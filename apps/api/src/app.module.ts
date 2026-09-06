@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { appConfig } from './config/app.config';
 import { HealthModule } from './modules/health/health.module';
 import { IamModule } from './modules/iam/iam.module';
+import { WebhooksModule } from './modules/webhooks/webhooks.module';
 import { FiscalModule } from './modules/fiscal/fiscal.module';
 import { SalesModule } from './modules/sales/sales.module';
 import { AuditModule } from './modules/audit/audit.module';
@@ -25,6 +26,7 @@ import { InventoryModule } from './modules/inventory/inventory.module';
     }),
     HealthModule,
     IamModule,
+    WebhooksModule,
     SalesModule,
     FiscalModule,
     AuditModule,

@@ -16,7 +16,13 @@ import { UPLOADS_DIR } from './modules/catalog/services/photo-storage.service';
  *  e Zod (packages/validation), aplicada por rota com o ZodValidationPipe. A pipe
  *  padrao exigiria class-validator e criaria uma segunda pilha de validacao. */
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
+  // rawBody: a assinatura de webhook e calculada sobre os bytes que o provedor
+  // enviou. Re-serializar o JSON ja parseado muda espaco e ordem de chave e a
+  // conferencia passa a falhar sempre — ver modules/webhooks.
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+    rawBody: true,
+  });
 
   const config = app.get(ConfigService).getOrThrow<AppConfig>(APP_CONFIG_KEY);
 
