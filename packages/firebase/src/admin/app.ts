@@ -2,6 +2,7 @@ import { type App, cert, getApps, initializeApp } from 'firebase-admin/app';
 import { type Auth, getAuth } from 'firebase-admin/auth';
 import { type AppCheck, getAppCheck } from 'firebase-admin/app-check';
 import { type Firestore, getFirestore } from 'firebase-admin/firestore';
+import { type Messaging, getMessaging } from 'firebase-admin/messaging';
 import { isEmulatorMode, readAdminCredentials } from './config';
 
 const APP_NAME = 'synapse-admin';
@@ -33,3 +34,5 @@ export const getAdminAuth = (): Auth => getAuth(getAdminApp());
 export const getAdminAppCheck = (): AppCheck => getAppCheck(getAdminApp());
 
 export const getAdminFirestore = (): Firestore => getFirestore(getAdminApp());
+
+export const getAdminMessaging = (): Messaging => getMessaging(getAdminApp());

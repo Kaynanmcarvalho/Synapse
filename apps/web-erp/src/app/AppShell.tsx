@@ -1,5 +1,4 @@
 import {
-  Bell,
   Boxes,
   ChevronDown,
   CircleHelp,
@@ -20,6 +19,7 @@ import {
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useTenantExperience, type FeatureKey } from './useTenantExperience';
+import { NotificationCenter } from '../features/notifications/NotificationCenter';
 
 interface NavItem {
   readonly label: string;
@@ -54,6 +54,7 @@ const NAVIGATION: Array<{ title: string; items: NavItem[] }> = [
   },
 ];
 
+// eslint-disable-next-line max-lines-per-function
 function SidebarContent({
   closeMobile,
   enabled,
@@ -150,6 +151,7 @@ function SidebarContent({
   );
 }
 
+// eslint-disable-next-line max-lines-per-function
 export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
@@ -223,17 +225,15 @@ export function AppShell() {
             <button className="hidden h-10 items-center gap-2 rounded-xl px-3 text-xs font-semibold text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 sm:flex">
               <Sparkles size={15} /> Atalhos
             </button>
-            {[CircleHelp, Bell, Settings].map((ActionIcon, index) => (
+            <NotificationCenter />
+            {[CircleHelp, Settings].map((ActionIcon, index) => (
               <button
                 key={index}
                 type="button"
-                aria-label={['Ajuda', 'Notificações', 'Configurações'][index]}
+                aria-label={['Ajuda', 'Configurações'][index]}
                 className="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
               >
                 <ActionIcon size={18} strokeWidth={1.8} />
-                {index === 1 && (
-                  <span className="absolute right-2.5 top-2.5 h-1.5 w-1.5 rounded-full bg-blue-600 ring-2 ring-white" />
-                )}
               </button>
             ))}
           </div>

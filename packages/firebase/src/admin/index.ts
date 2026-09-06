@@ -9,3 +9,4 @@ export type {
   QueryDocumentSnapshot,
   Transaction,
 } from 'firebase-admin/firestore';
+export type { Messaging } from 'firebase-admin/messaging';
