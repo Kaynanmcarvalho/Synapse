@@ -17,7 +17,11 @@ import type { CashMovementInput, CompletePosSaleInput } from '../dto/pos.schemas
 import { CashSessionRepository } from '../repositories/cash-session.repository';
 
 export interface PosFiscalIssuer {
-  issueNfce(sale: Omit<PosSale, 'nfceDocumentId'>): Promise<string>;
+  issueNfce(
+    tenantId: string,
+    companyId: string,
+    sale: Omit<PosSale, 'nfceDocumentId'>,
+  ): Promise<string>;
 }
 
 @Injectable()
@@ -104,7 +108,7 @@ export class PosService {
     };
     const sale = this.repository.saveSale({
       ...draft,
-      nfceDocumentId: await fiscal.issueNfce(draft),
+      nfceDocumentId: await fiscal.issueNfce(session.tenantId, input.companyId, draft),
     });
     const cashReceived = sale.payments
       .filter((p) => p.method === 'CASH')

@@ -23,6 +23,9 @@ export class MockFiscalProvider implements FiscalProvider {
   async cancelDocument(command: FiscalEventCommand) {
     return this.event(command, 'CANCELLED', 'Cancelamento homologado');
   }
+  async cancelNFCe(command: FiscalEventCommand) {
+    return this.cancelDocument(command);
+  }
   async correctNFe(command: FiscalEventCommand) {
     return this.event(command, 'AUTHORIZED', 'Carta de correção registrada');
   }
@@ -34,8 +37,17 @@ export class MockFiscalProvider implements FiscalProvider {
   async downloadXml(providerId: string) {
     return [...this.results.values()].find((result) => result.providerId === providerId)?.xml ?? '';
   }
+  async downloadNFCeXml(providerId: string) {
+    return this.downloadXml(providerId);
+  }
   async getDanfe(xml: string) {
     return Buffer.from(`DANFE MOCK\n${xml}`);
+  }
+  async getNFCeDanfe(xml: string) {
+    return this.getDanfe(xml);
+  }
+  async checkNFCeJob(jobId: string) {
+    return [...this.results.values()].find((result) => result.jobId === jobId) ?? null;
   }
   async queryDFe() {
     return [];

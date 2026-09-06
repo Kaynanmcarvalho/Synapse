@@ -7,9 +7,11 @@ import { FiscalConfigService } from './services/fiscal-config.service';
 import { FiscalProviderRegistry } from './services/fiscal-provider.registry';
 import { NfeService } from './services/nfe.service';
 import { SecretVaultService } from './services/secret-vault.service';
+import { NfceController } from './controllers/nfce.controller';
+import { NfceService } from './services/nfce.service';
 
 @Module({
-  controllers: [FiscalConfigController, NfeController],
+  controllers: [FiscalConfigController, NfeController, NfceController],
   providers: [
     FiscalRepository,
     MockFiscalProvider,
@@ -17,7 +19,8 @@ import { SecretVaultService } from './services/secret-vault.service';
     SecretVaultService,
     FiscalConfigService,
     NfeService,
+    NfceService,
   ],
-  exports: [FiscalRepository, FiscalProviderRegistry, NfeService],
+  exports: [FiscalRepository, FiscalProviderRegistry, NfeService, NfceService],
 })
 export class FiscalModule {}

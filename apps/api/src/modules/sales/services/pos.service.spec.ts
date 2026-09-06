@@ -17,6 +17,7 @@ describe('PosService', () => {
     const sale = await service.completeSale(
       cash.id,
       {
+        companyId: 'company',
         sellerId: 'seller',
         operatorDiscountLimitBasisPoints: 1_000,
         items: [
@@ -48,6 +49,7 @@ describe('PosService', () => {
       service.completeSale(
         cash.id,
         {
+          companyId: 'company',
           sellerId: 'seller',
           operatorDiscountLimitBasisPoints: 100,
           items: [

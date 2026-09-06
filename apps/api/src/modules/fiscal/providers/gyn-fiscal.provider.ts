@@ -28,6 +28,13 @@ export class GynFiscalProvider implements FiscalProvider {
       justificativa: command.justification,
     });
   }
+  cancelNFCe(command: FiscalEventCommand) {
+    return this.post('/fiscal/nfce/cancelar', {
+      chave: command.accessKey,
+      protocolo: command.protocol,
+      justificativa: command.justification,
+    });
+  }
   correctNFe(): Promise<FiscalProviderResult> {
     throw new NotImplementedException(
       'A documentação Gyn Fiscal consultada não publica endpoint de criação de CC-e',
@@ -40,8 +47,19 @@ export class GynFiscalProvider implements FiscalProvider {
   async downloadXml(providerId: string) {
     return (await this.request(`/fiscal/nfe/${providerId}/xml`)).text();
   }
+  async downloadNFCeXml(providerId: string, contingency = false) {
+    const suffix = contingency ? '/xml/contingencia' : '/xml';
+    return (await this.request(`/fiscal/nfce/${providerId}${suffix}`)).text();
+  }
   async getDanfe(xml: string) {
     const response = await this.request('/fiscal/nfe/danfe', {
+      method: 'POST',
+      body: JSON.stringify({ xml }),
+    });
+    return new Uint8Array(await response.arrayBuffer());
+  }
+  async getNFCeDanfe(xml: string) {
+    const response = await this.request('/fiscal/nfce/danfe', {
       method: 'POST',
       body: JSON.stringify({ xml }),
     });
@@ -66,6 +84,9 @@ export class GynFiscalProvider implements FiscalProvider {
   async checkJob(jobId: string) {
     return this.json(`/fiscal/nfe/job/${jobId}`);
   }
+  async checkNFCeJob(jobId: string) {
+    return this.map(await this.json(`/fiscal/nfce/job/${jobId}`));
+  }
   private async post(path: string, payload: Json) {
     return this.map(await this.json(path, { method: 'POST', body: JSON.stringify(payload) }));
   }
@@ -88,16 +109,9 @@ export class GynFiscalProvider implements FiscalProvider {
   }
   private map(raw: Json): FiscalProviderResult {
     const text = (name: string) => (typeof raw[name] === 'string' ? (raw[name] as string) : null);
-    const status = text('status')?.toUpperCase();
+    const status = (text('situacao') ?? text('status') ?? text('statusJob'))?.toUpperCase();
     return {
-      status:
-        status === 'AUTORIZADA' || status === 'CONCLUIDO'
-          ? 'AUTHORIZED'
-          : status === 'CANCELADA'
-            ? 'CANCELLED'
-            : status === 'REJEITADA'
-              ? 'REJECTED'
-              : 'PROCESSING',
+      status: this.mapStatus(status),
       providerId: text('id') ?? text('jobId') ?? '',
       jobId: text('jobId'),
       accessKey: text('chave') ?? text('chaveAcesso'),
@@ -106,5 +120,13 @@ export class GynFiscalProvider implements FiscalProvider {
       code: String(raw.codigoStatus ?? raw.codigo ?? ''),
       message: text('motivoStatus') ?? text('mensagem'),
     };
+  }
+  private mapStatus(status: string | undefined): FiscalProviderResult['status'] {
+    if (status === 'AUTORIZADA' || status === 'CONCLUIDO' || status === 'COMPLETED')
+      return 'AUTHORIZED';
+    if (status === 'CANCELADA') return 'CANCELLED';
+    if (status === 'CONTINGENCIA_PENDENTE') return 'CONTINGENCY';
+    if (status === 'REJEITADA' || status === 'FAILED') return 'REJECTED';
+    return 'PROCESSING';
   }
 }

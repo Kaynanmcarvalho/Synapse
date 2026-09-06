@@ -1,5 +1,4 @@
 import { Body, Controller, Get, Param, Post } from '@nestjs/common';
-import { randomUUID } from 'node:crypto';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CurrentTenant, RequirePermission } from '../../iam/iam.decorators';
 import { AuditedMutation } from '../../audit/audit.decorator';
@@ -13,12 +12,16 @@ import {
   type CompletePosSaleInput,
 } from '../dto/pos.schemas';
 import { PosService } from '../services/pos.service';
+import { NfceService } from '../../fiscal/services/nfce.service';
 
 @Controller('sales/pos')
 @RequirePermission('venda.criar')
 @AuditedMutation({ domain: 'FINANCE', entity: 'CashSession', collection: 'cashSessions' })
 export class PosController {
-  constructor(private readonly service: PosService) {}
+  constructor(
+    private readonly service: PosService,
+    private readonly nfce: NfceService,
+  ) {}
   @Post('cash-sessions') open(
     @CurrentTenant() tenant: TenantContext,
     @Body(new ZodValidationPipe(openCashSessionSchema))
@@ -44,7 +47,7 @@ export class PosController {
     @Param('id') id: string,
     @Body(new ZodValidationPipe(completePosSaleSchema)) input: CompletePosSaleInput,
   ) {
-    return this.service.completeSale(id, input, { issueNfce: async () => randomUUID() });
+    return this.service.completeSale(id, input, this.nfce);
   }
   @Post('cash-sessions/:id/close') close(
     @Param('id') id: string,

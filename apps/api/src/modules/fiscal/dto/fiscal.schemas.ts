@@ -10,6 +10,8 @@ export const fiscalConfigSchema = z.object({
   csc: z.string().max(120).nullable().optional(),
   nfeSeries: z.number().int().min(1).max(999),
   nfceSeries: z.number().int().min(1).max(999),
+  nfceContingencyEnabled: z.boolean().default(true),
+  nfceCancellationWindowMinutes: z.number().int().min(1).max(1440).default(30),
   state: z.string().length(2),
   taxRegime: z.string().min(1).max(80),
   certificateBase64: z.string().min(1).nullable().optional(),
@@ -29,6 +31,9 @@ export const fiscalEventSchema = z.object({
   justification: z.string().trim().min(15).max(255),
   idempotencyKey: z.string().min(8).max(120),
 });
+export const retryNfceSchema = z.object({
+  idempotencyKey: z.string().min(8).max(120),
+});
 export const invalidateNfeSchema = z
   .object({
     companyId: z.string().min(1),
@@ -43,4 +48,5 @@ export const invalidateNfeSchema = z
 export type FiscalConfigInput = z.infer<typeof fiscalConfigSchema>;
 export type IssueNfeInput = z.infer<typeof issueNfeSchema>;
 export type FiscalEventInput = z.infer<typeof fiscalEventSchema>;
+export type RetryNfceInput = z.infer<typeof retryNfceSchema>;
 export type InvalidateNfeInput = z.infer<typeof invalidateNfeSchema>;

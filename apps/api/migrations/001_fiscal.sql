@@ -43,9 +43,23 @@ CREATE TABLE IF NOT EXISTS fiscal_documents (
 );
 
 CREATE INDEX IF NOT EXISTS fiscal_documents_access_key_idx ON fiscal_documents (tenant_id, access_key);
+
+CREATE TABLE IF NOT EXISTS nfce_contingency_queue (
+  document_id uuid PRIMARY KEY REFERENCES fiscal_documents(id),
+  tenant_id uuid NOT NULL,
+  company_id uuid NOT NULL,
+  payload jsonb NOT NULL,
+  idempotency_key text NOT NULL,
+  attempts integer NOT NULL DEFAULT 0,
+  next_attempt_at timestamptz NOT NULL DEFAULT now(),
+  queued_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (tenant_id, idempotency_key)
+);
+
 ALTER TABLE fiscal_company_configs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE fiscal_sequences ENABLE ROW LEVEL SECURITY;
 ALTER TABLE fiscal_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE nfce_contingency_queue ENABLE ROW LEVEL SECURITY;
 
 -- Executar dentro da mesma transação que cria fiscal_documents. O UPSERT
 -- serializa concorrentes pela chave primária e devolve um único próximo número:

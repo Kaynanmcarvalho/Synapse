@@ -11,6 +11,7 @@ export const cashMovementSchema = z.object({
 });
 export const closeCashSessionSchema = z.object({ countedCash: money });
 export const completePosSaleSchema = z.object({
+  companyId: z.string().min(1),
   customerId: z.string().min(1).nullable().optional(),
   customerTaxId: z
     .string()

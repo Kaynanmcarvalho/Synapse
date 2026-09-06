@@ -49,6 +49,8 @@ export class FiscalConfigService {
       cscSecretRef,
       nfeSeries: input.nfeSeries,
       nfceSeries: input.nfceSeries,
+      nfceContingencyEnabled: input.nfceContingencyEnabled,
+      nfceCancellationWindowMinutes: input.nfceCancellationWindowMinutes,
       state: input.state.toUpperCase(),
       taxRegime: input.taxRegime,
       certificateSecretRef,

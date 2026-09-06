@@ -33,6 +33,8 @@ export interface FiscalCompanyConfig {
   readonly cscSecretRef: string | null;
   readonly nfeSeries: number;
   readonly nfceSeries: number;
+  readonly nfceContingencyEnabled?: boolean;
+  readonly nfceCancellationWindowMinutes?: number;
   readonly state: string;
   readonly taxRegime: string;
   readonly certificateSecretRef: string | null;
