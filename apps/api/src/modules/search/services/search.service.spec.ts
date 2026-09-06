@@ -1,41 +1,40 @@
-import type { FiscalDocument, Order, Product, Supplier, Titulo } from '@synapse/types';
+import type { Product, Supplier } from '@synapse/types';
 import { PartnerRepository } from '../../catalog/repositories/partner.repository';
 import { ProductRepository } from '../../catalog/repositories/product.repository';
-import { PartnerService } from '../../catalog/services/partner.service';
-import { ProductService } from '../../catalog/services/product.service';
-import type { TituloService } from '../../finance/services/titulo.service';
-import type { FiscalRepository } from '../../fiscal/repositories/fiscal.repository';
+import { OrderRepository } from '../../sales/repositories/order.repository';
+import { FiscalRepository } from '../../fiscal/repositories/fiscal.repository';
+import type { TituloRepository } from '../../finance/repositories/titulo.repository';
+import type { SellerRepository } from '../../field-sales/repositories/seller.repository';
+import { RoleService } from '../../iam/services/role.service';
+import { RoleRepository } from '../../iam/repositories/role.repository';
 import type { TenantContext } from '../../iam/iam.types';
-import type { OrderService } from '../../sales/services/order.service';
 import { SearchService } from './search.service';
 
 const tenant: TenantContext = {
   tenantId: 'tenant-1',
   userId: 'user-1',
-  roleIds: [],
+  roleIds: ['ADMIN_EMPRESA'],
   branchIds: [],
   warehouseIds: [],
 };
 
 function buildService() {
   const productRepository = new ProductRepository();
-  const products = new ProductService(productRepository);
   const partnerRepository = new PartnerRepository();
-  const partners = new PartnerService(partnerRepository);
-
-  const orders = { listByTenant: jest.fn(() => [] as Order[]) };
-  const fiscal = { listByTenant: jest.fn(() => [] as FiscalDocument[]) };
-  const titulos = { listAll: jest.fn(() => Promise.resolve([] as Titulo[])) };
-
+  const orders = new OrderRepository();
+  const fiscal = new FiscalRepository();
+  const titulos = { search: jest.fn(async () => []) };
+  const sellers = { search: jest.fn(async () => []) };
   const service = new SearchService(
-    products,
-    partners,
-    orders as unknown as OrderService,
-    fiscal as unknown as FiscalRepository,
-    titulos as unknown as TituloService,
+    productRepository,
+    partnerRepository,
+    orders,
+    fiscal,
+    titulos as unknown as TituloRepository,
+    sellers as unknown as SellerRepository,
+    new RoleService(new RoleRepository()),
   );
-
-  return { service, productRepository, partnerRepository, orders, fiscal, titulos };
+  return { service, productRepository, partnerRepository, orders, fiscal, titulos, sellers };
 }
 
 const productFixture = (id: string, name: string, sku: string): Product =>
@@ -130,10 +129,10 @@ describe('SearchService.search', () => {
     expect(types).toEqual(['customer', 'product', 'supplier']);
   });
 
-  it('inclui "vendedor" na lista de indisponíveis', async () => {
+  it('não marca nenhuma entidade como indisponível (vendedor já está integrado)', async () => {
     const { service } = buildService();
     const result = await service.search(tenant, 'qualquer', 20);
-    expect(result.unavailable).toContain('vendedor');
+    expect(result.unavailable).toEqual([]);
   });
 
   it('não quebra quando nada bate com a query', async () => {

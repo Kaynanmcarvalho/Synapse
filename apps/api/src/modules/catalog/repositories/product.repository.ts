@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Page, Product } from '@synapse/types';
+import { TenantSearchIndex } from '../../../common/search/tenant-search-index';
 
 export interface ProductSearchFilter {
   readonly q?: string;
@@ -12,6 +13,7 @@ export interface ProductSearchFilter {
  *  O contrato de paginacao por cursor ja fica pronto para essa troca. */
 @Injectable()
 export class ProductRepository {
+  readonly searchIndex = new TenantSearchIndex<Product>();
   private readonly products = new Map<string, Product>();
   /** Ordem de insercao, por tenant — e o que o cursor de paginacao anda. */
   private readonly order = new Map<string, string[]>();
@@ -21,6 +23,7 @@ export class ProductRepository {
   }
 
   save(product: Product): Product {
+    this.searchIndex.put(product, `${product.name} ${product.sku} ${product.ean ?? ''}`);
     const key = this.key(product.tenantId, product.id);
     if (!this.products.has(key)) {
       const ids = this.order.get(product.tenantId) ?? [];
@@ -42,6 +45,7 @@ export class ProductRepository {
   }
 
   delete(tenantId: string, id: string): void {
+    this.searchIndex.remove(tenantId, id);
     this.products.delete(this.key(tenantId, id));
     const ids = this.order.get(tenantId);
     if (ids)

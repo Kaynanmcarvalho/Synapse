@@ -13,6 +13,7 @@ import { AdminGuard } from './guards/admin.guard';
 import { AppCheckGuard } from './guards/app-check.guard';
 import { DeviceSessionGuard } from './guards/device-session.guard';
 import { UntrustedClaimsGuard } from './guards/untrusted-claims.guard';
+import { UserThrottlerGuard } from './guards/user-throttler.guard';
 import { PermissionInterceptor } from './interceptors/permission.interceptor';
 import { TenantContextInterceptor } from './interceptors/tenant-context.interceptor';
 import { BranchRepository } from './repositories/branch.repository';
@@ -51,6 +52,7 @@ import { RoleService } from './services/role.service';
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: AppCheckGuard },
     { provide: APP_GUARD, useClass: AuthGuard },
+    { provide: APP_GUARD, useClass: UserThrottlerGuard },
     { provide: APP_GUARD, useClass: UntrustedClaimsGuard },
     { provide: APP_GUARD, useClass: DeviceSessionGuard },
     { provide: APP_INTERCEPTOR, useClass: TenantContextInterceptor },

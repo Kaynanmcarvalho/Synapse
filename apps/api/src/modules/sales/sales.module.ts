@@ -11,6 +11,6 @@ import { OrderController } from './controllers/order.controller';
   imports: [CatalogModule],
   controllers: [PosController, OrderController],
   providers: [CashSessionRepository, PosService, OrderRepository, OrderService],
-  exports: [OrderService],
+  exports: [OrderService, OrderRepository, CashSessionRepository],
 })
 export class SalesModule {}

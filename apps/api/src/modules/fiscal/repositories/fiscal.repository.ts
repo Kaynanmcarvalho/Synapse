@@ -1,13 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import type { FiscalCompanyConfig, FiscalDocument } from '@synapse/types';
+import { TenantSearchIndex } from '../../../common/search/tenant-search-index';
 
 @Injectable()
 export class FiscalRepository {
+  readonly searchIndex = new TenantSearchIndex<FiscalDocument>();
   private readonly documents = new Map<string, FiscalDocument>();
   private readonly configs = new Map<string, FiscalCompanyConfig>();
   private readonly sequences = new Map<string, number>();
   private readonly idempotency = new Map<string, string>();
   saveDocument(document: FiscalDocument): FiscalDocument {
+    this.searchIndex.put(
+      document,
+      `${document.accessKey ?? ''} ${document.number} ${document.series} ${document.kind}`,
+    );
     this.documents.set(document.id, document);
     this.idempotency.set(document.idempotencyKey, document.id);
     return document;

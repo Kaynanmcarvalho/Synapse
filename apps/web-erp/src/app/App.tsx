@@ -9,6 +9,7 @@ import { StockIntelligenceScreen } from '../features/stock-intelligence/StockInt
 import { PurchasingScreen } from '../features/purchasing/PurchasingScreen';
 import { PlatformScreen } from '../features/platform/PlatformScreen';
 import { AppShell } from './AppShell';
+import { BranchConfigScreen } from '../features/config/BranchConfigScreen';
 
 export function App() {
   return (
@@ -23,6 +24,7 @@ export function App() {
           <Route path="/vendas/pdv" element={<PosScreen />} />
           <Route path="/cadastros/produtos" element={<ProductsScreen />} />
           <Route path="/configuracoes/cargos" element={<RolesScreen />} />
+          <Route path="/configuracoes/filiais" element={<BranchConfigScreen />} />
           <Route path="/configuracoes/integracoes" element={<PlatformScreen />} />
           <Route path="*" element={<Navigate to="/visao-geral" replace />} />
         </Route>

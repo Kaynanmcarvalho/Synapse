@@ -40,6 +40,12 @@ export class OrderService {
     },
   ): Order {
     const actor = this.actor(context);
+    const items = this.pricing.priceSaleItems(
+      context,
+      input.branchId,
+      input.customerId,
+      input.items,
+    );
     const limitPercent = this.pricing.getSellerDiscountLimit(context, context.userId);
     const limitBasisPoints = Math.round(limitPercent * 100);
     return this.repository.save({
@@ -49,9 +55,9 @@ export class OrderService {
       customerId: input.customerId as Order['customerId'],
       status: 'QUOTE',
       channel: input.channel,
-      total: input.items.reduce((sum, item) => sum + item.total, 0),
-      requiresApproval: this.discountBasisPoints(input.items) > limitBasisPoints,
-      items: input.items,
+      total: items.reduce((sum, item) => sum + item.total, 0),
+      requiresApproval: this.discountBasisPoints(items) > limitBasisPoints,
+      items,
       returnedItems: [],
       createdAt: new Date().toISOString(),
       createdBy: actor,

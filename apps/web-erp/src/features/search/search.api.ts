@@ -1,7 +1,7 @@
 import { apiRequest } from '../../lib/dev-auth';
 
 export type SearchEntityType =
-  'customer' | 'supplier' | 'product' | 'order' | 'fiscalDocument' | 'titulo';
+  'customer' | 'supplier' | 'product' | 'order' | 'fiscalDocument' | 'titulo' | 'seller';
 
 export interface SearchResultItem {
   readonly type: SearchEntityType;

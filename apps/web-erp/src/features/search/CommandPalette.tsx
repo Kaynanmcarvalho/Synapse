@@ -14,6 +14,7 @@ import {
 import { globalSearch, type SearchEntityType, type SearchResultItem } from './search.api';
 
 const TYPE_ICON: Record<SearchEntityType, LucideIcon> = {
+  seller: Boxes,
   customer: Boxes,
   supplier: Truck,
   product: Package,
@@ -23,6 +24,7 @@ const TYPE_ICON: Record<SearchEntityType, LucideIcon> = {
 };
 
 const TYPE_LABEL: Record<SearchEntityType, string> = {
+  seller: 'Vendedor',
   customer: 'Cliente',
   supplier: 'Fornecedor',
   product: 'Produto',

@@ -10,6 +10,6 @@ import { SellerService } from './services/seller.service';
   imports: [CatalogModule, SalesModule],
   controllers: [SellerSelfController, SellerAdminController],
   providers: [SellerRepository, SellerService, SellerDashboardService],
-  exports: [SellerService, SellerDashboardService],
+  exports: [SellerService, SellerDashboardService, SellerRepository],
 })
 export class FieldSalesModule {}

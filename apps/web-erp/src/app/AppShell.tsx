@@ -56,6 +56,7 @@ const NAVIGATION: Array<{ title: string; items: NavItem[] }> = [
     title: 'Gestão',
     items: [
       { label: 'Produtos', path: '/cadastros/produtos', icon: Boxes },
+      { label: 'Configuração por filial', path: '/configuracoes/filiais', icon: Settings },
       { label: 'Cargos e permissões', path: '/configuracoes/cargos', icon: ShieldCheck },
       { label: 'Integrações', path: '/configuracoes/integracoes', icon: Plug, badge: 'F9' },
     ],

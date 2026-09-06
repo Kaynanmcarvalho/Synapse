@@ -1,5 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { asPriceTableId, type PriceResolutionResult, type PriceTableEntry } from '@synapse/types';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  asPriceTableId,
+  type PosItem,
+  type PriceResolutionResult,
+  type PriceTableEntry,
+} from '@synapse/types';
 import type { CreatePriceTableEntryInput, ResolvePriceInput } from '@synapse/validation';
 import { randomUUID } from 'node:crypto';
 import type { TenantContext } from '../../iam/iam.types';
@@ -32,6 +37,38 @@ export class PricingService {
     private readonly repository: PricingRepository,
     private readonly products: ProductRepository,
   ) {}
+
+  /** Catálogo em reais; vendas em centavos e quantidades em milésimos. */
+  priceSaleItems(
+    tenant: TenantContext,
+    branchId: string,
+    customerId: string | null,
+    items: readonly PosItem[],
+  ): PosItem[] {
+    return items.map((item) => {
+      if (
+        !Number.isSafeInteger(item.quantity) ||
+        item.quantity <= 0 ||
+        !Number.isSafeInteger(item.discount) ||
+        item.discount < 0 ||
+        !Number.isSafeInteger(item.surcharge) ||
+        item.surcharge < 0
+      ) {
+        throw new BadRequestException('Quantidade, desconto ou acréscimo inválido');
+      }
+      const result = this.resolvePrice(tenant, {
+        productId: item.productId,
+        branchId,
+        quantity: item.quantity / 1000,
+        ...(customerId ? { customerId } : {}),
+        sellerId: tenant.userId,
+      });
+      const unitPrice = Math.round(result.price * 100);
+      const total = Math.round((item.quantity * unitPrice) / 1000) - item.discount + item.surcharge;
+      if (total < 0) throw new BadRequestException('Desconto excede o valor do item');
+      return { ...item, unitPrice, total };
+    });
+  }
 
   createPriceTableEntry(tenant: TenantContext, input: CreatePriceTableEntryInput): PriceTableEntry {
     const entry: PriceTableEntry = {

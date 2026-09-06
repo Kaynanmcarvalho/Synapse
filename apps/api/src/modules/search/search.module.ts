@@ -1,3 +1,5 @@
+import { FieldSalesModule } from '../field-sales/field-sales.module';
+import { IamModule } from '../iam/iam.module';
 import { Module } from '@nestjs/common';
 import { CatalogModule } from '../catalog/catalog.module';
 import { FinanceModule } from '../finance/finance.module';
@@ -10,7 +12,7 @@ import { SavedFilterService } from './services/saved-filter.service';
 import { SearchService } from './services/search.service';
 
 @Module({
-  imports: [CatalogModule, SalesModule, FiscalModule, FinanceModule],
+  imports: [CatalogModule, SalesModule, FiscalModule, FinanceModule, FieldSalesModule, IamModule],
   controllers: [SearchController, SavedFilterController],
   providers: [SearchService, SavedFilterRepository, SavedFilterService],
   exports: [SearchService],

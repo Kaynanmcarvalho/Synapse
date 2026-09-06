@@ -1,16 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import type { Customer, CustomerHistoryEntry, Supplier } from '@synapse/types';
+import { TenantSearchIndex } from '../../../common/search/tenant-search-index';
 
 @Injectable()
 export class PartnerRepository {
+  readonly customerIndex = new TenantSearchIndex<Customer>();
+  readonly supplierIndex = new TenantSearchIndex<Supplier>();
   private readonly customers = new Map<string, Customer>();
   private readonly suppliers = new Map<string, Supplier>();
   private readonly history: CustomerHistoryEntry[] = [];
   saveCustomer(value: Customer) {
+    this.customerIndex.put(value, `${value.name} ${value.taxId} ${value.phone}`);
     this.customers.set(`${value.tenantId}:${value.id}`, value);
     return value;
   }
   saveSupplier(value: Supplier) {
+    this.supplierIndex.put(value, `${value.tradeName} ${value.legalName} ${value.taxId}`);
     this.suppliers.set(`${value.tenantId}:${value.id}`, value);
     return value;
   }

@@ -24,6 +24,6 @@ import { ProductService } from './services/product.service';
     PricingRepository,
     PricingService,
   ],
-  exports: [PartnerService, ProductService, PricingService],
+  exports: [PartnerService, ProductService, PricingService, ProductRepository, PartnerRepository],
 })
 export class CatalogModule {}

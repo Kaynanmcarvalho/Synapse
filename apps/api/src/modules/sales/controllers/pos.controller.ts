@@ -41,10 +41,11 @@ export class PosController {
     return this.service.addMovement(id, 'WITHDRAWAL', input, tenant.userId);
   }
   @Post('cash-sessions/:id/sales') sale(
+    @CurrentTenant() tenant: TenantContext,
     @Param('id') id: string,
     @Body(new ZodValidationPipe(completePosSaleSchema)) input: CompletePosSaleInput,
   ) {
-    return this.service.completeSale(id, input, { issueNfce: async () => randomUUID() });
+    return this.service.completeSale(id, input, { issueNfce: async () => randomUUID() }, tenant);
   }
   @Post('cash-sessions/:id/close') close(
     @Param('id') id: string,

@@ -9,6 +9,6 @@ import { TituloService } from './services/titulo.service';
   // sem nenhum module registrando-as no DI — Sicredi/ItauProvider continuam
   // instanciados manualmente dentro do registry (não são providers Nest).
   providers: [TituloRepository, TituloService, MockBankProvider, BankProviderRegistry],
-  exports: [TituloService, BankProviderRegistry],
+  exports: [TituloService, TituloRepository, BankProviderRegistry],
 })
 export class FinanceModule {}
