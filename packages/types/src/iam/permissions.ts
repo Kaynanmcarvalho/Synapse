@@ -35,6 +35,9 @@ export const PERMISSIONS = [
   'estoque.inteligencia.ajustar',
   'compras.gerenciar',
   'compras.receber',
+  'plataforma.integracoes.visualizar',
+  'plataforma.integracoes.testar',
+  'plataforma.producao.ativar',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];

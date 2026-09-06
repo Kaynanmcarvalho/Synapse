@@ -7,6 +7,7 @@ import { InventoryScreen } from '../features/inventory/InventoryScreen';
 import { RolesScreen } from '../features/roles/RolesScreen';
 import { StockIntelligenceScreen } from '../features/stock-intelligence/StockIntelligenceScreen';
 import { PurchasingScreen } from '../features/purchasing/PurchasingScreen';
+import { PlatformScreen } from '../features/platform/PlatformScreen';
 import { AppShell } from './AppShell';
 
 export function App() {
@@ -22,6 +23,7 @@ export function App() {
           <Route path="/vendas/pdv" element={<PosScreen />} />
           <Route path="/cadastros/produtos" element={<ProductsScreen />} />
           <Route path="/configuracoes/cargos" element={<RolesScreen />} />
+          <Route path="/configuracoes/integracoes" element={<PlatformScreen />} />
           <Route path="*" element={<Navigate to="/visao-geral" replace />} />
         </Route>
       </Routes>

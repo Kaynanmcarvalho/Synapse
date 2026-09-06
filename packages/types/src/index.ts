@@ -14,3 +14,4 @@ export * from './banking';
 export * from './analytics';
 export * from './purchasing';
 export * from './search';
+export * from './platform';

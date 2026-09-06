@@ -35,6 +35,14 @@ export class StockIntelligenceService {
     private readonly partners: PartnerService,
   ) {}
 
+  /** Etapa "estoque" do onboarding (§65): existe algum saldo lançado pra
+   *  este tenant? Não importa qual filial/produto, só que o módulo de
+   *  estoque já foi usado de verdade, não só cadastrado. */
+  async hasAnyStock(tenantId: string): Promise<boolean> {
+    const balances = await this.repository.listAllBalances(tenantId);
+    return balances.length > 0;
+  }
+
   /** Recalcula os indicadores de uma filial e persiste uma linha por
    *  produto. É a mesma lógica chamada pelo job periódico e pelo endpoint
    *  de recálculo manual — não há dois caminhos para o mesmo cálculo. */

@@ -9,6 +9,7 @@ import {
   Menu,
   Moon,
   PackageSearch,
+  Plug,
   ScanLine,
   Search,
   Settings,
@@ -56,6 +57,7 @@ const NAVIGATION: Array<{ title: string; items: NavItem[] }> = [
     items: [
       { label: 'Produtos', path: '/cadastros/produtos', icon: Boxes },
       { label: 'Cargos e permissões', path: '/configuracoes/cargos', icon: ShieldCheck },
+      { label: 'Integrações', path: '/configuracoes/integracoes', icon: Plug, badge: 'F9' },
     ],
   },
 ];

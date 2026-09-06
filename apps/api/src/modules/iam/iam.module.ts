@@ -56,6 +56,6 @@ import { RoleService } from './services/role.service';
     { provide: APP_INTERCEPTOR, useClass: TenantContextInterceptor },
     { provide: APP_INTERCEPTOR, useClass: PermissionInterceptor },
   ],
-  exports: [MembershipRepository, SessionRepository, RoleService],
+  exports: [MembershipRepository, SessionRepository, RoleService, BranchService],
 })
 export class IamModule {}

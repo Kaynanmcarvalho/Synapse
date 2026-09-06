@@ -16,6 +16,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { PurchasingModule } from './modules/purchasing/purchasing.module';
 import { SearchModule } from './modules/search/search.module';
+import { PlatformModule } from './modules/platform/platform.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { SearchModule } from './modules/search/search.module';
     FinanceModule,
     PurchasingModule,
     SearchModule,
+    PlatformModule,
   ],
 })
 export class AppModule {}
