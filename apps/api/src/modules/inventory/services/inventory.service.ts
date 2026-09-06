@@ -12,6 +12,9 @@ export class InventoryService {
     private readonly repository: InventoryRepository,
     @Optional() private readonly countLocks?: InventoryCountLockService,
   ) {}
+  balance(context: TenantContext, branchId: string, warehouseId: string, productId: string) {
+    return this.repository.find(context.tenantId, branchId, warehouseId, productId);
+  }
   reserve(context: TenantContext, input: StockCommand) {
     return this.change(context, input, 'RESERVE', (stock) => ({
       physical: stock.physical,

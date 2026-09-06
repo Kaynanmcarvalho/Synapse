@@ -6,6 +6,12 @@ import { FIREBASE_FIRESTORE } from '../../iam/firebase.tokens';
 @Injectable()
 export class InventoryRepository {
   constructor(@Inject(FIREBASE_FIRESTORE) private readonly firestore: Firestore) {}
+  async find(tenantId: string, branchId: string, warehouseId: string, productId: string) {
+    const snapshot = await this.firestore
+      .doc(`tenants/${tenantId}/inventory/${branchId}_${warehouseId}_${productId}`)
+      .get();
+    return snapshot.exists ? (snapshot.data() as StockBalance) : null;
+  }
   async transact(
     tenantId: string,
     key: string,

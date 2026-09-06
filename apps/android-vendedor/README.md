@@ -1,17 +1,5 @@
-# apps/android-vendedor
+# Synapse Vendedor Android
 
-Reservado para o app Android nativo do vendedor externo — cartao **[F7] App Android offline-first**.
+Aplicativo Kotlin/Compose offline-first. Room mantém o catálogo permitido e pedidos locais; WorkManager envia a fila com uma chave idempotente por pedido. O servidor sempre recalcula preço e estoque. Divergências aparecem na tela de conflitos e nunca são aceitas silenciosamente.
 
-Nao e um workspace pnpm de proposito: o `pnpm-workspace.yaml` so enxerga diretorios com
-`package.json`, entao esta pasta fica fora do grafo do Turborepo ate o projeto Gradle existir.
-
-## O que entra aqui na F7
-
-- Projeto Gradle (Kotlin + Jetpack Compose)
-- Persistencia local (Room) com fila de sincronizacao
-- Estrategia de resolucao de conflito definida no cartao **[F0] Proposta de arquitetura e ADRs**
-
-## O que ja esta pronto para ele
-
-- `packages/types` — os mesmos contratos usados pela API, para espelhar no Kotlin
-- `apps/web-vendedor` — portal web equivalente, util como referencia de fluxo
+Configure `google-services.json` localmente e `API_BASE_URL` em `local.properties`. Abra esta pasta no Android Studio, sincronize o Gradle e execute `connectedCheck` com um emulador API 26+.

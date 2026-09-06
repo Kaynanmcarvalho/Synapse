@@ -49,3 +49,4 @@ apps/api/uploads/
 apps/android-vendedor/local.properties
 apps/android-vendedor/.gradle/
 apps/android-vendedor/build/
+apps/android-vendedor/app/google-services.json
