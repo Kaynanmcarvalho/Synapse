@@ -18,6 +18,11 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    match /tenants/{tenantId}/auditLogs/{logId} {
+      allow read: if belongsToTenant(tenantId);
+      allow create, update, delete: if false; // somente Admin SDK; append-only
+    }
+
     match /platform/{document=**} {
       allow read, write: if false;
     }

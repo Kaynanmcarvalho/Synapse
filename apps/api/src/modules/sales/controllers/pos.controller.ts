@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post, UsePipes } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CurrentTenant } from '../../iam/iam.decorators';
+import { AuditedMutation } from '../../audit/audit.decorator';
 import type { TenantContext } from '../../iam/iam.types';
 import {
   cashMovementSchema,
@@ -14,6 +15,7 @@ import {
 import { PosService } from '../services/pos.service';
 
 @Controller('sales/pos')
+@AuditedMutation({ domain: 'FINANCE', entity: 'CashSession', collection: 'cashSessions' })
 export class PosController {
   constructor(private readonly service: PosService) {}
   @Post('cash-sessions') @UsePipes(new ZodValidationPipe(openCashSessionSchema)) open(

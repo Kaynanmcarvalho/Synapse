@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, Post, Res, UsePipes } from '@nestjs/commo
 import type { Response } from 'express';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CurrentTenant } from '../../iam/iam.decorators';
+import { AuditedMutation } from '../../audit/audit.decorator';
 import type { TenantContext } from '../../iam/iam.types';
 import {
   fiscalEventSchema,
@@ -14,6 +15,7 @@ import {
 import { NfeService } from '../services/nfe.service';
 
 @Controller('fiscal/nfe')
+@AuditedMutation({ domain: 'FISCAL', entity: 'FiscalDocument', collection: 'fiscalDocuments' })
 export class NfeController {
   constructor(private readonly service: NfeService) {}
   @Post() @UsePipes(new ZodValidationPipe(issueNfeSchema)) issue(

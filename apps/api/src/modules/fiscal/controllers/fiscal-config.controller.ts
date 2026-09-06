@@ -1,9 +1,11 @@
 import { Body, Controller, Get, Param, Put, UsePipes } from '@nestjs/common';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
+import { AuditedMutation } from '../../audit/audit.decorator';
 import { fiscalConfigSchema, type FiscalConfigInput } from '../dto/fiscal.schemas';
 import { FiscalConfigService } from '../services/fiscal-config.service';
 
 @Controller('fiscal/config')
+@AuditedMutation({ domain: 'FISCAL', entity: 'FiscalConfig', collection: 'fiscalConfigs' })
 export class FiscalConfigController {
   constructor(private readonly service: FiscalConfigService) {}
   @Get(':companyId') get(@Param('companyId') companyId: string) {

@@ -2,7 +2,7 @@ import { type App, cert, getApps, initializeApp } from 'firebase-admin/app';
 import { type Auth, getAuth } from 'firebase-admin/auth';
 import { type AppCheck, getAppCheck } from 'firebase-admin/app-check';
 import { type Firestore, getFirestore } from 'firebase-admin/firestore';
-import { readAdminCredentials } from './config';
+import { isEmulatorMode, readAdminCredentials } from './config';
 
 const APP_NAME = 'synapse-admin';
 
@@ -14,6 +14,12 @@ export const getAdminApp = (): App => {
   const existing = getApps().find((app) => app.name === APP_NAME);
   if (existing) {
     cached = existing;
+    return cached;
+  }
+
+  if (isEmulatorMode()) {
+    const projectId = process.env['FIREBASE_PROJECT_ID'] ?? 'demo-synapse';
+    cached = initializeApp({ projectId }, APP_NAME);
     return cached;
   }
 

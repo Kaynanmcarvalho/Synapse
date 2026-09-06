@@ -1,4 +1,13 @@
-import type { AuditStamp, CategoryId, ProductId, TenantId } from '../common';
+import type {
+  AuditStamp,
+  CategoryId,
+  CustomerId,
+  PriceTableId,
+  ProductId,
+  SupplierId,
+  TenantId,
+  UserId,
+} from '../common';
 
 /** ativo, inativo, bloqueado, fora de linha (§5). */
 export type ProductStatus = 'active' | 'inactive' | 'blocked' | 'discontinued';
@@ -71,3 +80,61 @@ export const PRODUCT_STATUS_ALLOWS_SALE: Record<ProductStatus, boolean> = {
   blocked: false,
   discontinued: false,
 };
+
+export type CustomerType = 'PF' | 'PJ' | 'RURAL_PRODUCER';
+export type FinancialStatus = 'REGULAR' | 'OVERDUE' | 'BLOCKED';
+export interface Address {
+  readonly street: string;
+  readonly number: string;
+  readonly complement: string | null;
+  readonly district: string;
+  readonly city: string;
+  readonly state: string;
+  readonly postalCode: string;
+}
+export interface Customer extends AuditStamp {
+  readonly id: CustomerId;
+  readonly tenantId: TenantId;
+  readonly type: CustomerType;
+  readonly taxId: string;
+  readonly stateRegistration: string | null;
+  readonly municipalRegistration: string | null;
+  readonly name: string;
+  readonly legalName: string | null;
+  readonly address: Address;
+  readonly phone: string;
+  readonly whatsapp: string | null;
+  readonly email: string | null;
+  readonly creditLimit: number;
+  readonly openCredit: number;
+  readonly responsibleSellerId: UserId | null;
+  readonly priceTableId: PriceTableId | null;
+  readonly paymentTermId: string | null;
+  readonly financialStatus: FinancialStatus;
+  readonly active: boolean;
+}
+export interface Supplier extends AuditStamp {
+  readonly id: SupplierId;
+  readonly tenantId: TenantId;
+  readonly taxId: string;
+  readonly stateRegistration: string;
+  readonly legalName: string;
+  readonly tradeName: string;
+  readonly contacts: readonly { name: string; phone: string; email: string | null }[];
+  readonly paymentTermId: string | null;
+  readonly averageLeadDays: number;
+  readonly averagePrice: number;
+  readonly productIds: readonly ProductId[];
+  readonly active: boolean;
+}
+export type CustomerHistoryKind =
+  'ORDER' | 'INVOICE' | 'BOLETO' | 'PAYMENT' | 'RETURN' | 'DELINQUENCY';
+export interface CustomerHistoryEntry {
+  readonly id: string;
+  readonly customerId: CustomerId;
+  readonly kind: CustomerHistoryKind;
+  readonly referenceId: string;
+  readonly amount: number;
+  readonly occurredAt: string;
+  readonly description: string;
+}

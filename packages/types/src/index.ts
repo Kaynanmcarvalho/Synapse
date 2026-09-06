@@ -1,4 +1,5 @@
 export * from './common';
+export * from './audit';
 export * from './tenant';
 export * from './iam';
 export * from './config';
