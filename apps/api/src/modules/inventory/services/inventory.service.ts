@@ -49,11 +49,30 @@ export class InventoryService {
       blocked: stock.blocked,
     }));
   }
+  transferOut(context: TenantContext, input: StockCommand) {
+    return this.change(context, input, 'TRANSFER', (stock) => ({
+      physical: stock.physical - input.quantity,
+      reserved: stock.reserved,
+      blocked: stock.blocked,
+      inTransit: stock.inTransit + input.quantity,
+    }));
+  }
+  transferReceive(context: TenantContext, input: StockCommand, destination: boolean) {
+    return this.change(context, input, 'TRANSFER', (stock) => ({
+      physical: stock.physical + (destination ? input.quantity : 0),
+      reserved: stock.reserved,
+      blocked: stock.blocked,
+      inTransit: destination ? stock.inTransit : stock.inTransit - input.quantity,
+    }));
+  }
   private change(
     context: TenantContext,
     input: StockCommand,
     kind: StockMovementKind,
-    mutate: (stock: StockBalance) => Pick<StockBalance, 'physical' | 'reserved' | 'blocked'>,
+    mutate: (
+      stock: StockBalance,
+    ) => Pick<StockBalance, 'physical' | 'reserved' | 'blocked'> &
+      Partial<Pick<StockBalance, 'inTransit' | 'damaged' | 'consigned'>>,
   ) {
     const key = `${input.branchId}_${input.warehouseId}_${input.productId}`;
     const initial: StockBalance = {

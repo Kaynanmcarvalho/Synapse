@@ -1,6 +1,9 @@
 import type { AuditStamp, BranchId, CustomerId, OrderId, ProductId, TenantId } from '../common';
 
-export type OrderStatus = 'draft' | 'quote' | 'confirmed' | 'invoiced' | 'delivered' | 'cancelled';
+export type OrderStatus =
+  'QUOTE' | 'ORDER' | 'APPROVED' | 'PICKING' | 'INVOICED' | 'DELIVERED' | 'CANCELLED';
+export type OrderChannel =
+  'COUNTER' | 'SELLER' | 'EXTERNAL' | 'PHONE' | 'WHATSAPP' | 'FUTURE_SALE' | 'DELIVERY_ORDER';
 
 export interface Order extends AuditStamp {
   readonly id: OrderId;
@@ -9,6 +12,10 @@ export interface Order extends AuditStamp {
   readonly customerId: CustomerId;
   readonly status: OrderStatus;
   readonly total: number;
+  readonly channel: OrderChannel;
+  readonly requiresApproval: boolean;
+  readonly items: readonly PosItem[];
+  readonly returnedItems: readonly { productId: ProductId; quantity: number }[];
 }
 
 export type PaymentMethod =

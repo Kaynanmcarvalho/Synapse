@@ -47,3 +47,30 @@ export interface StockMovement {
   readonly occurredAt: string;
   readonly idempotencyKey: string;
 }
+
+export type TransferStatus =
+  'PENDING' | 'APPROVED' | 'PICKING' | 'IN_TRANSIT' | 'RECEIVED' | 'DIVERGENCE' | 'CANCELLED';
+export interface TransferItem {
+  readonly productId: ProductId;
+  readonly lotId: string | null;
+  readonly expiresOn: string | null;
+  readonly requested: number;
+  readonly shipped: number;
+  readonly received: number;
+}
+export interface StockTransfer {
+  readonly id: string;
+  readonly tenantId: TenantId;
+  readonly originBranchId: BranchId;
+  readonly originWarehouseId: string;
+  readonly destinationBranchId: BranchId;
+  readonly destinationWarehouseId: string;
+  readonly status: TransferStatus;
+  readonly items: readonly TransferItem[];
+  readonly history: readonly {
+    status: TransferStatus;
+    userId: string;
+    occurredAt: string;
+    note: string;
+  }[];
+}
