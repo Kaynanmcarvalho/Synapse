@@ -92,6 +92,41 @@ export interface InventoryCountLine {
   readonly countedAt: string | null;
 }
 
+/** §8: lote, fabricacao, validade, fornecedor, quantidade — e a base do FEFO. */
+export interface Lot {
+  readonly id: string;
+  readonly tenantId: TenantId;
+  readonly branchId: BranchId;
+  readonly warehouseId: string;
+  readonly productId: ProductId;
+  readonly supplierId: string | null;
+  readonly manufacturedAt: string;
+  readonly expiresAt: string;
+  readonly initialQuantity: number;
+  readonly physical: number;
+  readonly reserved: number;
+  readonly createdAt: string;
+  readonly createdBy: string;
+}
+
+/** Quanto falta para vencer, na granularidade dos alertas do §46. `EXPIRED`
+ *  quando a validade ja passou — nunca entra em venda nova (c12-4). */
+export type ExpiryAlertLevel = 'D90' | 'D60' | 'D30' | 'D15' | 'EXPIRED';
+
+export interface ExpiringLot {
+  readonly lot: Lot;
+  readonly daysUntilExpiry: number;
+  readonly alertLevel: ExpiryAlertLevel;
+}
+
+/** O que `LotService.reserveFefo` devolve: de quais lotes a quantidade saiu,
+ *  na ordem em que o FEFO consumiu — a rastreabilidade do c12-7. */
+export interface LotReservation {
+  readonly lotId: string;
+  readonly expiresAt: string;
+  readonly quantity: number;
+}
+
 export interface InventoryCount {
   readonly id: string;
   readonly tenantId: TenantId;

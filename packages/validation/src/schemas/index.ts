@@ -6,3 +6,4 @@ export * from './product.schema';
 export * from './category.schema';
 export * from './partner.schema';
 export * from './pricing.schema';
+export * from './lot.schema';

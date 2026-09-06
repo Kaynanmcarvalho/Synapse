@@ -1,64 +1,6 @@
-import { initializeApp } from 'firebase/app';
-import { connectAuthEmulator, getAuth, signInWithEmailAndPassword, type Auth } from 'firebase/auth';
+import { API_URL, apiRequest, authHeaders } from '../../lib/dev-auth';
 
-/** Bootstrap de dev para esta tela: fala direto com o emulador do Firebase
- *  Auth (127.0.0.1:9099), sem exigir projeto real nem App Check — o backend
- *  ja aceita isso fora de producao (APP_CHECK_ENFORCEMENT=false). O login de
- *  producao, com MFA e App Check de verdade, e o AuthService em
- *  features/auth — esta tela nao o substitui, so evita depender dele para
- *  demonstrar o cadastro de produtos e o motor de precos. */
-const app = initializeApp({ apiKey: 'demo-key', projectId: 'demo-synapse', appId: 'demo-app' });
-let auth: Auth | null = null;
-
-const getDevAuth = (): Auth => {
-  if (auth) return auth;
-  auth = getAuth(app);
-  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
-  return auth;
-};
-
-const API_URL = 'http://localhost:3333/api/v1';
-
-let sessionId: string | null = null;
-
-const authHeaders = async (): Promise<Record<string, string>> => {
-  const user = getDevAuth().currentUser;
-  if (!user) throw new Error('Faca login primeiro');
-  const idToken = await user.getIdToken();
-  return {
-    Authorization: `Bearer ${idToken}`,
-    ...(sessionId ? { 'X-Device-Session': sessionId } : {}),
-  };
-};
-
-const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
-  const headers = await authHeaders();
-  const response = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers: { ...headers, ...(init?.headers ?? {}) },
-  });
-  if (!response.ok) {
-    const body = (await response.json().catch(() => ({}))) as { message?: string };
-    throw new Error(body.message ?? `${response.status} ${response.statusText}`);
-  }
-  return response.json() as Promise<T>;
-};
-
-/** Login de dev + registro da sessao de dispositivo (X-Device-Session e
- *  exigido pelo DeviceSessionGuard em toda rota de negocio). */
-export const devSignIn = async (email: string, password: string): Promise<void> => {
-  await signInWithEmailAndPassword(getDevAuth(), email, password);
-  const idToken = await getDevAuth().currentUser?.getIdToken();
-  const response = await fetch(`${API_URL}/auth/sessions`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ deviceId: `web-erp-${Date.now()}`, name: 'Web ERP', platform: 'web' }),
-  });
-  const session = (await response.json()) as { id?: string };
-  sessionId = session.id ?? null;
-};
-
-export const isSignedIn = (): boolean => Boolean(getDevAuth().currentUser) && Boolean(sessionId);
+export { devSignIn, isSignedIn } from '../../lib/dev-auth';
 
 export interface ProductListItem {
   readonly id: string;
@@ -70,7 +12,7 @@ export interface ProductListItem {
 }
 
 export const listProducts = (query = ''): Promise<{ items: ProductListItem[] }> =>
-  request(`/catalog/products${query ? `?q=${encodeURIComponent(query)}` : ''}`);
+  apiRequest(`/catalog/products${query ? `?q=${encodeURIComponent(query)}` : ''}`);
 
 export interface CreateProductPayload {
   readonly sku: string;
@@ -83,7 +25,7 @@ export interface CreateProductPayload {
 }
 
 export const createProduct = (payload: CreateProductPayload): Promise<ProductListItem> =>
-  request('/catalog/products', {
+  apiRequest('/catalog/products', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -127,7 +69,7 @@ export interface ResolvedPrice {
 }
 
 export const resolvePrice = (productId: string, branchId: string | null): Promise<ResolvedPrice> =>
-  request('/catalog/pricing/resolve', {
+  apiRequest('/catalog/pricing/resolve', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ productId, branchId, quantity: 1 }),

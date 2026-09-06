@@ -31,6 +31,7 @@ const baseCustomerInput = {
   phone: '62999990000',
   whatsapp: null,
   email: 'fulano@teste.dev',
+  active: true,
   creditLimit: 1000,
   responsibleSellerId: null,
   priceTableId: null,
