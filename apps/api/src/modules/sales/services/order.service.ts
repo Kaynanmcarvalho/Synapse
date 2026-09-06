@@ -111,6 +111,9 @@ export class OrderService {
       version: order.version + 1,
     });
   }
+  listByTenant(tenantId: string): Order[] {
+    return this.repository.listByTenant(tenantId);
+  }
   private update(order: Order, status: Order['status'], context: TenantContext) {
     return this.repository.save({
       ...order,

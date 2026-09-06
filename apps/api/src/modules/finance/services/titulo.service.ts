@@ -54,4 +54,8 @@ export class TituloService {
   findById(tenantId: string, id: string): Promise<Titulo | null> {
     return this.repository.findById(tenantId, id);
   }
+
+  listAll(tenantId: string): Promise<Titulo[]> {
+    return this.repository.listAll(tenantId);
+  }
 }

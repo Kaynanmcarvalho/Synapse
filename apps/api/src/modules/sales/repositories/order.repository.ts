@@ -11,4 +11,7 @@ export class OrderRepository {
   find(id: string) {
     return this.values.get(id);
   }
+  listByTenant(tenantId: string): Order[] {
+    return [...this.values.values()].filter((order) => order.tenantId === tenantId);
+  }
 }

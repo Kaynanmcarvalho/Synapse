@@ -1,5 +1,7 @@
 /* eslint-disable max-lines, max-lines-per-function */
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { DataTable, type DataTableColumn } from '../../components/DataTable';
+import { SavedFiltersBar } from '../search/SavedFiltersBar';
 import {
   adjustSuggestion,
   devSignIn,
@@ -224,6 +226,106 @@ function SuggestionCell({
   );
 }
 
+function stockIntelligenceColumns(
+  branchId: string,
+  setMetrics: (updater: (current: StockIntelligenceMetric[]) => StockIntelligenceMetric[]) => void,
+): DataTableColumn<StockIntelligenceMetric>[] {
+  return [
+    {
+      key: 'product',
+      header: 'Produto',
+      sortValue: (metric) => metric.productName,
+      render: (metric) => (
+        <>
+          <span className="block font-semibold text-slate-800 dark:text-slate-100">
+            {metric.productName}
+          </span>
+          <span className="mt-0.5 flex items-center gap-2 text-[11px] text-slate-400">
+            SKU {metric.sku}
+            {metric.isDeadStock && (
+              <span className="rounded-full bg-rose-50 px-1.5 py-0.5 font-bold text-rose-600 dark:bg-rose-500/10">
+                parado
+              </span>
+            )}
+            {metric.isExcess && (
+              <span className="rounded-full bg-amber-50 px-1.5 py-0.5 font-bold text-amber-700 dark:bg-amber-500/10">
+                excesso
+              </span>
+            )}
+          </span>
+        </>
+      ),
+    },
+    {
+      key: 'abc',
+      header: 'ABC',
+      align: 'center',
+      sortValue: (metric) => metric.abc.byRevenue,
+      render: (metric) => <AbcBadge value={metric.abc.byRevenue} />,
+    },
+    {
+      key: 'stock',
+      header: 'Estoque',
+      align: 'right',
+      sortValue: (metric) => metric.stockOnHand,
+      render: (metric) => (
+        <span className="font-medium text-slate-600 dark:text-slate-300">{metric.stockOnHand}</span>
+      ),
+    },
+    {
+      key: 'turnover',
+      header: 'Giro',
+      align: 'right',
+      sortValue: (metric) => metric.turnoverRate,
+      render: (metric) => (
+        <span className="font-medium text-slate-600 dark:text-slate-300">
+          {metric.turnoverRate.toFixed(1)}×
+        </span>
+      ),
+    },
+    {
+      key: 'coverage',
+      header: 'Cobertura',
+      align: 'right',
+      sortValue: (metric) => metric.coverageDays ?? Number.POSITIVE_INFINITY,
+      render: (metric) => (
+        <span className="font-medium text-slate-600 dark:text-slate-300">
+          {metric.coverageDays === null ? '—' : `${Math.round(metric.coverageDays)}d`}
+        </span>
+      ),
+    },
+    {
+      key: 'stockouts',
+      header: 'Rupturas',
+      align: 'right',
+      sortValue: (metric) => metric.stockoutCount,
+      render: (metric) =>
+        metric.stockoutCount > 0 ? (
+          <span className="font-bold text-rose-600">{metric.stockoutCount}</span>
+        ) : (
+          <span className="text-slate-400">—</span>
+        ),
+    },
+    {
+      key: 'suggestion',
+      header: 'Sugestão de compra',
+      align: 'right',
+      sortValue: (metric) => metric.approvedPurchaseQty ?? metric.suggestedPurchaseQty,
+      render: (metric) => (
+        <SuggestionCell
+          metric={metric}
+          branchId={branchId.trim()}
+          onAdjusted={(updated) =>
+            setMetrics((current) =>
+              current.map((item) => (item.id === updated.id ? updated : item)),
+            )
+          }
+        />
+      ),
+    },
+  ];
+}
+
 export function StockIntelligenceScreen() {
   const [signedIn, setSignedIn] = useState(false);
   const [branchId, setBranchId] = useState('matriz');
@@ -368,22 +470,32 @@ export function StockIntelligenceScreen() {
           ))}
         </section>
 
-        <section className="mt-5 overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_50px_-30px_rgba(15,23,42,.28)]">
-          <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 p-5">
-            {FILTER_OPTIONS.map((option) => (
-              <button
-                key={option.key}
-                type="button"
-                onClick={() => setFilter(option.key)}
-                className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
-                  filter === option.key
-                    ? 'bg-slate-950 text-white shadow'
-                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
+        <section className="mt-5 overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_50px_-30px_rgba(15,23,42,.28)] dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex flex-col gap-3 border-b border-slate-100 p-5 dark:border-slate-800">
+            <div className="flex flex-wrap items-center gap-2">
+              {FILTER_OPTIONS.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => setFilter(option.key)}
+                  className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
+                    filter === option.key
+                      ? 'bg-slate-950 text-white shadow dark:bg-white dark:text-slate-900'
+                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+            <SavedFiltersBar
+              screen="estoque-inteligencia"
+              currentFilterState={{ branchId, filter }}
+              onApply={(state) => {
+                setBranchId(state.branchId);
+                setFilter(state.filter);
+              }}
+            />
           </div>
 
           {error && (
@@ -392,93 +504,18 @@ export function StockIntelligenceScreen() {
             </p>
           )}
 
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[960px] text-left">
-              <thead>
-                <tr className="bg-slate-50/70 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                  <th className="px-6 py-3">Produto</th>
-                  <th className="px-3 py-3 text-center">ABC</th>
-                  <th className="px-3 py-3 text-right">Estoque</th>
-                  <th className="px-3 py-3 text-right">Giro</th>
-                  <th className="px-3 py-3 text-right">Cobertura</th>
-                  <th className="px-3 py-3 text-right">Rupturas</th>
-                  <th className="px-6 py-3 text-right">Sugestão de compra</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {!loading && metrics.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-400">
-                      Nenhum indicador ainda — informe a filial e clique em &ldquo;Recalcular
-                      agora&rdquo;.
-                    </td>
-                  </tr>
-                )}
-                {loading && (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-10 text-center text-sm text-slate-400">
-                      Carregando…
-                    </td>
-                  </tr>
-                )}
-                {!loading &&
-                  metrics.map((metric) => (
-                    <tr key={metric.id} className="text-sm transition hover:bg-slate-50/80">
-                      <td className="px-6 py-4">
-                        <span className="block font-semibold text-slate-800">
-                          {metric.productName}
-                        </span>
-                        <span className="mt-0.5 flex items-center gap-2 text-[11px] text-slate-400">
-                          SKU {metric.sku}
-                          {metric.isDeadStock && (
-                            <span className="rounded-full bg-rose-50 px-1.5 py-0.5 font-bold text-rose-600">
-                              parado
-                            </span>
-                          )}
-                          {metric.isExcess && (
-                            <span className="rounded-full bg-amber-50 px-1.5 py-0.5 font-bold text-amber-700">
-                              excesso
-                            </span>
-                          )}
-                        </span>
-                      </td>
-                      <td className="px-3 py-4">
-                        <div className="flex items-center justify-center gap-1">
-                          <AbcBadge value={metric.abc.byRevenue} />
-                        </div>
-                      </td>
-                      <td className="px-3 py-4 text-right font-medium text-slate-600">
-                        {metric.stockOnHand}
-                      </td>
-                      <td className="px-3 py-4 text-right font-medium text-slate-600">
-                        {metric.turnoverRate.toFixed(1)}×
-                      </td>
-                      <td className="px-3 py-4 text-right font-medium text-slate-600">
-                        {metric.coverageDays === null ? '—' : `${Math.round(metric.coverageDays)}d`}
-                      </td>
-                      <td className="px-3 py-4 text-right font-medium text-slate-600">
-                        {metric.stockoutCount > 0 ? (
-                          <span className="font-bold text-rose-600">{metric.stockoutCount}</span>
-                        ) : (
-                          '—'
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <SuggestionCell
-                          metric={metric}
-                          branchId={branchId.trim()}
-                          onAdjusted={(updated) =>
-                            setMetrics((current) =>
-                              current.map((item) => (item.id === updated.id ? updated : item)),
-                            )
-                          }
-                        />
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={stockIntelligenceColumns(branchId, setMetrics)}
+            rows={metrics}
+            rowKey={(metric) => metric.id}
+            filterValue={(metric) => `${metric.productName} ${metric.sku}`}
+            filterPlaceholder="Filtrar por nome ou SKU..."
+            emptyLabel={
+              loading
+                ? 'Carregando…'
+                : 'Nenhum indicador ainda — informe a filial e clique em "Recalcular agora".'
+            }
+          />
         </section>
 
         <p className="mt-4 text-xs text-slate-400">

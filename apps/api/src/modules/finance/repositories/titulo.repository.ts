@@ -35,4 +35,9 @@ export class TituloRepository {
       .get();
     return snapshot.docs.map((document: QueryDocumentSnapshot) => document.data() as Titulo);
   }
+
+  async listAll(tenantId: string): Promise<Titulo[]> {
+    const snapshot = await this.collection(tenantId).get();
+    return snapshot.docs.map((document: QueryDocumentSnapshot) => document.data() as Titulo);
+  }
 }

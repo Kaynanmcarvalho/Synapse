@@ -19,6 +19,9 @@ export class FiscalRepository {
     const id = this.idempotency.get(key);
     return id ? this.documents.get(id) : undefined;
   }
+  listByTenant(tenantId: string): FiscalDocument[] {
+    return [...this.documents.values()].filter((document) => document.tenantId === tenantId);
+  }
   saveConfig(config: FiscalCompanyConfig): FiscalCompanyConfig {
     this.configs.set(config.companyId, config);
     return config;
