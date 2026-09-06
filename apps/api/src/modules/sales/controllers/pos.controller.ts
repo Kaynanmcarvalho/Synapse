@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CurrentTenant, RequirePermission } from '../../iam/iam.decorators';
@@ -19,6 +19,12 @@ import { PosService } from '../services/pos.service';
 @AuditedMutation({ domain: 'FINANCE', entity: 'CashSession', collection: 'cashSessions' })
 export class PosController {
   constructor(private readonly service: PosService) {}
+  @Get('cash-sessions/current') current(
+    @CurrentTenant() tenant: TenantContext,
+    @Query('branchId') branchId: string,
+  ) {
+    return this.service.getCurrentSession(tenant, branchId);
+  }
   @Post('cash-sessions') open(
     @CurrentTenant() tenant: TenantContext,
     @Body(new ZodValidationPipe(openCashSessionSchema))

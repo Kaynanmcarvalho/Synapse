@@ -30,7 +30,6 @@ describe('PosService', () => {
       cash.id,
       {
         sellerId: 'seller',
-        operatorDiscountLimitBasisPoints: 1_000,
         items: [
           {
             productId: 'product',
@@ -62,7 +61,6 @@ describe('PosService', () => {
         cash.id,
         {
           sellerId: 'seller',
-          operatorDiscountLimitBasisPoints: 100,
           items: [
             {
               productId: 'p',
@@ -79,5 +77,20 @@ describe('PosService', () => {
         context,
       ),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('nao acha caixa aberto antes de abrir, e acha depois de abrir', () => {
+    const service = createService(100, 10, 'p');
+    expect(service.getCurrentSession(context, 'branch')).toBeNull();
+    const cash = service.openCash(context, 'branch', 0);
+    expect(service.getCurrentSession(context, 'branch')?.id).toBe(cash.id);
+  });
+
+  it('nao acha caixa aberto de outra filial ou ja fechado', () => {
+    const service = createService(100, 10, 'p');
+    const cash = service.openCash(context, 'branch', 0);
+    expect(service.getCurrentSession(context, 'outra-filial')).toBeNull();
+    service.closeCash(cash.id, 0);
+    expect(service.getCurrentSession(context, 'branch')).toBeNull();
   });
 });

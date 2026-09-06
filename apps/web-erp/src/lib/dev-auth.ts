@@ -30,6 +30,8 @@ export const authHeaders = async (): Promise<Record<string, string>> => {
 
 export const isSignedIn = (): boolean => Boolean(getDevAuth().currentUser) && Boolean(sessionId);
 
+export const currentUid = (): string | null => getDevAuth().currentUser?.uid ?? null;
+
 export const devSignIn = async (email: string, password: string): Promise<void> => {
   await signInWithEmailAndPassword(getDevAuth(), email, password);
   const idToken = await getDevAuth().currentUser?.getIdToken();

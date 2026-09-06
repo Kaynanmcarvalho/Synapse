@@ -8,6 +8,19 @@ export class CashSessionRepository {
   find(id: string): CashSession | undefined {
     return this.sessions.get(id);
   }
+  findOpenByOperator(
+    tenantId: string,
+    branchId: string,
+    operatorId: string,
+  ): CashSession | undefined {
+    return [...this.sessions.values()].find(
+      (session) =>
+        session.tenantId === tenantId &&
+        session.branchId === branchId &&
+        session.operatorId === operatorId &&
+        session.closedAt === null,
+    );
+  }
   save(session: CashSession): CashSession {
     this.sessions.set(session.id, session);
     return session;

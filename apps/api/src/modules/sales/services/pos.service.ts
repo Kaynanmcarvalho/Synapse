@@ -28,6 +28,10 @@ export class PosService {
     private readonly pricing: PricingService,
   ) {}
 
+  getCurrentSession(context: TenantContext, branchId: string): CashSession | null {
+    return this.repository.findOpenByOperator(context.tenantId, branchId, context.userId) ?? null;
+  }
+
   openCash(context: TenantContext, branchId: string, openingAmount: number): CashSession {
     return this.repository.save({
       id: randomUUID(),
