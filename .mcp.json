@@ -2,7 +2,9 @@
   "mcpServers": {
     "muvta": {
       "command": "node",
-      "args": ["e:\Sistemas_Git\muvta_playground\apps\api\mcp\server.mjs"],
+      "args": [
+        "${MUVTA_MCP_SERVER:-c:/Users/renie/OneDrive/Área de Trabalho/Synapse/tools/muvta-mcp/server.mjs}"
+      ],
       "env": {
         "MUVTA_API_URL": "https://muvtaapi-production.up.railway.app",
         "MUVTA_API_KEY": "${MUVTA_API_KEY}"
