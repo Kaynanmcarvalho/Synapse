@@ -1,0 +1,3 @@
+export const FIREBASE_AUTH = Symbol('FIREBASE_AUTH');
+export const FIREBASE_APP_CHECK = Symbol('FIREBASE_APP_CHECK');
+export const FIREBASE_FIRESTORE = Symbol('FIREBASE_FIRESTORE');

@@ -1,0 +1,29 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function authenticated() {
+      return request.auth != null;
+    }
+
+    function belongsToTenant(tenantId) {
+      return authenticated()
+        && request.auth.token.tenantId is string
+        && request.auth.token.tenantId == tenantId;
+    }
+
+    match /tenants/{tenantId}/{document=**} {
+      allow read: if belongsToTenant(tenantId);
+      // Escritas críticas passam pela API/Admin SDK.
+      allow create, update, delete: if false;
+    }
+
+    match /platform/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

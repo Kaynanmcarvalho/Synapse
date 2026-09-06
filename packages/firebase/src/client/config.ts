@@ -8,6 +8,7 @@ export interface ClientEnv {
   readonly VITE_FIREBASE_STORAGE_BUCKET?: string | undefined;
   readonly VITE_FIREBASE_MESSAGING_SENDER_ID?: string | undefined;
   readonly VITE_FIREBASE_APP_ID?: string | undefined;
+  readonly VITE_FIREBASE_APP_CHECK_SITE_KEY?: string | undefined;
 }
 
 const REQUIRED: ReadonlyArray<keyof ClientEnv> = [

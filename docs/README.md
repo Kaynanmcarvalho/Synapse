@@ -1,9 +1,12 @@
 # Documentacao
 
-| Documento                      | Conteudo                                 |
-| ------------------------------ | ---------------------------------------- |
-| [convencoes.md](convencoes.md) | padroes de codigo, camadas e nomes       |
-| [adr/](adr/)                   | decisoes de arquitetura, uma por arquivo |
+| Documento                              | Conteudo                                 |
+| -------------------------------------- | ---------------------------------------- |
+| [convencoes.md](convencoes.md)         | padroes de codigo, camadas e nomes       |
+| [adr/](adr/)                           | decisoes de arquitetura, uma por arquivo |
+| [AUTHENTICATION.md](AUTHENTICATION.md) | autenticacao, sessoes e tenant           |
+| [DATABASE.md](DATABASE.md)             | modelagem de dados e indices             |
+| [architecture/](architecture/)         | proposta e ADRs da Fase 0                |
 
 ## Ordem de trabalho
 

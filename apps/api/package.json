@@ -20,6 +20,7 @@
     "@nestjs/config": "^4.0.0",
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/throttler": "^6.4.0",
     "@synapse/firebase": "workspace:*",
     "@synapse/types": "workspace:*",
     "@synapse/validation": "workspace:*",

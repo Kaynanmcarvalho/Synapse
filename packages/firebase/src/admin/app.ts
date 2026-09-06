@@ -1,5 +1,6 @@
 import { type App, cert, getApps, initializeApp } from 'firebase-admin/app';
 import { type Auth, getAuth } from 'firebase-admin/auth';
+import { type AppCheck, getAppCheck } from 'firebase-admin/app-check';
 import { type Firestore, getFirestore } from 'firebase-admin/firestore';
 import { readAdminCredentials } from './config';
 
@@ -22,5 +23,7 @@ export const getAdminApp = (): App => {
 };
 
 export const getAdminAuth = (): Auth => getAuth(getAdminApp());
+
+export const getAdminAppCheck = (): AppCheck => getAppCheck(getAdminApp());
 
 export const getAdminFirestore = (): Firestore => getFirestore(getAdminApp());
