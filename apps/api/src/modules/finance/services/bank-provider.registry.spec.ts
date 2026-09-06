@@ -78,14 +78,18 @@ describe('BankProviderRegistry', () => {
     expect(provider.bankId).toBe('ITAU');
   });
 
-  it('a mesma empresa pode estar em ambientes diferentes em cada banco', () => {
-    const emProducao = registry.resolve(conta({ environment: 'PRODUCAO' }));
+  it('a mesma empresa pode estar em ambientes de homologação diferentes em cada banco', () => {
     const emHomologacao = registry.resolve(
       conta({ bankId: 'ITAU', sicredi: undefined, itau: ITAU, environment: 'HOMOLOGACAO' }),
     );
 
-    expect(emProducao.environment).toBe('PRODUCAO');
     expect(emHomologacao.environment).toBe('HOMOLOGACAO');
+  });
+
+  it('impede que teste automatizado aponte para produção', () => {
+    expect(() => registry.resolve(conta({ environment: 'PRODUCAO' }))).toThrow(
+      /produção é proibida em teste automatizado/,
+    );
   });
 
   it('recusa conta desativada', () => {

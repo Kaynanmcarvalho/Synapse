@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import type { BankAccountConfig, BankProvider } from '@synapse/types';
 import { SecretVault } from '../../../common/crypto/secret-vault';
+import { assertNonProductionTestTarget } from '../../../common/testing/production-target.guard';
 import { ItauProvider } from '../providers/itau.provider';
 import { MockBankProvider } from '../providers/mock-bank.provider';
 import { SicrediProvider } from '../providers/sicredi.provider';
@@ -23,6 +24,8 @@ export class BankProviderRegistry {
     if (!config.ativo) {
       throw new BadRequestException(`Conta bancária ${config.apelido} está desativada`);
     }
+
+    assertNonProductionTestTarget('bancária', config.environment);
 
     // MOCK atende qualquer banco: e o ambiente em que o financeiro roda
     // inteiro enquanto o contrato do banco real nao chega.
