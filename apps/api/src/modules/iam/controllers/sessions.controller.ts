@@ -1,7 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Post, Req, UsePipes } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, UsePipes } from '@nestjs/common';
+import type { DecodedIdToken } from '@synapse/firebase/admin';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
-import { SkipDeviceSession } from '../iam.decorators';
-import type { AuthenticatedRequest } from '../iam.types';
+import { CurrentTenant, CurrentUser, SkipDeviceSession } from '../iam.decorators';
+import type { TenantContext } from '../iam.types';
 import { registerSessionSchema, type RegisterSessionInput } from '../dto/iam.schemas';
 import { SessionRepository } from '../repositories/session.repository';
 
@@ -12,18 +13,26 @@ export class SessionsController {
   @Post()
   @SkipDeviceSession()
   @UsePipes(new ZodValidationPipe(registerSessionSchema))
-  create(@Req() request: AuthenticatedRequest, @Body() input: RegisterSessionInput) {
-    return this.sessions.create(request.tenant!.tenantId, request.auth!.uid, input);
+  create(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: DecodedIdToken,
+    @Body() input: RegisterSessionInput,
+  ) {
+    return this.sessions.create(tenant.tenantId, user.uid, input);
   }
 
   @Get()
-  list(@Req() request: AuthenticatedRequest) {
-    return this.sessions.list(request.tenant!.tenantId, request.auth!.uid);
+  list(@CurrentTenant() tenant: TenantContext, @CurrentUser() user: DecodedIdToken) {
+    return this.sessions.list(tenant.tenantId, user.uid);
   }
 
   @Delete(':sessionId')
-  async revoke(@Req() request: AuthenticatedRequest, @Param('sessionId') sessionId: string) {
-    await this.sessions.revoke(request.tenant!.tenantId, request.auth!.uid, sessionId);
+  async revoke(
+    @CurrentTenant() tenant: TenantContext,
+    @CurrentUser() user: DecodedIdToken,
+    @Param('sessionId') sessionId: string,
+  ) {
+    await this.sessions.revoke(tenant.tenantId, user.uid, sessionId);
     return { revoked: true };
   }
 }

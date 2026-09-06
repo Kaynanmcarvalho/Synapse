@@ -1,8 +1,8 @@
-import { Body, Controller, Post, Req, UsePipes } from '@nestjs/common';
+import { Body, Controller, Post, UsePipes } from '@nestjs/common';
+import type { DecodedIdToken } from '@synapse/firebase/admin';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { companyOnboardingSchema, type CompanyOnboardingInput } from '../dto/iam.schemas';
-import { SkipDeviceSession, SkipTenant } from '../iam.decorators';
-import type { AuthenticatedRequest } from '../iam.types';
+import { CurrentUser, SkipDeviceSession, SkipTenant } from '../iam.decorators';
 import { OnboardingService } from '../services/onboarding.service';
 
 @Controller('onboarding')
@@ -13,7 +13,7 @@ export class OnboardingController {
   @SkipTenant()
   @SkipDeviceSession()
   @UsePipes(new ZodValidationPipe(companyOnboardingSchema))
-  createCompany(@Req() request: AuthenticatedRequest, @Body() input: CompanyOnboardingInput) {
-    return this.onboarding.createCompany(request.auth!.uid, input);
+  createCompany(@CurrentUser() user: DecodedIdToken, @Body() input: CompanyOnboardingInput) {
+    return this.onboarding.createCompany(user.uid, input);
   }
 }
