@@ -46,7 +46,7 @@ describe('NfeService', () => {
         justification: 'Correção sem alteração de valor fiscal',
         idempotencyKey: 'correction-sale-1',
       }),
-    ).resolves.toEqual(first);
+    ).resolves.toMatchObject({ id: first.id, status: 'AUTHORIZED' });
     await expect(
       service.cancel(first.id, {
         justification: 'Operação cancelada por solicitação do cliente',

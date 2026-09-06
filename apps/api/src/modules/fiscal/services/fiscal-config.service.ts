@@ -14,24 +14,31 @@ export class FiscalConfigService {
     if (input.environment === 'PRODUCAO' && input.productionConfirmation !== 'ATIVAR PRODUCAO')
       throw new BadRequestException('Confirme explicitamente ATIVAR PRODUCAO');
     const previous = this.repository.findConfig(input.companyId);
-    const certificateSecretRef = input.certificateBase64
-      ? this.vault.store(
-          `fiscal/${input.companyId}/a1`,
-          Buffer.from(input.certificateBase64, 'base64'),
-        )
-      : (previous?.certificateSecretRef ?? null);
-    const certificatePasswordSecretRef = input.certificatePassword
-      ? this.vault.store(`fiscal/${input.companyId}/a1-password`, input.certificatePassword)
-      : (previous?.certificatePasswordSecretRef ?? null);
-    const cscSecretRef = input.csc
-      ? this.vault.store(`fiscal/${input.companyId}/csc`, input.csc)
-      : (previous?.cscSecretRef ?? null);
-    const providerApiKeySecretRef = input.providerApiKey
-      ? this.vault.store(`fiscal/${input.companyId}/provider-api-key`, input.providerApiKey)
-      : (previous?.providerApiKeySecretRef ?? null);
-    const providerTenantIdSecretRef = input.providerTenantId
-      ? this.vault.store(`fiscal/${input.companyId}/provider-tenant-id`, input.providerTenantId)
-      : (previous?.providerTenantIdSecretRef ?? null);
+    const certificateSecretRef = this.storeWhenPresent(
+      `fiscal/${input.companyId}/a1`,
+      input.certificateBase64 ? Buffer.from(input.certificateBase64, 'base64') : null,
+      previous?.certificateSecretRef,
+    );
+    const certificatePasswordSecretRef = this.storeWhenPresent(
+      `fiscal/${input.companyId}/a1-password`,
+      input.certificatePassword,
+      previous?.certificatePasswordSecretRef,
+    );
+    const cscSecretRef = this.storeWhenPresent(
+      `fiscal/${input.companyId}/csc`,
+      input.csc,
+      previous?.cscSecretRef,
+    );
+    const providerApiKeySecretRef = this.storeWhenPresent(
+      `fiscal/${input.companyId}/provider-api-key`,
+      input.providerApiKey,
+      previous?.providerApiKeySecretRef,
+    );
+    const providerTenantIdSecretRef = this.storeWhenPresent(
+      `fiscal/${input.companyId}/provider-tenant-id`,
+      input.providerTenantId,
+      previous?.providerTenantIdSecretRef,
+    );
     return this.repository.saveConfig({
       companyId: input.companyId,
       environment: input.environment,
@@ -52,5 +59,13 @@ export class FiscalConfigService {
   }
   get(companyId: string) {
     return this.repository.findConfig(companyId);
+  }
+
+  private storeWhenPresent(
+    reference: string,
+    value: string | Buffer | null | undefined,
+    previous: string | null | undefined,
+  ): string | null {
+    return value ? this.vault.store(reference, value) : (previous ?? null);
   }
 }

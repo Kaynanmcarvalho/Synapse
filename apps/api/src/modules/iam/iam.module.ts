@@ -9,7 +9,7 @@ import { FirebaseModule } from './firebase.module';
 import { AdminGuard } from './guards/admin.guard';
 import { AppCheckGuard } from './guards/app-check.guard';
 import { DeviceSessionGuard } from './guards/device-session.guard';
-import { UntrustedTenantInputGuard } from './guards/untrusted-tenant-input.guard';
+import { UntrustedClaimsGuard } from './guards/untrusted-claims.guard';
 import { TenantContextInterceptor } from './interceptors/tenant-context.interceptor';
 import { MembershipRepository } from './repositories/membership.repository';
 import { SessionRepository } from './repositories/session.repository';
@@ -28,7 +28,7 @@ import { OnboardingService } from './services/onboarding.service';
     { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: AppCheckGuard },
     { provide: APP_GUARD, useClass: AuthGuard },
-    { provide: APP_GUARD, useClass: UntrustedTenantInputGuard },
+    { provide: APP_GUARD, useClass: UntrustedClaimsGuard },
     { provide: APP_GUARD, useClass: DeviceSessionGuard },
     { provide: APP_INTERCEPTOR, useClass: TenantContextInterceptor },
   ],

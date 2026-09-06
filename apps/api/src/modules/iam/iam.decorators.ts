@@ -10,10 +10,15 @@ import type { AuthenticatedRequest, TenantContext } from './iam.types';
 export const SKIP_APP_CHECK_KEY = 'skipAppCheck';
 export const SKIP_TENANT_KEY = 'skipTenant';
 export const SKIP_DEVICE_SESSION_KEY = 'skipDeviceSession';
+export const ALLOW_CLAIM_INPUT_KEY = 'allowClaimInput';
 
 export const SkipAppCheck = () => SetMetadata(SKIP_APP_CHECK_KEY, true);
 export const SkipTenant = () => SetMetadata(SKIP_TENANT_KEY, true);
 export const SkipDeviceSession = () => SetMetadata(SKIP_DEVICE_SESSION_KEY, true);
+
+/** Libera a rota do UntrustedClaimsGuard. So para quem administra cargos e
+ *  permissoes — e essas rotas validam o conteudo por conta propria. */
+export const AllowClaimInput = () => SetMetadata(ALLOW_CLAIM_INPUT_KEY, true);
 
 /** Token ja verificado pelo AuthGuard. Rota publica nao tem: o decorator recusa. */
 export const CurrentUser = createParamDecorator(

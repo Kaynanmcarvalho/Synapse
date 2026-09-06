@@ -4,13 +4,52 @@ type Line = { code: string; description: string; quantity: number; price: number
 const money = (cents: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100);
 
+function LineTable({ lines }: { lines: readonly Line[] }) {
+  return (
+    <table className="mt-5 w-full">
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th>Qtd.</th>
+          <th>Preço</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {lines.map((line, index) => (
+          <tr key={`${line.code}-${index}`}>
+            <td>{line.description}</td>
+            <td>{line.quantity}</td>
+            <td>{money(line.price)}</td>
+            <td>{money(line.quantity * line.price)}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
 /** Fluxo keyboard-first: o leitor de código de barras funciona como teclado e envia Enter. */
 export function PosScreen() {
   const input = useRef<HTMLInputElement>(null);
   const [code, setCode] = useState('');
   const [lines, setLines] = useState<Line[]>([]);
   const [customerTaxId, setCustomerTaxId] = useState('');
-  useEffect(() => input.current?.focus(), []);
+  useEffect(() => {
+    input.current?.focus();
+    const keyboard = (event: KeyboardEvent) => {
+      if (event.key === 'F2') {
+        event.preventDefault();
+        input.current?.focus();
+      }
+      if (event.key === 'F9') {
+        event.preventDefault();
+        document.getElementById('cpf-cnpj')?.focus();
+      }
+    };
+    document.addEventListener('keydown', keyboard);
+    return () => document.removeEventListener('keydown', keyboard);
+  }, []);
   const total = lines.reduce((sum, line) => sum + line.quantity * line.price, 0);
   const add = () => {
     if (!code.trim()) return;
@@ -20,18 +59,8 @@ export function PosScreen() {
     ]);
     setCode('');
   };
-  const keyDown = (event: React.KeyboardEvent) => {
-    if (event.key === 'F2') {
-      event.preventDefault();
-      input.current?.focus();
-    }
-    if (event.key === 'F9') {
-      event.preventDefault();
-      document.getElementById('cpf-cnpj')?.focus();
-    }
-  };
   return (
-    <main className="min-h-screen bg-slate-950 p-6 text-slate-100" onKeyDown={keyDown}>
+    <main className="min-h-screen bg-slate-950 p-6 text-slate-100">
       <header className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold">PDV / Caixa</h1>
         <span>F2 Produto · F9 CPF/CNPJ · F10 Pagamento</span>
@@ -53,26 +82,7 @@ export function PosScreen() {
               onChange={(e) => setCode(e.target.value)}
             />
           </form>
-          <table className="mt-5 w-full">
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>Qtd.</th>
-                <th>Preço</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lines.map((line, index) => (
-                <tr key={`${line.code}-${index}`}>
-                  <td>{line.description}</td>
-                  <td>{line.quantity}</td>
-                  <td>{money(line.price)}</td>
-                  <td>{money(line.quantity * line.price)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <LineTable lines={lines} />
         </section>
         <aside className="rounded bg-slate-900 p-6">
           <p className="text-sm">TOTAL</p>
