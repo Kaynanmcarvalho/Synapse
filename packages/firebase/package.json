@@ -1,0 +1,48 @@
+{
+  "name": "@synapse/firebase",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Inicializacao e helpers do Firebase (Admin no servidor, Web no cliente)",
+  "main": "./dist/cjs/index.js",
+  "types": "./dist/cjs/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/cjs/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    },
+    "./admin": {
+      "types": "./dist/cjs/admin/index.d.ts",
+      "import": "./dist/esm/admin/index.js",
+      "require": "./dist/cjs/admin/index.js"
+    },
+    "./client": {
+      "types": "./dist/cjs/client/index.d.ts",
+      "import": "./dist/esm/client/index.js",
+      "require": "./dist/cjs/client/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json && node ../../scripts/stamp-dist.mjs",
+    "dev": "tsc -p tsconfig.esm.json --watch --preserveWatchOutput",
+    "lint": "eslint src --max-warnings 0",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rimraf dist .turbo *.tsbuildinfo"
+  },
+  "dependencies": {
+    "firebase": "^11.1.0",
+    "firebase-admin": "^13.0.2"
+  },
+  "devDependencies": {
+    "@synapse/config": "workspace:*",
+    "@synapse/types": "workspace:*",
+    "@types/node": "^22.10.5",
+    "eslint": "^9.18.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.3"
+  },
+  "module": "./dist/esm/index.js"
+}

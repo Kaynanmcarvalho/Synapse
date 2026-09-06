@@ -1,0 +1,49 @@
+{
+  "name": "@synapse/ui",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Biblioteca de componentes React compartilhada entre os apps web",
+  "main": "./dist/cjs/index.js",
+  "types": "./dist/cjs/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "tailwind.preset.js"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json && node ../../scripts/stamp-dist.mjs",
+    "dev": "tsc -p tsconfig.esm.json --watch --preserveWatchOutput",
+    "lint": "eslint src --max-warnings 0",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rimraf dist .turbo *.tsbuildinfo"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.6.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@synapse/config": "workspace:*",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "eslint": "^9.18.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.3"
+  },
+  "module": "./dist/esm/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/cjs/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    },
+    "./tailwind.preset.js": "./tailwind.preset.js",
+    "./package.json": "./package.json"
+  },
+  "type": "module"
+}

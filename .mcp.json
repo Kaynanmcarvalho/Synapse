@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "muvta": {
+      "command": "node",
+      "args": ["e:\Sistemas_Git\muvta_playground\apps\api\mcp\server.mjs"],
+      "env": {
+        "MUVTA_API_URL": "https://muvtaapi-production.up.railway.app",
+        "MUVTA_API_KEY": "${MUVTA_API_KEY}"
+      }
+    }
+  }
+}

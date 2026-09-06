@@ -1,0 +1,41 @@
+{
+  "name": "@synapse/web-admin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Admin",
+  "scripts": {
+    "dev": "vite --port 5174",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview --port 5174",
+    "lint": "eslint src --max-warnings 0",
+    "typecheck": "tsc -b --pretty",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest",
+    "clean": "rimraf dist .turbo coverage *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@synapse/firebase": "workspace:*",
+    "@synapse/types": "workspace:*",
+    "@synapse/ui": "workspace:*",
+    "@synapse/validation": "workspace:*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.1"
+  },
+  "devDependencies": {
+    "@synapse/config": "workspace:*",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.18.0",
+    "jsdom": "^25.0.1",
+    "postcss": "^8.4.49",
+    "rimraf": "^6.0.1",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.3",
+    "vite": "^6.0.7",
+    "vitest": "^2.1.8"
+  }
+}

@@ -1,0 +1,46 @@
+# dependencias
+node_modules/
+.pnpm-store/
+
+# build
+dist/
+build/
+out/
+.next/
+.turbo/
+*.tsbuildinfo
+
+# ambiente e segredos
+.env
+.env.*
+!.env.example
+*.local
+serviceAccount*.json
+firebase-adminsdk*.json
+
+# logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# cobertura e testes
+coverage/
+.nyc_output/
+
+# editores e SO
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# firebase
+.firebase/
+firebase-debug.log
+
+# android
+apps/android-vendedor/local.properties
+apps/android-vendedor/.gradle/
+apps/android-vendedor/build/

@@ -1,0 +1,9 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+
+# Pacotes cujo script de instalacao e necessario (binario nativo ou geracao de codigo).
+onlyBuiltDependencies:
+  - '@firebase/util'
+  - esbuild
+  - protobufjs

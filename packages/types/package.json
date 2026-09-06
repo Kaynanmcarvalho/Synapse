@@ -1,0 +1,33 @@
+{
+  "name": "@synapse/types",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Contratos e tipos compartilhados entre API, web e app",
+  "main": "./dist/cjs/index.js",
+  "types": "./dist/cjs/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.cjs.json && tsc -p tsconfig.esm.json && node ../../scripts/stamp-dist.mjs",
+    "dev": "tsc -p tsconfig.esm.json --watch --preserveWatchOutput",
+    "lint": "eslint src --max-warnings 0",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rimraf dist .turbo *.tsbuildinfo"
+  },
+  "devDependencies": {
+    "@synapse/config": "workspace:*",
+    "@types/node": "^22.10.5",
+    "eslint": "^9.18.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.7.3"
+  },
+  "module": "./dist/esm/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/cjs/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "name": "@synapse/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Configuracoes compartilhadas: tsconfig, eslint e prettier",
+  "exports": {
+    "./eslint/base": "./eslint/base.js",
+    "./eslint/react": "./eslint/react.js",
+    "./eslint/nest": "./eslint/nest.js",
+    "./tsconfig/base.json": "./tsconfig/base.json",
+    "./tsconfig/node.json": "./tsconfig/node.json",
+    "./tsconfig/react.json": "./tsconfig/react.json",
+    "./tsconfig/library.json": "./tsconfig/library.json",
+    "./tsconfig/library.cjs.json": "./tsconfig/library.cjs.json",
+    "./tsconfig/library.esm.json": "./tsconfig/library.esm.json"
+  },
+  "files": [
+    "eslint",
+    "tsconfig"
+  ],
+  "scripts": {
+    "lint": "eslint eslint --max-warnings 0",
+    "typecheck": "echo \"no types to check\"",
+    "clean": "rimraf .turbo"
+  },
+  "peerDependencies": {
+    "eslint": "^9.18.0",
+    "typescript": "^5.7.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.18",
+    "globals": "^15.14.0",
+    "typescript-eslint": "^8.20.0"
+  }
+}
