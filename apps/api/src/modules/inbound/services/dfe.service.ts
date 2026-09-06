@@ -73,8 +73,8 @@ export class DfeService {
     });
   }
 
-  list(tenant: TenantContext) {
-    return this.repository.list(tenant.tenantId);
+  list(tenant: TenantContext, limit = 50, cursor?: string) {
+    return this.repository.page(tenant.tenantId, limit, cursor);
   }
 
   get(tenant: TenantContext, accessKey: string) {

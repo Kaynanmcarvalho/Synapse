@@ -24,8 +24,8 @@ export function DfeScreen() {
 
   const refresh = useCallback(async () => {
     const next = await listDfe();
-    setEntries(next);
-    if (!selectedKey && next[0]) setSelectedKey(next[0].nota.chaveDeAcesso);
+    setEntries(next.items);
+    if (!selectedKey && next.items[0]) setSelectedKey(next.items[0].nota.chaveDeAcesso);
   }, [selectedKey]);
 
   useEffect(() => {

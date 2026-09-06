@@ -3,6 +3,7 @@ import type { Titulo } from '@synapse/types';
 import type { Conferencia, DeParaDoFornecedor } from '../entities/conferencia';
 import type { NotaRecebida } from '../entities/nfe-xml';
 import type { PosicaoDeCusto } from '../entities/custo-medio';
+import type { Page } from '@synapse/types';
 
 export interface EntradaDfe {
   readonly tenantId: string;
@@ -29,6 +30,17 @@ export class DfeRepository {
   }
   list(tenantId: string) {
     return [...this.entries.values()].filter((entry) => entry.tenantId === tenantId);
+  }
+  page(tenantId: string, limit: number, cursor?: string): Page<EntradaDfe> {
+    const ordered = this.list(tenantId).sort((a, b) => b.importedAt.localeCompare(a.importedAt));
+    const index = cursor ? ordered.findIndex((entry) => entry.nota.chaveDeAcesso === cursor) : -1;
+    const items = ordered.slice(index + 1, index + 1 + limit);
+    const hasMore = index + 1 + items.length < ordered.length;
+    return {
+      items,
+      hasMore,
+      nextCursor: hasMore ? (items.at(-1)?.nota.chaveDeAcesso ?? null) : null,
+    };
   }
   saveMapping(mapping: DeParaDoFornecedor) {
     this.mappings.set(`${mapping.cnpjEmitente}:${mapping.codigoDoFornecedor}`, mapping);

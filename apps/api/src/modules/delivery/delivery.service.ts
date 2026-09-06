@@ -39,8 +39,8 @@ export class DeliveryService {
       })),
     });
   }
-  list(tenant: TenantContext) {
-    return this.repository.list(tenant.tenantId);
+  list(tenant: TenantContext, limit = 50, cursor?: string) {
+    return this.repository.list(tenant.tenantId, limit, cursor);
   }
   assign(tenant: TenantContext, id: string, input: AssignmentInput) {
     return this.update(tenant, id, (route) => ({ ...route, ...input }));

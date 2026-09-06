@@ -11,6 +11,7 @@ import { AuditedMutation } from '../../audit/audit.decorator';
 import { CurrentTenant, RequirePermission } from '../../iam/iam.decorators';
 import type { TenantContext } from '../../iam/iam.types';
 import { PartnerService } from '../services/partner.service';
+import { paginationDtoSchema, type PaginationDto } from '../../../common/dto/pagination.dto';
 
 const financialStatusSchema = z.object({ status: z.enum(['REGULAR', 'OVERDUE', 'BLOCKED']) });
 
@@ -37,18 +38,29 @@ export class PartnerController {
   }
   @Get('customers')
   @RequirePermission('cliente.gerenciar')
-  customers(@CurrentTenant() tenant: TenantContext, @Query('q') query = '') {
-    return this.service.searchCustomers(tenant.tenantId, query);
+  customers(
+    @CurrentTenant() tenant: TenantContext,
+    @Query('q') query = '',
+    @Query(new ZodValidationPipe(paginationDtoSchema)) page: PaginationDto,
+  ) {
+    return this.service.searchCustomers(tenant.tenantId, query, page.limit, page.cursor);
   }
   @Get('suppliers')
   @RequirePermission('fornecedor.gerenciar')
-  suppliers(@CurrentTenant() tenant: TenantContext, @Query('q') query = '') {
-    return this.service.searchSuppliers(tenant.tenantId, query);
+  suppliers(
+    @CurrentTenant() tenant: TenantContext,
+    @Query('q') query = '',
+    @Query(new ZodValidationPipe(paginationDtoSchema)) page: PaginationDto,
+  ) {
+    return this.service.searchSuppliers(tenant.tenantId, query, page.limit, page.cursor);
   }
   @Get('customers/:id/history')
   @RequirePermission('cliente.gerenciar')
-  history(@Param('id') id: string) {
-    return this.service.history(id);
+  history(
+    @Param('id') id: string,
+    @Query(new ZodValidationPipe(paginationDtoSchema)) page: PaginationDto,
+  ) {
+    return this.service.history(id, page.limit, page.cursor);
   }
   @Patch('customers/:id/financial-status')
   @RequirePermission('cliente.gerenciar')

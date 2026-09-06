@@ -12,6 +12,7 @@ import { CurrentTenant, RequirePermission } from '../../iam/iam.decorators';
 import type { TenantContext } from '../../iam/iam.types';
 import { LotService } from '../services/lot.service';
 import { RequireFeature } from '../../saas/feature.decorator';
+import { paginationDtoSchema, type PaginationDto } from '../../../common/dto/pagination.dto';
 
 const balanceQuerySchema = z.object({
   branchId: z.string().min(1),
@@ -45,8 +46,11 @@ export class LotController {
   }
 
   @Get('expiry-alerts')
-  expiryAlerts(@CurrentTenant() tenant: TenantContext) {
-    return this.lots.expiryAlerts(tenant);
+  expiryAlerts(
+    @CurrentTenant() tenant: TenantContext,
+    @Query(new ZodValidationPipe(paginationDtoSchema)) page: PaginationDto,
+  ) {
+    return this.lots.expiryAlerts(tenant, page.limit, page.cursor);
   }
 
   @Post('reserve-fefo')

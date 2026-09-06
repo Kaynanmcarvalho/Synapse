@@ -7,6 +7,8 @@
 | [AUTHENTICATION.md](AUTHENTICATION.md) | autenticacao, sessoes e tenant           |
 | [DATABASE.md](DATABASE.md)             | modelagem de dados e indices             |
 | [architecture/](architecture/)         | proposta e ADRs da Fase 0                |
+| [OPERATIONS.md](OPERATIONS.md)         | observabilidade, backup e rollback       |
+| [PERFORMANCE.md](PERFORMANCE.md)       | volume, paginação, cache e carga         |
 
 ## Ordem de trabalho
 

@@ -38,8 +38,8 @@ describe('NotificationService', () => {
       entityKey: 'LOW_STOCK',
     });
     const records = service.list({ ...manager, userId: 'user' });
-    expect(records).toHaveLength(7);
-    expect(records.find((item) => item.event === 'LOW_STOCK')?.count).toBe(2);
+    expect(records.items).toHaveLength(7);
+    expect(records.items.find((item) => item.event === 'LOW_STOCK')?.count).toBe(2);
     expect(fcm.send).toHaveBeenCalledTimes(8);
     expect(email.send).toHaveBeenCalledTimes(2);
   });
@@ -58,7 +58,7 @@ describe('NotificationService', () => {
       entityKey: 'order-1',
     });
     expect(service.read(manager, record.id).readAt).not.toBeNull();
-    expect(service.list(manager)).toHaveLength(1);
+    expect(service.list(manager).items).toHaveLength(1);
   });
 
   it('desliga canais por usuário e evento', async () => {
@@ -77,7 +77,7 @@ describe('NotificationService', () => {
       body: 'Recebido',
       entityKey: 'bill-1',
     });
-    expect(service.list({ ...manager, userId: 'user' })).toHaveLength(0);
+    expect(service.list({ ...manager, userId: 'user' }).items).toHaveLength(0);
     expect(fcm.send).not.toHaveBeenCalled();
   });
 });

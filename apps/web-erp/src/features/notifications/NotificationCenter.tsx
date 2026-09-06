@@ -14,13 +14,14 @@ type NotificationItem = {
   updatedAt: string;
 };
 
+// eslint-disable-next-line max-lines-per-function
 export function NotificationCenter() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<NotificationItem[]>([]);
   const load = useCallback(
     () =>
-      apiRequest<NotificationItem[]>('/notifications')
-        .then(setItems)
+      apiRequest<{ items: NotificationItem[] }>('/notifications')
+        .then((page) => setItems(page.items))
         .catch(() => undefined),
     [],
   );

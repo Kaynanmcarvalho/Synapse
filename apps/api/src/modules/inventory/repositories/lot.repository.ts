@@ -1,6 +1,6 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import type { Firestore, QueryDocumentSnapshot } from '@synapse/firebase/admin';
-import type { Lot, LotReservation } from '@synapse/types';
+import type { Lot, LotReservation, Page } from '@synapse/types';
 import { FIREBASE_FIRESTORE } from '../../iam/firebase.tokens';
 
 @Injectable()
@@ -41,11 +41,27 @@ export class LotRepository {
       .filter((lot) => lot.physical - lot.reserved > 0);
   }
 
-  /** Todo lote do tenant, para o job de alerta de vencimento (c12-3) — nao
-   *  filtra por filial/deposito de proposito, o alerta e da empresa toda. */
-  async listAll(tenantId: string): Promise<Lot[]> {
-    const snapshot = await this.collection(tenantId).get();
-    return snapshot.docs.map((document: QueryDocumentSnapshot) => document.data() as Lot);
+  async listExpiring(
+    tenantId: string,
+    expiresBefore: string,
+    limit: number,
+    cursor?: string,
+  ): Promise<Page<Lot>> {
+    const collection = this.collection(tenantId);
+    let query = collection.where('expiresAt', '<=', expiresBefore).orderBy('expiresAt', 'asc');
+    if (cursor) {
+      const snapshot = await collection.doc(cursor).get();
+      if (!snapshot.exists) throw new BadRequestException('Cursor de lote inválido');
+      query = query.startAfter(snapshot);
+    }
+    const snapshot = await query.limit(limit + 1).get();
+    const hasMore = snapshot.docs.length > limit;
+    const docs = snapshot.docs.slice(0, limit);
+    return {
+      items: docs.map((document: QueryDocumentSnapshot) => document.data() as Lot),
+      hasMore,
+      nextCursor: hasMore ? (docs.at(-1)?.id ?? null) : null,
+    };
   }
 
   /** Reserva ou baixa (delta negativo) uma quantidade de um lote especifico,

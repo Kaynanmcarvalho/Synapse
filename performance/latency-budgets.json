@@ -1,0 +1,8 @@
+{
+  "health": { "p95Ms": 250, "errorRateMax": 0.001 },
+  "catalog.products.list": { "p95Ms": 500, "errorRateMax": 0.01 },
+  "catalog.partners.list": { "p95Ms": 600, "errorRateMax": 0.01 },
+  "sales.pos.complete": { "p95Ms": 1500, "errorRateMax": 0.005 },
+  "fiscal.issue": { "p95Ms": 3000, "errorRateMax": 0.02 },
+  "inventory.reserve": { "p95Ms": 750, "errorRateMax": 0.005 }
+}

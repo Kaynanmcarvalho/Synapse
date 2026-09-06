@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { cursorPage } from '../../common/pagination/cursor-page';
 export type DeliveryStatus =
   'AGUARDANDO' | 'SEPARANDO' | 'PRONTO' | 'EM_ROTA' | 'ENTREGUE' | 'NAO_ENTREGUE';
 export interface Delivery {
@@ -38,7 +39,13 @@ export class DeliveryRepository {
     const route = this.routes.get(id);
     return route?.tenantId === tenantId ? route : undefined;
   }
-  list(tenantId: string) {
-    return [...this.routes.values()].filter((route) => route.tenantId === tenantId);
+  list(tenantId: string, limit: number, cursor?: string) {
+    return cursorPage(
+      [...this.routes.values()]
+        .filter((route) => route.tenantId === tenantId)
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+      limit,
+      cursor,
+    );
   }
 }

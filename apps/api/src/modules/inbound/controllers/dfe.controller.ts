@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query } from '@nestjs/common';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { AuditedMutation } from '../../audit/audit.decorator';
 import { CurrentTenant, RequirePermission } from '../../iam/iam.decorators';
@@ -19,6 +19,7 @@ import {
 } from '../dto/dfe.schemas';
 import { DfeService } from '../services/dfe.service';
 import { RequireFeature } from '../../saas/feature.decorator';
+import { paginationDtoSchema, type PaginationDto } from '../../../common/dto/pagination.dto';
 
 @Controller('inbound/dfe')
 @RequireFeature('DFE')
@@ -46,8 +47,11 @@ export class DfeController {
 
   @Get()
   @RequirePermission('fiscal.visualizar')
-  list(@CurrentTenant() tenant: TenantContext) {
-    return this.service.list(tenant);
+  list(
+    @CurrentTenant() tenant: TenantContext,
+    @Query(new ZodValidationPipe(paginationDtoSchema)) page: PaginationDto,
+  ) {
+    return this.service.list(tenant, page.limit, page.cursor);
   }
 
   @Post('mappings')

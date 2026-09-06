@@ -93,14 +93,14 @@ export class PartnerService {
       customerId: customerId as CustomerHistoryEntry['customerId'],
     });
   }
-  history(customerId: string) {
-    return this.repository.customerHistory(customerId);
+  history(customerId: string, limit = 50, cursor?: string) {
+    return this.repository.customerHistory(customerId, limit, cursor);
   }
-  searchCustomers(tenantId: string, term: string) {
-    return this.repository.searchCustomers(tenantId, term);
+  searchCustomers(tenantId: string, term: string, limit = 50, cursor?: string) {
+    return this.repository.searchCustomers(tenantId, term, limit, cursor);
   }
-  searchSuppliers(tenantId: string, term: string) {
-    return this.repository.searchSuppliers(tenantId, term);
+  searchSuppliers(tenantId: string, term: string, limit = 50, cursor?: string) {
+    return this.repository.searchSuppliers(tenantId, term, limit, cursor);
   }
   private actor(context: TenantContext): AuditActor {
     return { uid: context.userId as AuditActor['uid'], email: '', name: '', source: 'api' };

@@ -31,7 +31,8 @@ const json = (body: unknown): RequestInit => ({
   body: JSON.stringify(body),
 });
 
-export const listDfe = () => apiRequest<DfeEntry[]>('/inbound/dfe');
+export const listDfe = () =>
+  apiRequest<{ items: DfeEntry[]; nextCursor: string | null; hasMore: boolean }>('/inbound/dfe');
 export const importDfe = (xml: string) =>
   apiRequest<DfeEntry>('/inbound/dfe/import', json({ xml }));
 export const checkDfeItem = (

@@ -119,16 +119,17 @@ export class LotService {
 
   /** Alertas em 90/60/30/15 dias e vencidos (c12-3) — a mesma lista alimenta
    *  o dashboard de produtos proximos do vencimento (c12-5). */
-  async expiryAlerts(tenant: TenantContext): Promise<ExpiringLot[]> {
+  async expiryAlerts(tenant: TenantContext, limit = 50, cursor?: string) {
     const now = new Date();
-    const lots = await this.repository.listAll(tenant.tenantId);
+    const cutoff = new Date(now.getTime() + 90 * 86_400_000).toISOString().slice(0, 10);
+    const page = await this.repository.listExpiring(tenant.tenantId, cutoff, limit, cursor);
     const alerts: ExpiringLot[] = [];
-    for (const lot of lots) {
+    for (const lot of page.items) {
       if (lot.physical <= 0) continue;
       const daysUntilExpiry = daysUntil(lot.expiresAt, now);
       const alertLevel = classifyExpiry(daysUntilExpiry);
       if (alertLevel) alerts.push({ lot, daysUntilExpiry, alertLevel });
     }
-    return alerts.sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry);
+    return { ...page, items: alerts.sort((a, b) => a.daysUntilExpiry - b.daysUntilExpiry) };
   }
 }

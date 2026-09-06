@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { CurrentTenant, RequirePermission } from '../iam/iam.decorators';
 import type { TenantContext } from '../iam/iam.types';
 import { DeliveryService } from './delivery.service';
+import { paginationDtoSchema, type PaginationDto } from '../../common/dto/pagination.dto';
 import {
   assignmentSchema,
   createRouteSchema,
@@ -25,8 +26,11 @@ export class DeliveryController {
   ) {
     return this.service.create(t, i);
   }
-  @Get() list(@CurrentTenant() t: TenantContext) {
-    return this.service.list(t);
+  @Get() list(
+    @CurrentTenant() t: TenantContext,
+    @Query(new ZodValidationPipe(paginationDtoSchema)) page: PaginationDto,
+  ) {
+    return this.service.list(t, page.limit, page.cursor);
   }
   @Post(':id/assign') assign(
     @CurrentTenant() t: TenantContext,

@@ -54,7 +54,7 @@ describe('DeliveryService', () => {
       'RETURN',
       1000,
     );
-    expect(service.list(tenant)[0]?.deliveries[0]?.status).toBe('NAO_ENTREGUE');
+    expect(service.list(tenant).items[0]?.deliveries[0]?.status).toBe('NAO_ENTREGUE');
   });
   it('registra entrega com assinatura ou foto', () => {
     const service = new DeliveryService(new DeliveryRepository(), {} as InventoryService);

@@ -38,7 +38,7 @@ describe('PartnerService', () => {
   it('cadastra, busca e consolida histórico', () => {
     const service = new PartnerService(new PartnerRepository());
     const customer = service.createCustomer(context, input);
-    expect(service.searchCustomers('tenant', '529.982')).toHaveLength(1);
+    expect(service.searchCustomers('tenant', '529.982').items).toHaveLength(1);
     service.addHistory(customer.id, {
       kind: 'ORDER',
       referenceId: 'order',
@@ -46,7 +46,7 @@ describe('PartnerService', () => {
       occurredAt: new Date().toISOString(),
       description: 'Pedido',
     });
-    expect(service.history(customer.id)).toHaveLength(1);
+    expect(service.history(customer.id).items).toHaveLength(1);
   });
   it('bloqueia venda acima do crédito', () => {
     const service = new PartnerService(new PartnerRepository());

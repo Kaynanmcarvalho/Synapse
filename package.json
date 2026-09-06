@@ -26,6 +26,10 @@
     "restore:gcp:dry-run": "node scripts/restore-gcp.mjs --dry-run",
     "rollback:gcp": "node scripts/rollback-cloud-run.mjs",
     "rollback:gcp:dry-run": "node scripts/rollback-cloud-run.mjs --dry-run",
+    "performance:seed": "node scripts/seed-performance.mjs",
+    "performance:seed:dry-run": "node scripts/seed-performance.mjs --dry-run",
+    "performance:load": "k6 run performance/k6/api-load.js",
+    "performance:indexes:verify": "firebase emulators:exec --only firestore --project demo-synapse \"node scripts/verify-firestore-indexes.mjs\"",
     "prepare": "husky || true"
   },
   "devDependencies": {
@@ -34,6 +38,7 @@
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-import": "^2.31.0",
+    "firebase-admin": "13.0.2",
     "firebase-tools": "15.29.0",
     "globals": "^15.14.0",
     "husky": "^9.1.7",

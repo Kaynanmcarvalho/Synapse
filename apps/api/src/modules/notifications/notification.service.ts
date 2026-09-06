@@ -14,8 +14,8 @@ export class NotificationService {
     private readonly fcm: FcmGateway,
     private readonly email: EmailGateway,
   ) {}
-  list(context: TenantContext) {
-    return this.repository.list(context.tenantId, context.userId);
+  list(context: TenantContext, limit = 50, cursor?: string) {
+    return this.repository.list(context.tenantId, context.userId, limit, cursor);
   }
   read(context: TenantContext, id: string) {
     const value = this.repository.find(id);

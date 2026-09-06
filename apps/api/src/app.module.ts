@@ -16,6 +16,7 @@ import { DeliveryModule } from './modules/delivery/delivery.module';
 import { SaasModule } from './modules/saas/saas.module';
 import { NotificationModule } from './modules/notifications/notification.module';
 import { ObservabilityModule } from './common/observability/observability.module';
+import { PerformanceModule } from './modules/performance/performance.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { ObservabilityModule } from './common/observability/observability.module
     SaasModule,
     NotificationModule,
     ObservabilityModule,
+    PerformanceModule,
   ],
 })
 export class AppModule {}

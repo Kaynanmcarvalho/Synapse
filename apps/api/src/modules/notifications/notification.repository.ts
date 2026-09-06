@@ -4,6 +4,7 @@ import type {
   NotificationPreference,
   NotificationRecord,
 } from './notification.types';
+import { cursorPage } from '../../common/pagination/cursor-page';
 
 @Injectable()
 export class NotificationRepository {
@@ -17,10 +18,13 @@ export class NotificationRepository {
   find(id: string) {
     return this.records.get(id);
   }
-  list(tenantId: string, userId: string) {
+  private listAll(tenantId: string, userId: string) {
     return [...this.records.values()]
       .filter((n) => n.tenantId === tenantId && n.userId === userId)
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  }
+  list(tenantId: string, userId: string, limit: number, cursor?: string) {
+    return cursorPage(this.listAll(tenantId, userId), limit, cursor);
   }
   findRecent(
     tenantId: string,
@@ -29,7 +33,7 @@ export class NotificationRepository {
     entityKey: string,
     since: number,
   ) {
-    return this.list(tenantId, userId).find(
+    return this.listAll(tenantId, userId).find(
       (n) => n.event === event && n.entityKey === entityKey && Date.parse(n.updatedAt) >= since,
     );
   }
