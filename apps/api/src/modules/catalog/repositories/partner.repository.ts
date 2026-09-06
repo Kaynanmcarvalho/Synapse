@@ -17,6 +17,9 @@ export class PartnerRepository {
   findCustomer(tenantId: string, id: string) {
     return this.customers.get(`${tenantId}:${id}`);
   }
+  findSupplier(tenantId: string, id: string) {
+    return this.suppliers.get(`${tenantId}:${id}`);
+  }
   updateCustomer(customer: Customer) {
     return this.saveCustomer(customer);
   }

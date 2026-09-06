@@ -12,3 +12,4 @@ export * from './pricing';
 export * from './compliance';
 export * from './banking';
 export * from './analytics';
+export * from './purchasing';

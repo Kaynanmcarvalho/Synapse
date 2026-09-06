@@ -11,6 +11,7 @@ import {
   Search,
   Settings,
   ShieldCheck,
+  ShoppingCart,
   Sparkles,
   TrendingUp,
   Warehouse,
@@ -41,6 +42,7 @@ const NAVIGATION: Array<{ title: string; items: NavItem[] }> = [
         icon: TrendingUp,
         badge: 'F8',
       },
+      { label: 'Compras', path: '/compras', icon: ShoppingCart, badge: 'F8' },
     ],
   },
   {

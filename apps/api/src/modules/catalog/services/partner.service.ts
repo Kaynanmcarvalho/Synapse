@@ -46,6 +46,11 @@ export class PartnerService {
     if (!customer) throw new NotFoundException('Cliente não encontrado');
     return customer;
   }
+  getSupplier(tenantId: string, supplierId: string) {
+    const supplier = this.repository.findSupplier(tenantId, supplierId);
+    if (!supplier) throw new NotFoundException('Fornecedor não encontrado');
+    return supplier;
+  }
   assertCredit(tenantId: string, customerId: string, saleAmount: number) {
     const customer = this.repository.findCustomer(tenantId, customerId);
     if (!customer) throw new NotFoundException('Cliente não encontrado');

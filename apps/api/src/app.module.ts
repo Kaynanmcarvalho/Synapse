@@ -13,6 +13,8 @@ import { CatalogModule } from './modules/catalog/catalog.module';
 import { ComplianceModule } from './modules/compliance/compliance.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { FinanceModule } from './modules/finance/finance.module';
+import { PurchasingModule } from './modules/purchasing/purchasing.module';
 
 @Module({
   imports: [
@@ -37,6 +39,8 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     ComplianceModule,
     InventoryModule,
     AnalyticsModule,
+    FinanceModule,
+    PurchasingModule,
   ],
 })
 export class AppModule {}
