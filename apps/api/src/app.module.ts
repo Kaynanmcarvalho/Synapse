@@ -12,6 +12,7 @@ import { CatalogModule } from './modules/catalog/catalog.module';
 import { ComplianceModule } from './modules/compliance/compliance.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { InboundModule } from './modules/inbound/inbound.module';
+import { DeliveryModule } from './modules/delivery/delivery.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { InboundModule } from './modules/inbound/inbound.module';
     ComplianceModule,
     InventoryModule,
     InboundModule,
+    DeliveryModule,
   ],
 })
 export class AppModule {}
