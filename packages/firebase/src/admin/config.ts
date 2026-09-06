@@ -6,6 +6,11 @@ export interface AdminCredentials {
   readonly privateKey: string;
 }
 
+/** Os emuladores nao verificam credencial real: so precisam saber o projectId.
+ *  Ligado sempre que uma das variaveis padrao do Firebase CLI estiver presente. */
+export const isEmulatorMode = (env: NodeJS.ProcessEnv = process.env): boolean =>
+  Boolean(env['FIRESTORE_EMULATOR_HOST'] ?? env['FIREBASE_AUTH_EMULATOR_HOST']);
+
 /** Le as credenciais do ambiente. A chave privada chega com \n escapado
  *  quando vem de variavel de ambiente, entao desfazemos o escape aqui. */
 export const readAdminCredentials = (env: NodeJS.ProcessEnv = process.env): AdminCredentials => {
@@ -23,5 +28,5 @@ export const readAdminCredentials = (env: NodeJS.ProcessEnv = process.env): Admi
     throw new FirebaseConfigError(missing);
   }
 
-  return { projectId, clientEmail, privateKey: privateKey.replace(/\n/g, '\n') };
+  return { projectId, clientEmail, privateKey: privateKey.replace(/\\n/g, '\n') };
 };

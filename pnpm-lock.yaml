@@ -453,6 +453,9 @@ importers:
 
   packages/validation:
     dependencies:
+      '@synapse/types':
+        specifier: workspace:*
+        version: link:../types
       zod:
         specifier: ^3.24.1
         version: 3.25.76
@@ -460,9 +463,6 @@ importers:
       '@synapse/config':
         specifier: workspace:*
         version: link:../config
-      '@synapse/types':
-        specifier: workspace:*
-        version: link:../types
       '@types/node':
         specifier: ^22.10.5
         version: 22.20.1

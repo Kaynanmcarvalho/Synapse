@@ -14,6 +14,14 @@ import type { AuthenticatedRequest } from '../iam.types';
 
 @Injectable()
 export class AppCheckGuard implements CanActivate {
+  /** App Check nao tem emulador oficial verificavel pelo Admin SDK, entao nao da
+   *  para exigi-lo em desenvolvimento local sem um site key real. Em producao o
+   *  enforcement e sempre obrigatorio, ignorando a flag. */
+  static isEnforced(): boolean {
+    if (process.env['NODE_ENV'] === 'production') return true;
+    return process.env['APP_CHECK_ENFORCEMENT'] !== 'false';
+  }
+
   constructor(
     private readonly reflector: Reflector,
     @Inject(FIREBASE_APP_CHECK) private readonly appCheck: AppCheck,
@@ -28,7 +36,7 @@ export class AppCheckGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    if (skip || isPublic) return true;
+    if (skip || isPublic || !AppCheckGuard.isEnforced()) return true;
 
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const token = request.header('X-Firebase-AppCheck');

@@ -18,11 +18,11 @@
     "clean": "rimraf dist .turbo *.tsbuildinfo"
   },
   "dependencies": {
+    "@synapse/types": "workspace:*",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@synapse/config": "workspace:*",
-    "@synapse/types": "workspace:*",
     "@types/node": "^22.10.5",
     "eslint": "^9.18.0",
     "rimraf": "^6.0.1",
