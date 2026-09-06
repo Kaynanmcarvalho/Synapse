@@ -18,6 +18,6 @@ import { SecretVaultService } from './services/secret-vault.service';
     FiscalConfigService,
     NfeService,
   ],
-  exports: [FiscalRepository, FiscalProviderRegistry, NfeService],
+  exports: [FiscalRepository, FiscalProviderRegistry, NfeService, FiscalConfigService],
 })
 export class FiscalModule {}

@@ -11,7 +11,14 @@ import { SegredosDeWebhook } from './webhook-signature';
     WebhookInbox,
     SegredosDeWebhook,
     WebhooksService,
-    { provide: FilaDeWebhooks, useClass: FilaEmMemoria },
+    {
+      provide: FilaDeWebhooks,
+      // useClass faz o Nest tentar resolver os parâmetros opcionais
+      // (política de retentativa, função de dormir) como dependências —
+      // eles não são providers, só defaults pra teste instanciar direto.
+      useFactory: (inbox: WebhookInbox) => new FilaEmMemoria(inbox),
+      inject: [WebhookInbox],
+    },
   ],
   exports: [WebhookInbox, WebhooksService],
 })
