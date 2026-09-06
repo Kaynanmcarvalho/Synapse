@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { ProductsScreen } from '../features/products/ProductsScreen';
 import { PosScreen } from '../features/pos/PosScreen';
+import { InventoryScreen } from '../features/inventory/InventoryScreen';
 
 /** Sem roteador ainda (chega numa fase seguinte) — troca simples por aba,
  *  so para as telas terem onde aparecer enquanto sao construidas. */
-const SCREENS = { pos: PosScreen, produtos: ProductsScreen } as const;
+const SCREENS = { inventário: InventoryScreen, pos: PosScreen, produtos: ProductsScreen } as const;
 
 export function App() {
-  const [screen, setScreen] = useState<keyof typeof SCREENS>('produtos');
+  const [screen, setScreen] = useState<keyof typeof SCREENS>('inventário');
   const Screen = SCREENS[screen];
 
   return (

@@ -1,13 +1,17 @@
-import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Optional } from '@nestjs/common';
 import type { StockBalance, StockMovement, StockMovementKind } from '@synapse/types';
 import { randomUUID } from 'node:crypto';
 import type { TenantContext } from '../../iam/iam.types';
 import type { StockCommand } from '../dto/inventory.schemas';
 import { InventoryRepository } from '../repositories/inventory.repository';
+import { InventoryCountLockService } from './inventory-count-lock.service';
 
 @Injectable()
 export class InventoryService {
-  constructor(private readonly repository: InventoryRepository) {}
+  constructor(
+    private readonly repository: InventoryRepository,
+    @Optional() private readonly countLocks?: InventoryCountLockService,
+  ) {}
   reserve(context: TenantContext, input: StockCommand) {
     return this.change(context, input, 'RESERVE', (stock) => ({
       physical: stock.physical,
@@ -74,6 +78,13 @@ export class InventoryService {
     ) => Pick<StockBalance, 'physical' | 'reserved' | 'blocked'> &
       Partial<Pick<StockBalance, 'inTransit' | 'damaged' | 'consigned'>>,
   ) {
+    this.countLocks?.assertMovementAllowed(
+      context.tenantId,
+      input.branchId,
+      input.warehouseId,
+      kind,
+      input.sourceId,
+    );
     const key = `${input.branchId}_${input.warehouseId}_${input.productId}`;
     const initial: StockBalance = {
       tenantId: context.tenantId as StockBalance['tenantId'],

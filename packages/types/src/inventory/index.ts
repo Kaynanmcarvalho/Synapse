@@ -74,3 +74,36 @@ export interface StockTransfer {
     note: string;
   }[];
 }
+
+export type InventoryCountType = 'GENERAL' | 'PARTIAL' | 'CATEGORY' | 'WAREHOUSE' | 'CYCLE';
+export type InventoryMovementPolicy = 'FREEZE' | 'SNAPSHOT';
+export type InventoryCountStatus = 'COUNTING' | 'REVIEW' | 'ADJUSTED' | 'CANCELLED';
+
+export interface InventoryCountLine {
+  readonly productId: ProductId;
+  readonly barcode: string;
+  readonly name: string;
+  readonly systemQuantity: number;
+  readonly countedQuantity: number | null;
+  readonly difference: number;
+  readonly unitCost: number;
+  readonly differenceCost: number;
+  readonly counterId: string | null;
+  readonly countedAt: string | null;
+}
+
+export interface InventoryCount {
+  readonly id: string;
+  readonly tenantId: TenantId;
+  readonly branchId: BranchId;
+  readonly warehouseId: string;
+  readonly type: InventoryCountType;
+  readonly movementPolicy: InventoryMovementPolicy;
+  readonly status: InventoryCountStatus;
+  readonly categoryId: string | null;
+  readonly responsibleId: string;
+  readonly startedAt: string;
+  readonly reviewedAt: string | null;
+  readonly adjustedAt: string | null;
+  readonly lines: readonly InventoryCountLine[];
+}
