@@ -13,6 +13,7 @@ import { ComplianceModule } from './modules/compliance/compliance.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { InboundModule } from './modules/inbound/inbound.module';
 import { DeliveryModule } from './modules/delivery/delivery.module';
+import { SaasModule } from './modules/saas/saas.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { DeliveryModule } from './modules/delivery/delivery.module';
     InventoryModule,
     InboundModule,
     DeliveryModule,
+    SaasModule,
   ],
 })
 export class AppModule {}
