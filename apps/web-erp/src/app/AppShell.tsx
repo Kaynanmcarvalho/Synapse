@@ -10,6 +10,7 @@ import {
   ScanLine,
   Search,
   Settings,
+  ShieldCheck,
   Sparkles,
   Warehouse,
   X,
@@ -35,7 +36,13 @@ const NAVIGATION: Array<{ title: string; items: NavItem[] }> = [
       { label: 'Inventários', path: '/estoque/inventarios', icon: PackageSearch },
     ],
   },
-  { title: 'Gestão', items: [{ label: 'Produtos', path: '/cadastros/produtos', icon: Boxes }] },
+  {
+    title: 'Gestão',
+    items: [
+      { label: 'Produtos', path: '/cadastros/produtos', icon: Boxes },
+      { label: 'Cargos e permissões', path: '/configuracoes/cargos', icon: ShieldCheck },
+    ],
+  },
 ];
 
 function SidebarContent({ closeMobile }: { readonly closeMobile?: () => void }) {
