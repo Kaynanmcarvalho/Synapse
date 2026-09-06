@@ -72,6 +72,34 @@ export const updateProductSchema = createProductSchema.partial();
 
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
 
+/** Uma linha da planilha de importacao em massa (c8-5). So os campos que
+ *  fazem sentido digitar a mao; o resto do modelo completo (§5) recebe
+ *  default no service, do mesmo jeito que o formulario faria. */
+export const productCsvRowSchema = z.object({
+  sku: z.string().trim().min(1).max(64),
+  name: z.string().trim().min(1).max(200),
+  unit: z.string().trim().min(1).max(10),
+  ncm: ncmSchema,
+  defaultCfop: z
+    .string()
+    .trim()
+    .regex(/^\d{4}$/, 'CFOP deve ter 4 digitos'),
+  origin: z.coerce.number().int().min(0).max(8),
+  cost: z.coerce.number().finite().nonnegative(),
+  salePrice: z.coerce.number().finite().nonnegative(),
+  ean: z
+    .string()
+    .trim()
+    .optional()
+    .transform((value) => (value ? value : undefined))
+    .refine((value) => value === undefined || isValidEan(value), {
+      message: 'EAN/GTIN invalido: digito verificador nao confere',
+    }),
+  categoryId: z.string().trim().optional(),
+});
+
+export type ProductCsvRow = z.infer<typeof productCsvRowSchema>;
+
 export const productSearchSchema = z.object({
   q: z.string().trim().min(1).max(200).optional(),
   status: productStatusSchema.optional(),

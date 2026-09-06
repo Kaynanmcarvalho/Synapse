@@ -37,15 +37,21 @@ Formato `modulo.operacao`, definido em `packages/types/src/iam/permissions.ts`:
 
 ## Escopo de uma permissão
 
-Um `PermissionGrant` pode trazer `scope.branchIds` e `scope.warehouseIds`.
-Duas restrições independentes se aplicam — as duas precisam passar:
+Um `PermissionGrant` pode trazer `scope.branchIds` e `scope.warehouseIds` —
+os dois eixos do §3 ("por filial e por depósito"), verificados de forma
+independente e idêntica. Para cada eixo informado na chamada, duas
+restrições se aplicam — as duas precisam passar:
 
-1. **A do grant.** Sem `scope`, vale em qualquer filial. Com `scope.branchIds`,
-   só nas filiais listadas ali.
-2. **A do membership.** `TenantContext.branchIds` vem do vínculo do usuário
-   com o tenant (`tenants/{tenantId}/users/{userId}`). Vazio significa usuário
-   **não restrito** — é o caso normal de `ADMIN_EMPRESA`, que fecha a empresa
-   inteira. Uma lista preenchida restringe às filiais daquele vínculo.
+1. **A do grant.** Sem `scope` naquele eixo, vale em qualquer filial/depósito.
+   Com `scope.branchIds`/`scope.warehouseIds`, só nos listados ali.
+2. **A do membership.** `TenantContext.branchIds`/`warehouseIds` vem do
+   vínculo do usuário com o tenant (`tenants/{tenantId}/users/{userId}`).
+   Vazio significa usuário **não restrito** — é o caso normal de
+   `ADMIN_EMPRESA`, que fecha a empresa inteira. Uma lista preenchida
+   restringe às filiais/depósitos daquele vínculo.
+
+`@RequirePermission(permissao, branchParam?, warehouseParam?)` aceita o nome
+de até dois `@Param` da rota para checar cada eixo contra o escopo.
 
 Exemplo do §3 — cargo "Supervisor Regional": vê produto e estoque em três
 filiais, cancela venda em uma delas, não toca no fiscal:

@@ -107,21 +107,39 @@ export class RoleService {
     });
   }
 
-  /** Duas restricoes independentes, as duas precisam passar:
-   *  - a do GRANT: sem `scope.branchIds` vale em qualquer filial; com escopo,
-   *    so nas filiais listadas (o caso do "Supervisor Regional" do §3).
-   *  - a do MEMBERSHIP: `tenant.branchIds` vazio significa usuario nao restrito
-   *    a filial nenhuma — o caso do ADMIN_EMPRESA que fecha a empresa toda.
-   *    Uma lista preenchida restringe as filiais em que o usuario atua. */
-  hasPermission(tenant: TenantContext, permission: Permission, branchId?: string): boolean {
+  /** Duas restricoes independentes por eixo (filial, deposito), as duas
+   *  precisam passar em cada eixo informado:
+   *  - a do GRANT: sem `scope.branchIds`/`scope.warehouseIds` vale em
+   *    qualquer filial/deposito; com escopo, so nos listados (o caso do
+   *    "Supervisor Regional" do §3).
+   *  - a do MEMBERSHIP: `tenant.branchIds`/`warehouseIds` vazio significa
+   *    usuario nao restrito — o caso do ADMIN_EMPRESA que fecha a empresa
+   *    toda. Uma lista preenchida restringe onde o usuario atua. */
+  hasPermission(
+    tenant: TenantContext,
+    permission: Permission,
+    scope: { branchId?: string; warehouseId?: string } = {},
+  ): boolean {
     const grants = this.resolveGrants(tenant);
     return grants.some((grant) => {
       if (grant.permission !== permission) return false;
-      if (!branchId) return true;
-      if (grant.scope?.branchIds && !grant.scope.branchIds.includes(branchId)) return false;
-      if (tenant.branchIds.length > 0 && !tenant.branchIds.includes(branchId)) return false;
+      if (!this.scopeAllows(scope.branchId, grant.scope?.branchIds, tenant.branchIds)) return false;
+      if (!this.scopeAllows(scope.warehouseId, grant.scope?.warehouseIds, tenant.warehouseIds)) {
+        return false;
+      }
       return true;
     });
+  }
+
+  private scopeAllows(
+    requested: string | undefined,
+    grantScope: readonly string[] | undefined,
+    membershipScope: readonly string[],
+  ): boolean {
+    if (!requested) return true;
+    if (grantScope && !grantScope.includes(requested)) return false;
+    if (membershipScope.length > 0 && !membershipScope.includes(requested)) return false;
+    return true;
   }
 
   private toView(role: Role): RoleView {

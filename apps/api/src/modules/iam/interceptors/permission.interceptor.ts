@@ -42,8 +42,11 @@ export class PermissionInterceptor implements NestInterceptor {
     const branchId = required.branchParam
       ? (request.params?.[required.branchParam] as string | undefined)
       : undefined;
+    const warehouseId = required.warehouseParam
+      ? (request.params?.[required.warehouseParam] as string | undefined)
+      : undefined;
 
-    if (!this.roles.hasPermission(request.tenant, required.permission, branchId)) {
+    if (!this.roles.hasPermission(request.tenant, required.permission, { branchId, warehouseId })) {
       throw new ForbiddenException(`Permissão necessária: ${required.permission}`);
     }
     return next.handle();

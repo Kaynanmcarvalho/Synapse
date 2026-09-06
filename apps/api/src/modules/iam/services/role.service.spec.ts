@@ -90,25 +90,81 @@ describe('RoleService — escopo por filial (exemplo do §3: Supervisor Regional
     });
     const supervisor = buildTenant({ roleIds: [role.id], branchIds: ['goiania', 'anapolis'] });
 
-    expect(service.hasPermission(supervisor, 'estoque.visualizar', 'goiania')).toBe(true);
-    expect(service.hasPermission(supervisor, 'estoque.visualizar', 'anapolis')).toBe(true);
-    expect(service.hasPermission(supervisor, 'venda.cancelar', 'goiania')).toBe(true);
-    expect(service.hasPermission(supervisor, 'venda.cancelar', 'anapolis')).toBe(false);
-    expect(service.hasPermission(supervisor, 'fiscal.emitir', 'goiania')).toBe(false);
+    expect(service.hasPermission(supervisor, 'estoque.visualizar', { branchId: 'goiania' })).toBe(
+      true,
+    );
+    expect(service.hasPermission(supervisor, 'estoque.visualizar', { branchId: 'anapolis' })).toBe(
+      true,
+    );
+    expect(service.hasPermission(supervisor, 'venda.cancelar', { branchId: 'goiania' })).toBe(true);
+    expect(service.hasPermission(supervisor, 'venda.cancelar', { branchId: 'anapolis' })).toBe(
+      false,
+    );
+    expect(service.hasPermission(supervisor, 'fiscal.emitir', { branchId: 'goiania' })).toBe(false);
   });
 
   it('membership sem filial (branchIds vazio) nao restringe — e o caso do admin da empresa', () => {
     const repository = new RoleRepository();
     const service = new RoleService(repository);
     const admin = buildTenant({ roleIds: ['ADMIN_EMPRESA'], branchIds: [] });
-    expect(service.hasPermission(admin, 'filial.configurar', 'qualquer-filial')).toBe(true);
+    expect(service.hasPermission(admin, 'filial.configurar', { branchId: 'qualquer-filial' })).toBe(
+      true,
+    );
   });
 
   it('membership com filiais restringe mesmo quando o grant nao tem escopo', () => {
     const repository = new RoleRepository();
     const service = new RoleService(repository);
     const gerente = buildTenant({ roleIds: ['GERENTE'], branchIds: ['goiania'] });
-    expect(service.hasPermission(gerente, 'venda.criar', 'goiania')).toBe(true);
-    expect(service.hasPermission(gerente, 'venda.criar', 'anapolis')).toBe(false);
+    expect(service.hasPermission(gerente, 'venda.criar', { branchId: 'goiania' })).toBe(true);
+    expect(service.hasPermission(gerente, 'venda.criar', { branchId: 'anapolis' })).toBe(false);
+  });
+
+  it('o mesmo mecanismo de escopo vale para deposito (§3: "por filial e por deposito")', () => {
+    const repository = new RoleRepository();
+    const service = new RoleService(repository);
+    const role = service.create(buildTenant(), {
+      name: 'Conferente Deposito 1',
+      permissions: [{ permission: 'estoque.ajustar', scope: { warehouseIds: ['deposito-1'] } }],
+    });
+    const conferente = buildTenant({
+      roleIds: [role.id],
+      warehouseIds: ['deposito-1', 'deposito-2'],
+    });
+
+    expect(
+      service.hasPermission(conferente, 'estoque.ajustar', { warehouseId: 'deposito-1' }),
+    ).toBe(true);
+    expect(
+      service.hasPermission(conferente, 'estoque.ajustar', { warehouseId: 'deposito-2' }),
+    ).toBe(false);
+  });
+
+  it('checa filial e deposito ao mesmo tempo — os dois precisam passar', () => {
+    const repository = new RoleRepository();
+    const service = new RoleService(repository);
+    const role = service.create(buildTenant(), {
+      name: 'Operador Goiania Deposito 1',
+      permissions: [
+        {
+          permission: 'estoque.ajustar',
+          scope: { branchIds: ['goiania'], warehouseIds: ['deposito-1'] },
+        },
+      ],
+    });
+    const operador = buildTenant({ roleIds: [role.id] });
+
+    expect(
+      service.hasPermission(operador, 'estoque.ajustar', {
+        branchId: 'goiania',
+        warehouseId: 'deposito-1',
+      }),
+    ).toBe(true);
+    expect(
+      service.hasPermission(operador, 'estoque.ajustar', {
+        branchId: 'goiania',
+        warehouseId: 'deposito-2',
+      }),
+    ).toBe(false);
   });
 });

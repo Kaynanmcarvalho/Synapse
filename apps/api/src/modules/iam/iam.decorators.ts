@@ -27,14 +27,21 @@ export interface RequirePermissionOptions {
   /** Nome do parametro de rota que carrega o id da filial, quando a permissao
    *  precisa ser checada com escopo (ex.: 'branchId' em ':branchId/config'). */
   readonly branchParam?: string;
+  /** O mesmo, para o id do deposito (§3: escopo "por filial e por deposito"). */
+  readonly warehouseParam?: string;
 }
 
 /** Exige uma permissao do catalogo §3 para acessar a rota. Verificado pelo
  *  PermissionInterceptor, que resolve as permissoes efetivas do usuario. */
-export const RequirePermission = (permission: Permission, branchParam?: string) =>
+export const RequirePermission = (
+  permission: Permission,
+  branchParam?: string,
+  warehouseParam?: string,
+) =>
   SetMetadata(REQUIRE_PERMISSION_KEY, {
     permission,
     branchParam,
+    warehouseParam,
   } satisfies RequirePermissionOptions);
 
 /** Token ja verificado pelo AuthGuard. Rota publica nao tem: o decorator recusa. */

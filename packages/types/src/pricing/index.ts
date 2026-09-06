@@ -41,26 +41,20 @@ export interface PromotionEntry {
   readonly branchId: BranchId | null;
 }
 
-export interface NegotiatedPrice {
+export interface CustomerSpecificPrice {
+  readonly tenantId: TenantId;
+  readonly productId: ProductId;
+  readonly customerId: CustomerId;
+  readonly price: number;
+}
+
+/** O que o vendedor pede. `requiresApproval` nao entra aqui: quem decide isso
+ *  e o resolver, comparando `discountPercent` com o limite do vendedor —
+ *  nunca o cliente que fez a chamada. */
+export interface NegotiatedPriceRequest {
   readonly price: number;
   readonly requestedBy: UserId;
   readonly discountPercent: number;
-  /** Quando o desconto pedido excede o limite do vendedor, o preco nao se
-   *  aplica sozinho: fica pendente ate alguem com `venda.aprovarDesconto` liberar. */
-  readonly requiresApproval: boolean;
-}
-
-export interface PriceResolutionInput {
-  readonly tenantId: TenantId;
-  readonly productId: ProductId;
-  readonly branchId: BranchId | null;
-  readonly customerId?: CustomerId;
-  readonly customerGroupId?: string;
-  readonly sellerId?: UserId;
-  readonly quantity: number;
-  readonly channel?: SalesChannel;
-  readonly at?: string;
-  readonly negotiated?: NegotiatedPrice;
 }
 
 export interface PriceResolutionResult {
