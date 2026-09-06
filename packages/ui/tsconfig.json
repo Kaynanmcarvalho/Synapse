@@ -5,7 +5,8 @@
     "jsx": "react-jsx",
     "types": [],
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "tsBuildInfoFile": "./node_modules/.tmp/typecheck.tsbuildinfo"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

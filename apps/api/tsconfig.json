@@ -6,7 +6,8 @@
     "paths": {
       "@/*": ["src/*"]
     },
-    "types": ["node", "jest"]
+    "types": ["node", "jest"],
+    "tsBuildInfoFile": "./node_modules/.tmp/typecheck.tsbuildinfo"
   },
   "include": ["src/**/*", "test/**/*"],
   "exclude": ["node_modules", "dist"]

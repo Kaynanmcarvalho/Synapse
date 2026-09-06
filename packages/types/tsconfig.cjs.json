@@ -4,7 +4,8 @@
     "lib": ["ES2022"],
     "types": ["node"],
     "outDir": "dist/cjs",
-    "rootDir": "src"
+    "rootDir": "src",
+    "tsBuildInfoFile": "./node_modules/.tmp/build.cjs.tsbuildinfo"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.spec.ts", "**/*.spec.tsx"]
