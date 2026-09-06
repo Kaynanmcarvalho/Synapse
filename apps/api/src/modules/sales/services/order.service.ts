@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import type { AuditActor, Order, OrderChannel, PosItem } from '@synapse/types';
 import { randomUUID } from 'node:crypto';
+import { PricingService } from '../../catalog/services/pricing.service';
 import type { TenantContext } from '../../iam/iam.types';
 import { OrderRepository } from '../repositories/order.repository';
 
@@ -20,7 +21,15 @@ export interface SalesInventoryPort {
 }
 @Injectable()
 export class OrderService {
-  constructor(private readonly repository: OrderRepository) {}
+  constructor(
+    private readonly repository: OrderRepository,
+    private readonly pricing: PricingService,
+  ) {}
+  /** §27/§1: o limite de desconto NUNCA vem do corpo da requisição — um
+   *  vendedor editando a chamada não consegue mais se auto-aprovar. O limite
+   *  é sempre resolvido aqui, a partir de quem está autenticado
+   *  (`context.userId`), contra o que `PricingService`/`preco.gerenciar`
+   *  configurou pra esse vendedor especificamente. */
   quote(
     context: TenantContext,
     input: {
@@ -28,10 +37,11 @@ export class OrderService {
       customerId: string;
       channel: OrderChannel;
       items: readonly PosItem[];
-      sellerDiscountLimitBasisPoints: number;
     },
   ): Order {
     const actor = this.actor(context);
+    const limitPercent = this.pricing.getSellerDiscountLimit(context, context.userId);
+    const limitBasisPoints = Math.round(limitPercent * 100);
     return this.repository.save({
       id: randomUUID() as Order['id'],
       tenantId: context.tenantId as Order['tenantId'],
@@ -40,8 +50,7 @@ export class OrderService {
       status: 'QUOTE',
       channel: input.channel,
       total: input.items.reduce((sum, item) => sum + item.total, 0),
-      requiresApproval:
-        this.discountBasisPoints(input.items) > input.sellerDiscountLimitBasisPoints,
+      requiresApproval: this.discountBasisPoints(input.items) > limitBasisPoints,
       items: input.items,
       returnedItems: [],
       createdAt: new Date().toISOString(),

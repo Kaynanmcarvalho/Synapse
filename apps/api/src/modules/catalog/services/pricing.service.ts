@@ -68,6 +68,13 @@ export class PricingService {
     this.repository.setSellerDiscountLimit(tenant.tenantId, sellerId, limitPercent);
   }
 
+  /** §27/§1 "o desconto máximo é validado no backend": quem decide o limite
+   *  de um vendedor é este método, nunca um valor que chegou no corpo da
+   *  requisição — usado por `OrderService.quote` pra não confiar no cliente. */
+  getSellerDiscountLimit(tenant: TenantContext, sellerId: string): number {
+    return this.repository.getSellerDiscountLimit(tenant.tenantId, sellerId);
+  }
+
   /** Percorre os seis niveis do §6, da base para o topo. Cada nivel presente
    *  sobrescreve o anterior; o resultado guarda de qual nivel o preco final
    *  veio, para a UI explicar ("este preco vem da tabela Atacado GO"). */

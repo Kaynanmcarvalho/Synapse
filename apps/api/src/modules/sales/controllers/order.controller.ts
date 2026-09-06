@@ -18,7 +18,6 @@ export class OrderController {
       customerId: string;
       channel: OrderChannel;
       items: PosItem[];
-      sellerDiscountLimitBasisPoints: number;
     },
   ) {
     return this.orders.quote(tenant, body);

@@ -17,6 +17,7 @@ import { FinanceModule } from './modules/finance/finance.module';
 import { PurchasingModule } from './modules/purchasing/purchasing.module';
 import { SearchModule } from './modules/search/search.module';
 import { PlatformModule } from './modules/platform/platform.module';
+import { FieldSalesModule } from './modules/field-sales/field-sales.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { PlatformModule } from './modules/platform/platform.module';
     PurchasingModule,
     SearchModule,
     PlatformModule,
+    FieldSalesModule,
   ],
 })
 export class AppModule {}

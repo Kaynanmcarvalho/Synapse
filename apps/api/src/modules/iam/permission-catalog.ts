@@ -44,6 +44,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, PermissionGrant[]> 
     'plataforma.integracoes.visualizar',
     'plataforma.integracoes.testar',
     'plataforma.producao.ativar',
+    'vendedor.gerenciar',
   ),
   ADMIN_EMPRESA: grants(
     'produto.visualizar',
@@ -82,6 +83,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, PermissionGrant[]> 
     'plataforma.integracoes.visualizar',
     'plataforma.integracoes.testar',
     'plataforma.producao.ativar',
+    'vendedor.gerenciar',
   ),
   ADMIN_FILIAL: grants(
     'produto.visualizar',
@@ -107,6 +109,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, PermissionGrant[]> 
     'compras.receber',
     'plataforma.integracoes.visualizar',
     'plataforma.integracoes.testar',
+    'vendedor.gerenciar',
   ),
   GERENTE: grants(
     'produto.visualizar',
@@ -126,6 +129,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, PermissionGrant[]> 
     'estoque.inteligencia.ajustar',
     'compras.gerenciar',
     'compras.receber',
+    'vendedor.gerenciar',
   ),
   VENDEDOR: grants(
     'produto.visualizar',

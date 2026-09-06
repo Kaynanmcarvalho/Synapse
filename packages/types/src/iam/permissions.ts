@@ -38,6 +38,7 @@ export const PERMISSIONS = [
   'plataforma.integracoes.visualizar',
   'plataforma.integracoes.testar',
   'plataforma.producao.ativar',
+  'vendedor.gerenciar',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];

@@ -299,6 +299,12 @@ importers:
       '@synapse/validation':
         specifier: workspace:*
         version: link:../../packages/validation
+      firebase:
+        specifier: ^11.1.0
+        version: 11.10.0
+      lucide-react:
+        specifier: ^1.41.0
+        version: 1.41.0(react@19.2.8)
       react:
         specifier: ^19.0.0
         version: 19.2.8
