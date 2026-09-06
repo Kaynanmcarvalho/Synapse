@@ -10,8 +10,10 @@ import {
   type RetryNfceInput,
 } from '../dto/fiscal.schemas';
 import { NfceService } from '../services/nfce.service';
+import { RequireFeature } from '../../saas/feature.decorator';
 
 @Controller('fiscal/nfce')
+@RequireFeature('NFCE')
 @AuditedMutation({ domain: 'FISCAL', entity: 'FiscalDocument', collection: 'fiscalDocuments' })
 export class NfceController {
   constructor(private readonly service: NfceService) {}

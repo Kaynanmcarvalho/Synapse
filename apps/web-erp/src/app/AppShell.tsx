@@ -19,12 +19,14 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { useTenantExperience, type FeatureKey } from './useTenantExperience';
 
 interface NavItem {
   readonly label: string;
   readonly path: string;
   readonly icon: LucideIcon;
   readonly badge?: string;
+  readonly feature?: FeatureKey;
 }
 
 const NAVIGATION: Array<{ title: string; items: NavItem[] }> = [
@@ -32,10 +34,15 @@ const NAVIGATION: Array<{ title: string; items: NavItem[] }> = [
   {
     title: 'Operação',
     items: [
-      { label: 'PDV / Caixa', path: '/vendas/pdv', icon: ScanLine, badge: 'F10' },
-      { label: 'Estoque', path: '/estoque', icon: Warehouse },
-      { label: 'Inventários', path: '/estoque/inventarios', icon: PackageSearch },
-      { label: 'Entrada por XML', path: '/estoque/entradas-xml', icon: FileInput },
+      { label: 'PDV / Caixa', path: '/vendas/pdv', icon: ScanLine, badge: 'F10', feature: 'NFCE' },
+      { label: 'Estoque', path: '/estoque', icon: Warehouse, feature: 'INVENTORY' },
+      {
+        label: 'Inventários',
+        path: '/estoque/inventarios',
+        icon: PackageSearch,
+        feature: 'INVENTORY',
+      },
+      { label: 'Entrada por XML', path: '/estoque/entradas-xml', icon: FileInput, feature: 'DFE' },
     ],
   },
   {
@@ -47,17 +54,31 @@ const NAVIGATION: Array<{ title: string; items: NavItem[] }> = [
   },
 ];
 
-function SidebarContent({ closeMobile }: { readonly closeMobile?: () => void }) {
+function SidebarContent({
+  closeMobile,
+  enabled,
+  systemName,
+  logoUrl,
+}: {
+  readonly closeMobile?: () => void;
+  readonly enabled: (feature?: FeatureKey) => boolean;
+  readonly systemName: string;
+  readonly logoUrl: string | null;
+}) {
   return (
     <>
       <div className="flex h-20 items-center gap-3 px-6">
         <span className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-[14px] bg-slate-950 text-white shadow-lg shadow-slate-950/20">
-          <Command size={21} strokeWidth={2.2} />
+          {logoUrl ? (
+            <img alt="" className="h-full w-full object-cover" src={logoUrl} />
+          ) : (
+            <Command size={21} strokeWidth={2.2} />
+          )}
           <span className="absolute inset-x-1 bottom-0 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent" />
         </span>
         <span>
           <strong className="block text-[15px] font-extrabold tracking-[-0.02em] text-slate-950">
-            Synapse
+            {systemName}
           </strong>
           <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
             Business OS
@@ -72,38 +93,40 @@ function SidebarContent({ closeMobile }: { readonly closeMobile?: () => void }) 
               {group.title}
             </p>
             <div className="space-y-1">
-              {group.items.map((item) => {
-                const ItemIcon = item.icon;
-                return (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    end={item.path === '/estoque'}
-                    onClick={closeMobile}
-                    className={({ isActive }) =>
-                      `group flex h-11 items-center gap-3 rounded-xl px-3 text-[13px] font-semibold transition-all ${
-                        isActive
-                          ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/10'
-                          : 'text-slate-500 hover:bg-slate-100 hover:text-slate-950'
-                      }`
-                    }
-                  >
-                    {({ isActive }) => (
-                      <>
-                        <ItemIcon size={18} strokeWidth={isActive ? 2.2 : 1.8} />
-                        <span className="flex-1">{item.label}</span>
-                        {item.badge && (
-                          <span
-                            className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold ${isActive ? 'bg-white/10 text-slate-300' : 'bg-slate-100 text-slate-400'}`}
-                          >
-                            {item.badge}
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </NavLink>
-                );
-              })}
+              {group.items
+                .filter((item) => enabled(item.feature))
+                .map((item) => {
+                  const ItemIcon = item.icon;
+                  return (
+                    <NavLink
+                      key={item.path}
+                      to={item.path}
+                      end={item.path === '/estoque'}
+                      onClick={closeMobile}
+                      className={({ isActive }) =>
+                        `group flex h-11 items-center gap-3 rounded-xl px-3 text-[13px] font-semibold transition-all ${
+                          isActive
+                            ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/10'
+                            : 'text-slate-500 hover:bg-slate-100 hover:text-slate-950'
+                        }`
+                      }
+                    >
+                      {({ isActive }) => (
+                        <>
+                          <ItemIcon size={18} strokeWidth={isActive ? 2.2 : 1.8} />
+                          <span className="flex-1">{item.label}</span>
+                          {item.badge && (
+                            <span
+                              className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold ${isActive ? 'bg-white/10 text-slate-300' : 'bg-slate-100 text-slate-400'}`}
+                            >
+                              {item.badge}
+                            </span>
+                          )}
+                        </>
+                      )}
+                    </NavLink>
+                  );
+                })}
             </div>
           </div>
         ))}
@@ -130,13 +153,19 @@ function SidebarContent({ closeMobile }: { readonly closeMobile?: () => void }) 
 export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
+  const experience = useTenantExperience();
+  const enabled = (feature?: FeatureKey) => !feature || experience.flags[feature];
 
   useEffect(() => setMobileOpen(false), [location.pathname]);
 
   return (
     <div className="min-h-screen bg-[#f6f7f9] text-slate-950">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-[244px] flex-col border-r border-slate-200/80 bg-white lg:flex">
-        <SidebarContent />
+        <SidebarContent
+          enabled={enabled}
+          systemName={experience.branding.systemName}
+          logoUrl={experience.branding.logoUrl}
+        />
       </aside>
 
       {mobileOpen && (
@@ -156,7 +185,12 @@ export function AppShell() {
             >
               <X size={18} />
             </button>
-            <SidebarContent closeMobile={() => setMobileOpen(false)} />
+            <SidebarContent
+              closeMobile={() => setMobileOpen(false)}
+              enabled={enabled}
+              systemName={experience.branding.systemName}
+              logoUrl={experience.branding.logoUrl}
+            />
           </aside>
         </div>
       )}

@@ -13,8 +13,10 @@ import {
   type IssueNfeInput,
 } from '../dto/fiscal.schemas';
 import { NfeService } from '../services/nfe.service';
+import { RequireFeature } from '../../saas/feature.decorator';
 
 @Controller('fiscal/nfe')
+@RequireFeature('NFE')
 @AuditedMutation({ domain: 'FISCAL', entity: 'FiscalDocument', collection: 'fiscalDocuments' })
 export class NfeController {
   constructor(private readonly service: NfeService) {}

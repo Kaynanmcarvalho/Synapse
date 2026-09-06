@@ -18,8 +18,10 @@ import {
   type SupplierMappingInput,
 } from '../dto/dfe.schemas';
 import { DfeService } from '../services/dfe.service';
+import { RequireFeature } from '../../saas/feature.decorator';
 
 @Controller('inbound/dfe')
+@RequireFeature('DFE')
 @AuditedMutation({ domain: 'FISCAL', entity: 'InboundDfe', collection: 'inboundDfe' })
 export class DfeController {
   constructor(private readonly service: DfeService) {}

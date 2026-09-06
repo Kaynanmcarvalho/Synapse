@@ -4,8 +4,10 @@ import { AuditedMutation } from '../../audit/audit.decorator';
 import { CurrentTenant, RequirePermission } from '../../iam/iam.decorators';
 import type { TenantContext } from '../../iam/iam.types';
 import { TransferService } from '../services/transfer.service';
+import { RequireFeature } from '../../saas/feature.decorator';
 
 @Controller('inventory/transfers')
+@RequireFeature('INVENTORY')
 @RequirePermission('estoque.transferir')
 @AuditedMutation({ domain: 'INVENTORY', entity: 'StockTransfer', collection: 'transfers' })
 export class TransferController {

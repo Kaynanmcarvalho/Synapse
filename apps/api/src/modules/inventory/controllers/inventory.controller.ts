@@ -6,8 +6,10 @@ import { CurrentTenant, RequirePermission } from '../../iam/iam.decorators';
 import type { TenantContext } from '../../iam/iam.types';
 import { stockCommandSchema, type StockCommand } from '../dto/inventory.schemas';
 import { InventoryService } from '../services/inventory.service';
+import { RequireFeature } from '../../saas/feature.decorator';
 
 @Controller('inventory')
+@RequireFeature('INVENTORY')
 @RequirePermission('estoque.ajustar')
 @AuditedMutation({ domain: 'INVENTORY', entity: 'Inventory', collection: 'inventory' })
 export class InventoryController {

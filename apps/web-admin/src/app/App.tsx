@@ -16,6 +16,10 @@ type Company = {
   plan: 'BASIC' | 'PROFESSIONAL' | 'ENTERPRISE' | 'CUSTOM';
   status: 'trial' | 'active' | 'suspended';
   consumption: Consumption[];
+  experience: {
+    flags: Record<string, boolean>;
+    branding: { systemName: string; primaryColor: string };
+  };
 };
 type Metrics = {
   companies: number;
@@ -43,6 +47,8 @@ function headers(): HeadersInit {
   };
 }
 
+// O painel permanece coeso enquanto os filtros e formulários de detalhe não viram rotas próprias.
+// eslint-disable-next-line max-lines-per-function
 export function App() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
@@ -77,6 +83,19 @@ export function App() {
     });
     if (!response.ok) {
       setError('Não foi possível alterar a empresa');
+      return;
+    }
+    await load();
+  }
+
+  async function toggleFeature(company: Company, feature: string) {
+    const response = await fetch(`${env.apiUrl}/saas/companies/${company.tenantId}/features`, {
+      method: 'PATCH',
+      headers: headers(),
+      body: JSON.stringify({ feature, enabled: !company.experience.flags[feature] }),
+    });
+    if (!response.ok) {
+      setError('Não foi possível alterar o módulo');
       return;
     }
     await load();
@@ -157,6 +176,17 @@ export function App() {
                         {labels[item.resource]}: {item.used}/{item.limit} ({item.percentage}%)
                       </span>
                     ))}
+                    <span className="col-span-2 mt-2 flex flex-wrap gap-1">
+                      {Object.entries(company.experience.flags).map(([feature, enabled]) => (
+                        <button
+                          key={feature}
+                          onClick={() => void toggleFeature(company, feature)}
+                          className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${enabled ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-400 line-through'}`}
+                        >
+                          {feature}
+                        </button>
+                      ))}
+                    </span>
                   </td>
                   <td className="py-4 text-right">
                     <button

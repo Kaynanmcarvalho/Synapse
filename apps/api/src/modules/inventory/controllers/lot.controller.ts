@@ -11,6 +11,7 @@ import { AuditedMutation } from '../../audit/audit.decorator';
 import { CurrentTenant, RequirePermission } from '../../iam/iam.decorators';
 import type { TenantContext } from '../../iam/iam.types';
 import { LotService } from '../services/lot.service';
+import { RequireFeature } from '../../saas/feature.decorator';
 
 const balanceQuerySchema = z.object({
   branchId: z.string().min(1),
@@ -21,6 +22,7 @@ const balanceQuerySchema = z.object({
 const quantitySchema = z.object({ quantity: z.number().positive() });
 
 @Controller('inventory/lots')
+@RequireFeature('INVENTORY')
 @RequirePermission('estoque.ajustar')
 @AuditedMutation({ domain: 'INVENTORY', entity: 'Lot', collection: 'lots' })
 export class LotController {

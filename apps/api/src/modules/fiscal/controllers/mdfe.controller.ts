@@ -14,8 +14,10 @@ import {
   type VehicleInput,
 } from '../dto/mdfe.schemas';
 import { MdfeService } from '../services/mdfe.service';
+import { RequireFeature } from '../../saas/feature.decorator';
 
 @Controller('fiscal/mdfe')
+@RequireFeature('MDFE')
 export class MdfeController {
   constructor(private readonly service: MdfeService) {}
   @Post('drivers') @RequirePermission('fiscal.emitir') driver(

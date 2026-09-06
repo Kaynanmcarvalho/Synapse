@@ -11,11 +11,21 @@ import {
   updateTenantSubscriptionSchema,
 } from './dto/saas.schemas';
 import { SaasService } from './saas.service';
+import {
+  updateBrandingSchema,
+  updateFeatureSchema,
+  type UpdateBrandingInput,
+  type UpdateFeatureInput,
+} from './dto/feature.schemas';
+import { FeatureService } from './feature.service';
 
 @Controller('saas')
 @SkipPermission()
 export class SaasController {
-  constructor(private readonly service: SaasService) {}
+  constructor(
+    private readonly service: SaasService,
+    private readonly features: FeatureService,
+  ) {}
 
   @Get('companies') list(@CurrentTenant() context: TenantContext) {
     return this.service.list(context);
@@ -48,5 +58,33 @@ export class SaasController {
 
   @Get('metrics') metrics(@CurrentTenant() context: TenantContext) {
     return this.service.metrics(context);
+  }
+
+  @Get('experience') experience(@CurrentTenant() context: TenantContext) {
+    return this.features.getForCurrentTenant(context);
+  }
+
+  @Get('companies/:tenantId/experience') tenantExperience(
+    @CurrentTenant() context: TenantContext,
+    @Param('tenantId') tenantId: string,
+  ) {
+    this.service.list(context);
+    return this.features.get(tenantId);
+  }
+
+  @Patch('companies/:tenantId/features') feature(
+    @CurrentTenant() context: TenantContext,
+    @Param('tenantId') tenantId: string,
+    @Body(new ZodValidationPipe(updateFeatureSchema)) input: UpdateFeatureInput,
+  ) {
+    return this.features.setFeature(context, tenantId, input);
+  }
+
+  @Patch('companies/:tenantId/branding') branding(
+    @CurrentTenant() context: TenantContext,
+    @Param('tenantId') tenantId: string,
+    @Body(new ZodValidationPipe(updateBrandingSchema)) input: UpdateBrandingInput,
+  ) {
+    return this.features.setBranding(context, tenantId, input);
   }
 }

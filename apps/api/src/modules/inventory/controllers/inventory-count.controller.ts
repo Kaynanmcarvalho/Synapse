@@ -4,8 +4,10 @@ import { AuditedMutation } from '../../audit/audit.decorator';
 import { CurrentTenant, RequirePermission } from '../../iam/iam.decorators';
 import type { TenantContext } from '../../iam/iam.types';
 import { InventoryCountService } from '../services/inventory-count.service';
+import { RequireFeature } from '../../saas/feature.decorator';
 
 @Controller('inventory/counts')
+@RequireFeature('INVENTORY')
 @RequirePermission('estoque.inventariar')
 @AuditedMutation({ domain: 'INVENTORY', entity: 'InventoryCount', collection: 'inventoryCounts' })
 export class InventoryCountController {

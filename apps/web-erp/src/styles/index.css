@@ -5,6 +5,8 @@
 @layer base {
   html {
     font-family: theme('fontFamily.sans');
+    --brand-primary: #2563eb;
+    --brand-secondary: #4f46e5;
   }
 
   body {
