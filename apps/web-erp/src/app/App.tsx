@@ -5,6 +5,7 @@ import { ProductsScreen } from '../features/products/ProductsScreen';
 import { PosScreen } from '../features/pos/PosScreen';
 import { InventoryScreen } from '../features/inventory/InventoryScreen';
 import { RolesScreen } from '../features/roles/RolesScreen';
+import { StockIntelligenceScreen } from '../features/stock-intelligence/StockIntelligenceScreen';
 import { AppShell } from './AppShell';
 
 export function App() {
@@ -15,6 +16,7 @@ export function App() {
           <Route path="/visao-geral" element={<DashboardScreen />} />
           <Route path="/estoque" element={<StockScreen />} />
           <Route path="/estoque/inventarios" element={<InventoryScreen />} />
+          <Route path="/estoque/inteligencia" element={<StockIntelligenceScreen />} />
           <Route path="/vendas/pdv" element={<PosScreen />} />
           <Route path="/cadastros/produtos" element={<ProductsScreen />} />
           <Route path="/configuracoes/cargos" element={<RolesScreen />} />

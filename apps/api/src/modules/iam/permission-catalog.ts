@@ -37,6 +37,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, PermissionGrant[]> 
     'cliente.gerenciar',
     'fornecedor.gerenciar',
     'auditoria.visualizar',
+    'estoque.inteligencia.visualizar',
+    'estoque.inteligencia.ajustar',
   ),
   ADMIN_EMPRESA: grants(
     'produto.visualizar',
@@ -68,6 +70,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, PermissionGrant[]> 
     'cliente.gerenciar',
     'fornecedor.gerenciar',
     'auditoria.visualizar',
+    'estoque.inteligencia.visualizar',
+    'estoque.inteligencia.ajustar',
   ),
   ADMIN_FILIAL: grants(
     'produto.visualizar',
@@ -87,6 +91,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, PermissionGrant[]> 
     'preco.negociarExtra',
     'cliente.gerenciar',
     'fornecedor.gerenciar',
+    'estoque.inteligencia.visualizar',
+    'estoque.inteligencia.ajustar',
   ),
   GERENTE: grants(
     'produto.visualizar',
@@ -102,6 +108,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, PermissionGrant[]> 
     'financeiro.visualizar',
     'preco.negociarExtra',
     'cliente.gerenciar',
+    'estoque.inteligencia.visualizar',
+    'estoque.inteligencia.ajustar',
   ),
   VENDEDOR: grants(
     'produto.visualizar',
@@ -125,6 +133,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, PermissionGrant[]> 
     'estoque.transferir',
     'estoque.inventariar',
     'fornecedor.gerenciar',
+    'estoque.inteligencia.visualizar',
+    'estoque.inteligencia.ajustar',
   ),
   FINANCEIRO: grants(
     'produto.visualizar',

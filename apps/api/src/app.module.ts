@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { join } from 'node:path';
 import { appConfig } from './config/app.config';
 import { HealthModule } from './modules/health/health.module';
@@ -11,6 +12,7 @@ import { AuditModule } from './modules/audit/audit.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { ComplianceModule } from './modules/compliance/compliance.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -24,6 +26,7 @@ import { InventoryModule } from './modules/inventory/inventory.module';
       // raiz esta sempre tres niveis acima, entao resolvemos a partir de __dirname.
       envFilePath: [join(__dirname, '../../../.env.local'), join(__dirname, '../../../.env')],
     }),
+    ScheduleModule.forRoot(),
     HealthModule,
     IamModule,
     WebhooksModule,
@@ -33,6 +36,7 @@ import { InventoryModule } from './modules/inventory/inventory.module';
     CatalogModule,
     ComplianceModule,
     InventoryModule,
+    AnalyticsModule,
   ],
 })
 export class AppModule {}

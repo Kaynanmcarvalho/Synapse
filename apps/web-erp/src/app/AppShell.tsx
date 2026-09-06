@@ -12,6 +12,7 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
+  TrendingUp,
   Warehouse,
   X,
   type LucideIcon,
@@ -34,6 +35,12 @@ const NAVIGATION: Array<{ title: string; items: NavItem[] }> = [
       { label: 'PDV / Caixa', path: '/vendas/pdv', icon: ScanLine, badge: 'F10' },
       { label: 'Estoque', path: '/estoque', icon: Warehouse },
       { label: 'Inventários', path: '/estoque/inventarios', icon: PackageSearch },
+      {
+        label: 'Inteligência de estoque',
+        path: '/estoque/inteligencia',
+        icon: TrendingUp,
+        badge: 'F8',
+      },
     ],
   },
   {

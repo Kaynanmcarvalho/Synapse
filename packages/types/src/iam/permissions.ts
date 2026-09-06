@@ -31,6 +31,8 @@ export const PERMISSIONS = [
   'cliente.gerenciar',
   'fornecedor.gerenciar',
   'auditoria.visualizar',
+  'estoque.inteligencia.visualizar',
+  'estoque.inteligencia.ajustar',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];

@@ -18,6 +18,9 @@ out/
 serviceAccount*.json
 firebase-adminsdk*.json
 
+# claude code (config pessoal, por maquina)
+.claude/settings.local.json
+
 # logs
 logs/
 *.log
