@@ -63,7 +63,16 @@ export class PlatformOnboardingService {
     homologationPassed: boolean;
     productionActivatedAt: string | null;
   }): OnboardingStep[] {
-    const { branchCount, config, hasStock, hasProducts, memberCount, homologationPassed } = input;
+    return [
+      ...this.buildSetupSteps(input.branchCount, input.config),
+      ...this.buildOperationalSteps(input),
+    ];
+  }
+
+  private buildSetupSteps(
+    branchCount: number,
+    config: ReturnType<FiscalConfigService['get']>,
+  ): OnboardingStep[] {
     return [
       this.step('DADOS_EMPRESA', 'Dados da empresa', true, true, 'Empresa criada no cadastro'),
       this.step(
@@ -96,6 +105,18 @@ export class PlatformOnboardingService {
         true,
         'Nenhuma conta bancária cadastrada ainda (Sicredi/Itaú rodam em modo mock)',
       ),
+    ];
+  }
+
+  private buildOperationalSteps(input: {
+    hasStock: boolean;
+    hasProducts: boolean;
+    memberCount: number;
+    homologationPassed: boolean;
+    productionActivatedAt: string | null;
+  }): OnboardingStep[] {
+    const { hasStock, hasProducts, memberCount, homologationPassed, productionActivatedAt } = input;
+    return [
       this.step(
         'ESTOQUE',
         'Estoque',
@@ -129,10 +150,10 @@ export class PlatformOnboardingService {
       this.step(
         'PRODUCAO',
         'Produção',
-        input.productionActivatedAt !== null,
+        productionActivatedAt !== null,
         false,
-        input.productionActivatedAt
-          ? `Ativada em ${input.productionActivatedAt}`
+        productionActivatedAt
+          ? `Ativada em ${productionActivatedAt}`
           : 'Produção ainda não ativada',
       ),
     ];
