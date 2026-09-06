@@ -1,0 +1,32 @@
+name: Rollback API
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment: { type: choice, options: [development, staging, production], required: true }
+      revision: { description: 'Revisão Cloud Run previamente validada', required: true }
+      confirmation: { description: '<projeto>:<serviço>:<revisão>', required: true }
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Redirecionar tráfego para revisão anterior
+        run: node scripts/rollback-cloud-run.mjs
+        env:
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          GCP_REGION: ${{ vars.GCP_REGION }}
+          CLOUD_RUN_SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
+          ROLLBACK_REVISION: ${{ inputs.revision }}
+          CONFIRM_ROLLBACK: ${{ inputs.confirmation }}

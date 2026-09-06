@@ -17,3 +17,5 @@ Development, staging/homologação e produção usam projetos Firebase, bancos, 
 Rollback de aplicação usa a imagem anterior. Migrations destrutivas exigem estratégia expand/contract e nunca são revertidas automaticamente. Firestore, PostgreSQL e Storage precisam de backup e teste periódico de restauração. Os RPO/RTO definitivos ainda dependem de aprovação operacional.
 
 O Android requer Android SDK 35, JDK 17+, `google-services.json` por ambiente e assinatura armazenada fora do repositório.
+
+O runbook executável de observabilidade, backup, restauração e rollback está em [OPERATIONS.md](./OPERATIONS.md).

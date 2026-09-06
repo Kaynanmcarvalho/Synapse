@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import type { ObservedRequest } from '../observability/request-context';
 
 interface ErrorBody {
   readonly statusCode: number;
@@ -14,6 +15,8 @@ interface ErrorBody {
   readonly message: string;
   readonly path: string;
   readonly timestamp: string;
+  readonly requestId: string;
+  readonly correlationId: string;
 }
 
 /** Toda resposta de erro sai no mesmo formato: statusCode, error, message. */
@@ -24,7 +27,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const request = ctx.getRequest<Request & Partial<ObservedRequest>>();
 
     const status =
       exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
@@ -36,7 +39,16 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error(
-        `${request.method} ${request.url} -> ${status}`,
+        JSON.stringify({
+          level: 'ERROR',
+          event: 'unhandled_error',
+          method: request.method,
+          path: request.url,
+          status,
+          requestId: request.requestId,
+          correlationId: request.correlationId,
+          timestamp: new Date().toISOString(),
+        }),
         exception instanceof Error ? exception.stack : String(exception),
       );
     }
@@ -47,6 +59,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
       message,
       path: request.url,
       timestamp: new Date().toISOString(),
+      requestId: request.requestId ?? 'unknown',
+      correlationId: request.correlationId ?? request.requestId ?? 'unknown',
     };
 
     response.status(status).json(body);

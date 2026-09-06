@@ -1,0 +1,46 @@
+name: Deploy
+
+on:
+  push:
+    branches: [develop, staging, main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        required: true
+        options: [development, staging, production]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || (github.ref_name == 'main' && 'production') || (github.ref_name == 'staging' && 'staging') || 'development' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint && pnpm typecheck && pnpm test && pnpm build
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Publicar regras e índices
+        run: pnpm exec firebase deploy --only firestore --project "$FIREBASE_PROJECT_ID"
+        env:
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+      - name: Construir e publicar API
+        run: |
+          gcloud builds submit --tag "$REGION-docker.pkg.dev/$FIREBASE_PROJECT_ID/$ARTIFACT_REPOSITORY/synapse-api:$GITHUB_SHA" .
+          gcloud run deploy "$CLOUD_RUN_SERVICE" --image "$REGION-docker.pkg.dev/$FIREBASE_PROJECT_ID/$ARTIFACT_REPOSITORY/synapse-api:$GITHUB_SHA" --region "$REGION" --project "$FIREBASE_PROJECT_ID"
+        env:
+          FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
+          REGION: ${{ vars.GCP_REGION }}
+          ARTIFACT_REPOSITORY: ${{ vars.ARTIFACT_REPOSITORY }}
+          CLOUD_RUN_SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}

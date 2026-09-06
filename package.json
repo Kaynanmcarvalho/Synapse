@@ -21,6 +21,11 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,md,yml,yaml,css}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,md,yml,yaml,css}\"",
     "check": "pnpm run lint && pnpm run typecheck && pnpm run build",
+    "backup:gcp": "node scripts/backup-gcp.mjs",
+    "restore:gcp": "node scripts/restore-gcp.mjs",
+    "restore:gcp:dry-run": "node scripts/restore-gcp.mjs --dry-run",
+    "rollback:gcp": "node scripts/rollback-cloud-run.mjs",
+    "rollback:gcp:dry-run": "node scripts/rollback-cloud-run.mjs --dry-run",
     "prepare": "husky || true"
   },
   "devDependencies": {
@@ -29,6 +34,7 @@
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-import": "^2.31.0",
+    "firebase-tools": "15.29.0",
     "globals": "^15.14.0",
     "husky": "^9.1.7",
     "lint-staged": "^15.3.0",
