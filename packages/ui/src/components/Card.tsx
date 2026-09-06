@@ -1,4 +1,4 @@
-import type { HTMLAttributes } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import { cn } from '../lib/cn';
 
 export type CardProps = HTMLAttributes<HTMLDivElement>;
@@ -20,11 +20,18 @@ export function CardHeader({ className, ...props }: CardProps) {
   return <div className={cn('mb-3 flex items-center justify-between', className)} {...props} />;
 }
 
-export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
+export interface CardTitleProps extends HTMLAttributes<HTMLHeadingElement> {
+  /** Obrigatorio: um titulo vazio nao e anunciado por leitor de tela. */
+  readonly children: ReactNode;
+}
+
+export function CardTitle({ className, children, ...props }: CardTitleProps) {
   return (
     <h3
       className={cn('text-sm font-semibold text-slate-900 dark:text-slate-100', className)}
       {...props}
-    />
+    >
+      {children}
+    </h3>
   );
 }

@@ -1,0 +1,15 @@
+# Normaliza tudo para LF no repositorio, independente do SO de quem commita.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.avif binary
+*.pdf binary
+*.zip binary
+*.jar binary
+*.keystore binary
+
+pnpm-lock.yaml linguist-generated=true -diff
