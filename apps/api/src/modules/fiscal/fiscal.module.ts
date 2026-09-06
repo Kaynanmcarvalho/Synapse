@@ -9,9 +9,12 @@ import { NfeService } from './services/nfe.service';
 import { SecretVaultService } from './services/secret-vault.service';
 import { NfceController } from './controllers/nfce.controller';
 import { NfceService } from './services/nfce.service';
+import { MdfeController } from './controllers/mdfe.controller';
+import { MdfeRepository } from './repositories/mdfe.repository';
+import { MdfeService } from './services/mdfe.service';
 
 @Module({
-  controllers: [FiscalConfigController, NfeController, NfceController],
+  controllers: [FiscalConfigController, NfeController, NfceController, MdfeController],
   providers: [
     FiscalRepository,
     MockFiscalProvider,
@@ -20,6 +23,8 @@ import { NfceService } from './services/nfce.service';
     FiscalConfigService,
     NfeService,
     NfceService,
+    MdfeRepository,
+    MdfeService,
   ],
   exports: [FiscalRepository, FiscalProviderRegistry, NfeService, NfceService],
 })

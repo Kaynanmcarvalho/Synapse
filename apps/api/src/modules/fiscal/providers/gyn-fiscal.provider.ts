@@ -81,6 +81,18 @@ export class GynFiscalProvider implements FiscalProvider {
   issueMDFe(command: FiscalIssueCommand) {
     return this.post('/fiscal/mdfe/emitir', command.payload);
   }
+  closeMDFe(id: string, payload: Json) {
+    return this.post(`/fiscal/mdfe/${id}/encerrar`, payload);
+  }
+  cancelMDFe(id: string, payload: Json) {
+    return this.post(`/fiscal/mdfe/${id}/cancelar`, payload);
+  }
+  async checkMDFeJob(id: string) {
+    return this.map(await this.json(`/fiscal/mdfe/job/${id}`));
+  }
+  async getDamdfe(id: string) {
+    return new Uint8Array(await (await this.request(`/fiscal/mdfe/${id}/damdfe`)).arrayBuffer());
+  }
   async invalidateNFe(payload: Json) {
     return this.post('/fiscal/nfe/inutilizar', payload);
   }

@@ -64,6 +64,33 @@ export class MockFiscalProvider implements FiscalProvider {
       message: 'Manifestação registrada',
     };
   }
+  async closeMDFe() {
+    return this.mdfeEvent('Encerramento homologado');
+  }
+  async cancelMDFe() {
+    return { ...this.mdfeEvent('Cancelamento homologado'), status: 'CANCELLED' as const };
+  }
+  async checkMDFeJob(jobId: string) {
+    return (
+      [...this.results.values()].find((result) => result.jobId === jobId) ??
+      this.mdfeEvent('Autorizado')
+    );
+  }
+  async getDamdfe(id: string) {
+    return Buffer.from(`DAMDFE MOCK ${id}`);
+  }
+  private mdfeEvent(message: string): FiscalProviderResult {
+    return {
+      status: 'AUTHORIZED',
+      providerId: randomUUID(),
+      jobId: null,
+      accessKey: '1'.repeat(44),
+      protocol: Date.now().toString(),
+      xml: null,
+      code: '100',
+      message,
+    };
+  }
   private issue(command: FiscalIssueCommand): FiscalProviderResult {
     const previous = this.results.get(command.idempotencyKey);
     if (previous) return previous;

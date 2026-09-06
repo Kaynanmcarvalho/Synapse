@@ -48,3 +48,9 @@ O fluxo operacional fica disponível em **Estoque → Entrada por XML**:
 5. lançar a entrada, que cria os movimentos de estoque, registra lotes, recalcula o custo médio ponderado e gera as parcelas a pagar das duplicatas do XML.
 
 O endpoint de lançamento recusa notas pendentes. Cada movimento usa `dfe:<chave>:item:<numero>` como chave de idempotência, e uma nota já lançada apenas devolve o resultado existente. Em produção, `002_inbound_dfe.sql` persiste notas, de-paras e cursores; o agendador da infraestrutura deve chamar o polling conforme o volume e respeitar os limites do plano Gyn Fiscal.
+
+## MDF-e para frota própria
+
+O módulo expõe cadastros de motoristas e veículos em `POST /fiscal/mdfe/drivers` e `POST /fiscal/mdfe/vehicles`. A emissão em `POST /fiscal/mdfe` valida capacidade do veículo e envia motorista, placa/RNTRC, chaves de NF-e, UFs de carregamento e descarregamento e percurso à Gyn Fiscal. O acompanhamento do `jobId` mantém o manifesto em processamento até a autorização, quando ele passa a `OPEN`.
+
+Manifestos abertos podem ser encerrados em `POST /fiscal/mdfe/:id/close`, cancelados em `POST /fiscal/mdfe/:id/cancel` e impressos em `GET /fiscal/mdfe/:id/damdfe`. `GET /fiscal/mdfe/alerts?hours=24` lista os que ultrapassaram o limite operacional; esse endpoint deve alimentar o monitor periódico, pois um MDF-e autorizado nunca deve permanecer aberto depois da viagem.
