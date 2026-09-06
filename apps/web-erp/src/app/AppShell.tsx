@@ -5,6 +5,7 @@ import {
   CircleHelp,
   Command,
   Gauge,
+  FileInput,
   Menu,
   PackageSearch,
   ScanLine,
@@ -34,6 +35,7 @@ const NAVIGATION: Array<{ title: string; items: NavItem[] }> = [
       { label: 'PDV / Caixa', path: '/vendas/pdv', icon: ScanLine, badge: 'F10' },
       { label: 'Estoque', path: '/estoque', icon: Warehouse },
       { label: 'Inventários', path: '/estoque/inventarios', icon: PackageSearch },
+      { label: 'Entrada por XML', path: '/estoque/entradas-xml', icon: FileInput },
     ],
   },
   {

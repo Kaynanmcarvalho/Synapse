@@ -75,6 +75,9 @@ export class GynFiscalProvider implements FiscalProvider {
       raw: item as Json,
     }));
   }
+  async manifestDFe(payload: Json) {
+    return this.post('/fiscal/nfe/distribuicao/nfe/manifestacoes', payload);
+  }
   issueMDFe(command: FiscalIssueCommand) {
     return this.post('/fiscal/mdfe/emitir', command.payload);
   }

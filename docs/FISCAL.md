@@ -34,3 +34,17 @@ Checklist de homologação antes da produção:
 - simular indisponibilidade, confirmar `CONTINGENCY` e sua posterior regularização;
 - cancelar dentro do prazo configurado e validar o protocolo retornado;
 - somente então mudar para `PRODUCAO` com a confirmação explícita exigida pela API.
+
+## DF-e e entrada por XML
+
+O worker periódico chama `POST /inbound/dfe/poll` com empresa e CNPJ. O backend consulta a distribuição da Gyn Fiscal a partir do último NSU persistido, importa somente XMLs completos e avança o cursor de forma monotônica. Também é possível importar manualmente por `POST /inbound/dfe/import`. A chave de acesso é a identidade idempotente da nota dentro do tenant.
+
+O fluxo operacional fica disponível em **Estoque → Entrada por XML**:
+
+1. manifestar ciência, confirmação, desconhecimento ou operação não realizada;
+2. resolver o de-para por CNPJ do fornecedor e código do produto dele;
+3. conferir produto, quantidade, custo, lote e validade item a item;
+4. concluir a conferência humana;
+5. lançar a entrada, que cria os movimentos de estoque, registra lotes, recalcula o custo médio ponderado e gera as parcelas a pagar das duplicatas do XML.
+
+O endpoint de lançamento recusa notas pendentes. Cada movimento usa `dfe:<chave>:item:<numero>` como chave de idempotência, e uma nota já lançada apenas devolve o resultado existente. Em produção, `002_inbound_dfe.sql` persiste notas, de-paras e cursores; o agendador da infraestrutura deve chamar o polling conforme o volume e respeitar os limites do plano Gyn Fiscal.

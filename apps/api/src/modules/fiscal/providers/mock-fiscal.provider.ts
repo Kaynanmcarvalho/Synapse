@@ -52,6 +52,18 @@ export class MockFiscalProvider implements FiscalProvider {
   async queryDFe() {
     return [];
   }
+  async manifestDFe() {
+    return {
+      status: 'AUTHORIZED' as const,
+      providerId: randomUUID(),
+      jobId: null,
+      accessKey: null,
+      protocol: Date.now().toString(),
+      xml: null,
+      code: '135',
+      message: 'Manifestação registrada',
+    };
+  }
   private issue(command: FiscalIssueCommand): FiscalProviderResult {
     const previous = this.results.get(command.idempotencyKey);
     if (previous) return previous;

@@ -11,6 +11,7 @@ import { AuditModule } from './modules/audit/audit.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
 import { ComplianceModule } from './modules/compliance/compliance.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
+import { InboundModule } from './modules/inbound/inbound.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { InventoryModule } from './modules/inventory/inventory.module';
     CatalogModule,
     ComplianceModule,
     InventoryModule,
+    InboundModule,
   ],
 })
 export class AppModule {}
