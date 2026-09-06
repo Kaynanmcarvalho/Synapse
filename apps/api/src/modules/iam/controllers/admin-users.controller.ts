@@ -3,12 +3,13 @@ import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { AuditedMutation } from '../../audit/audit.decorator';
 import { booleanFlagSchema } from '../dto/iam.schemas';
 import { AdminGuard } from '../guards/admin.guard';
-import { CurrentTenant } from '../iam.decorators';
+import { CurrentTenant, RequirePermission } from '../iam.decorators';
 import type { TenantContext } from '../iam.types';
 import { AdminUsersService } from '../services/admin-users.service';
 
 @Controller('admin/users')
 @UseGuards(AdminGuard)
+@RequirePermission('usuario.gerenciar')
 @AuditedMutation({ domain: 'PERMISSION', entity: 'UserPermission', collection: 'users' })
 export class AdminUsersController {
   constructor(private readonly users: AdminUsersService) {}

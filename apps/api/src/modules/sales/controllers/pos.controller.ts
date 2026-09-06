@@ -1,7 +1,7 @@
-import { Body, Controller, Get, Param, Post, UsePipes } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
-import { CurrentTenant } from '../../iam/iam.decorators';
+import { CurrentTenant, RequirePermission } from '../../iam/iam.decorators';
 import { AuditedMutation } from '../../audit/audit.decorator';
 import type { TenantContext } from '../../iam/iam.types';
 import {
@@ -15,40 +15,40 @@ import {
 import { PosService } from '../services/pos.service';
 
 @Controller('sales/pos')
+@RequirePermission('venda.criar')
 @AuditedMutation({ domain: 'FINANCE', entity: 'CashSession', collection: 'cashSessions' })
 export class PosController {
   constructor(private readonly service: PosService) {}
-  @Post('cash-sessions') @UsePipes(new ZodValidationPipe(openCashSessionSchema)) open(
+  @Post('cash-sessions') open(
     @CurrentTenant() tenant: TenantContext,
-    @Body() input: { branchId: string; openingAmount: number },
+    @Body(new ZodValidationPipe(openCashSessionSchema))
+    input: { branchId: string; openingAmount: number },
   ) {
     return this.service.openCash(tenant, input.branchId, input.openingAmount);
   }
-  @Post('cash-sessions/:id/supply') @UsePipes(new ZodValidationPipe(cashMovementSchema)) supply(
+  @Post('cash-sessions/:id/supply') supply(
     @CurrentTenant() tenant: TenantContext,
     @Param('id') id: string,
-    @Body() input: CashMovementInput,
+    @Body(new ZodValidationPipe(cashMovementSchema)) input: CashMovementInput,
   ) {
     return this.service.addMovement(id, 'SUPPLY', input, tenant.userId);
   }
-  @Post('cash-sessions/:id/withdrawal')
-  @UsePipes(new ZodValidationPipe(cashMovementSchema))
-  withdrawal(
+  @Post('cash-sessions/:id/withdrawal') withdrawal(
     @CurrentTenant() tenant: TenantContext,
     @Param('id') id: string,
-    @Body() input: CashMovementInput,
+    @Body(new ZodValidationPipe(cashMovementSchema)) input: CashMovementInput,
   ) {
     return this.service.addMovement(id, 'WITHDRAWAL', input, tenant.userId);
   }
-  @Post('cash-sessions/:id/sales') @UsePipes(new ZodValidationPipe(completePosSaleSchema)) sale(
+  @Post('cash-sessions/:id/sales') sale(
     @Param('id') id: string,
-    @Body() input: CompletePosSaleInput,
+    @Body(new ZodValidationPipe(completePosSaleSchema)) input: CompletePosSaleInput,
   ) {
     return this.service.completeSale(id, input, { issueNfce: async () => randomUUID() });
   }
-  @Post('cash-sessions/:id/close') @UsePipes(new ZodValidationPipe(closeCashSessionSchema)) close(
+  @Post('cash-sessions/:id/close') close(
     @Param('id') id: string,
-    @Body() input: { countedCash: number },
+    @Body(new ZodValidationPipe(closeCashSessionSchema)) input: { countedCash: number },
   ) {
     return this.service.closeCash(id, input.countedCash);
   }

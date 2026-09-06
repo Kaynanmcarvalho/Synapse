@@ -1,11 +1,12 @@
 import { Body, Controller, Param, Post } from '@nestjs/common';
 import type { StockTransfer } from '@synapse/types';
 import { AuditedMutation } from '../../audit/audit.decorator';
-import { CurrentTenant } from '../../iam/iam.decorators';
+import { CurrentTenant, RequirePermission } from '../../iam/iam.decorators';
 import type { TenantContext } from '../../iam/iam.types';
 import { TransferService } from '../services/transfer.service';
 
 @Controller('inventory/transfers')
+@RequirePermission('estoque.transferir')
 @AuditedMutation({ domain: 'INVENTORY', entity: 'StockTransfer', collection: 'transfers' })
 export class TransferController {
   constructor(private readonly transfers: TransferService) {}

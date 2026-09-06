@@ -24,6 +24,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, PermissionGrant[]> 
     'fiscal.emitir',
     'fiscal.cancelar',
     'fiscal.visualizar',
+    'fiscal.configurar',
     'financeiro.visualizar',
     'financeiro.editar',
     'financeiro.conciliar',
@@ -33,6 +34,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, PermissionGrant[]> 
     'usuario.gerenciar',
     'preco.gerenciar',
     'preco.negociarExtra',
+    'cliente.gerenciar',
+    'fornecedor.gerenciar',
+    'auditoria.visualizar',
   ),
   ADMIN_EMPRESA: grants(
     'produto.visualizar',
@@ -51,6 +55,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, PermissionGrant[]> 
     'fiscal.emitir',
     'fiscal.cancelar',
     'fiscal.visualizar',
+    'fiscal.configurar',
     'financeiro.visualizar',
     'financeiro.editar',
     'financeiro.conciliar',
@@ -60,6 +65,9 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, PermissionGrant[]> 
     'usuario.gerenciar',
     'preco.gerenciar',
     'preco.negociarExtra',
+    'cliente.gerenciar',
+    'fornecedor.gerenciar',
+    'auditoria.visualizar',
   ),
   ADMIN_FILIAL: grants(
     'produto.visualizar',
@@ -77,6 +85,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, PermissionGrant[]> 
     'financeiro.visualizar',
     'filial.configurar',
     'preco.negociarExtra',
+    'cliente.gerenciar',
+    'fornecedor.gerenciar',
   ),
   GERENTE: grants(
     'produto.visualizar',
@@ -91,6 +101,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, PermissionGrant[]> 
     'fiscal.visualizar',
     'financeiro.visualizar',
     'preco.negociarExtra',
+    'cliente.gerenciar',
   ),
   VENDEDOR: grants(
     'produto.visualizar',
@@ -98,6 +109,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, PermissionGrant[]> 
     'venda.criar',
     'venda.editar',
     'fiscal.visualizar',
+    'cliente.gerenciar',
   ),
   CAIXA: grants(
     'produto.visualizar',
@@ -112,6 +124,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, PermissionGrant[]> 
     'estoque.ajustar',
     'estoque.transferir',
     'estoque.inventariar',
+    'fornecedor.gerenciar',
   ),
   FINANCEIRO: grants(
     'produto.visualizar',
@@ -119,5 +132,6 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, PermissionGrant[]> 
     'financeiro.editar',
     'financeiro.conciliar',
     'fiscal.visualizar',
+    'cliente.gerenciar',
   ),
 };

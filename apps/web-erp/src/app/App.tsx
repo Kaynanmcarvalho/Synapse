@@ -1,35 +1,24 @@
-import { useState } from 'react';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { DashboardScreen } from '../features/dashboard/DashboardScreen';
+import { StockScreen } from '../features/inventory/StockScreen';
 import { ProductsScreen } from '../features/products/ProductsScreen';
 import { PosScreen } from '../features/pos/PosScreen';
 import { InventoryScreen } from '../features/inventory/InventoryScreen';
-
-/** Sem roteador ainda (chega numa fase seguinte) — troca simples por aba,
- *  so para as telas terem onde aparecer enquanto sao construidas. */
-const SCREENS = { inventário: InventoryScreen, pos: PosScreen, produtos: ProductsScreen } as const;
+import { AppShell } from './AppShell';
 
 export function App() {
-  const [screen, setScreen] = useState<keyof typeof SCREENS>('inventário');
-  const Screen = SCREENS[screen];
-
   return (
-    <div className="min-h-full">
-      <nav className="flex gap-1 border-b border-slate-200 bg-white px-4 py-2 dark:border-slate-800 dark:bg-slate-900">
-        {(Object.keys(SCREENS) as Array<keyof typeof SCREENS>).map((key) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setScreen(key)}
-            className={`rounded px-3 py-1.5 text-sm font-medium capitalize ${
-              screen === key
-                ? 'bg-brand-600 text-white'
-                : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
-            }`}
-          >
-            {key}
-          </button>
-        ))}
-      </nav>
-      <Screen />
-    </div>
+    <BrowserRouter>
+      <Routes>
+        <Route element={<AppShell />}>
+          <Route path="/visao-geral" element={<DashboardScreen />} />
+          <Route path="/estoque" element={<StockScreen />} />
+          <Route path="/estoque/inventarios" element={<InventoryScreen />} />
+          <Route path="/vendas/pdv" element={<PosScreen />} />
+          <Route path="/cadastros/produtos" element={<ProductsScreen />} />
+          <Route path="*" element={<Navigate to="/visao-geral" replace />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }

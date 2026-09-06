@@ -8,6 +8,7 @@ import { FiscalModule } from './modules/fiscal/fiscal.module';
 import { SalesModule } from './modules/sales/sales.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { CatalogModule } from './modules/catalog/catalog.module';
+import { ComplianceModule } from './modules/compliance/compliance.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 
 @Module({
@@ -28,6 +29,7 @@ import { InventoryModule } from './modules/inventory/inventory.module';
     FiscalModule,
     AuditModule,
     CatalogModule,
+    ComplianceModule,
     InventoryModule,
   ],
 })

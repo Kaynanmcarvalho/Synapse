@@ -11,12 +11,20 @@ import type { AuthenticatedRequest, TenantContext } from './iam.types';
 export const SKIP_APP_CHECK_KEY = 'skipAppCheck';
 export const SKIP_TENANT_KEY = 'skipTenant';
 export const SKIP_DEVICE_SESSION_KEY = 'skipDeviceSession';
+export const SKIP_PERMISSION_KEY = 'skipPermission';
 export const ALLOW_CLAIM_INPUT_KEY = 'allowClaimInput';
 export const REQUIRE_PERMISSION_KEY = 'requirePermission';
 
 export const SkipAppCheck = () => SetMetadata(SKIP_APP_CHECK_KEY, true);
 export const SkipTenant = () => SetMetadata(SKIP_TENANT_KEY, true);
 export const SkipDeviceSession = () => SetMetadata(SKIP_DEVICE_SESSION_KEY, true);
+
+/** Diferente de @Public: exige login (e tenant, quando aplicavel) normalmente,
+ *  so libera da checagem de UMA permissao de negocio. E o caso de onboarding
+ *  (nao ha tenant ainda para checar) e das rotas de "minhas sessoes de
+ *  dispositivo" (todo membro do tenant mexe nas proprias, sem permissao
+ *  especial). Nao usar @Public aqui: ele tambem libera o AuthGuard. */
+export const SkipPermission = () => SetMetadata(SKIP_PERMISSION_KEY, true);
 
 /** Libera a rota do UntrustedClaimsGuard. So para quem administra cargos e
  *  permissoes — e essas rotas validam o conteudo por conta propria. */

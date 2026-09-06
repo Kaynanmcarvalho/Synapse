@@ -8,7 +8,7 @@ import {
 } from '@synapse/validation';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { AuditedMutation } from '../../audit/audit.decorator';
-import { CurrentTenant } from '../../iam/iam.decorators';
+import { CurrentTenant, RequirePermission } from '../../iam/iam.decorators';
 import type { TenantContext } from '../../iam/iam.types';
 import { PartnerService } from '../services/partner.service';
 
@@ -18,6 +18,7 @@ const financialStatusSchema = z.object({ status: z.enum(['REGULAR', 'OVERDUE', '
 export class PartnerController {
   constructor(private readonly service: PartnerService) {}
   @Post('customers')
+  @RequirePermission('cliente.gerenciar')
   @AuditedMutation({ domain: 'CUSTOMER', entity: 'Customer', collection: 'customers' })
   customer(
     @CurrentTenant() tenant: TenantContext,
@@ -26,6 +27,7 @@ export class PartnerController {
     return this.service.createCustomer(tenant, input);
   }
   @Post('suppliers')
+  @RequirePermission('fornecedor.gerenciar')
   @AuditedMutation({ domain: 'SUPPLIER', entity: 'Supplier', collection: 'suppliers' })
   supplier(
     @CurrentTenant() tenant: TenantContext,
@@ -33,16 +35,23 @@ export class PartnerController {
   ) {
     return this.service.createSupplier(tenant, input);
   }
-  @Get('customers') customers(@CurrentTenant() tenant: TenantContext, @Query('q') query = '') {
+  @Get('customers')
+  @RequirePermission('cliente.gerenciar')
+  customers(@CurrentTenant() tenant: TenantContext, @Query('q') query = '') {
     return this.service.searchCustomers(tenant.tenantId, query);
   }
-  @Get('suppliers') suppliers(@CurrentTenant() tenant: TenantContext, @Query('q') query = '') {
+  @Get('suppliers')
+  @RequirePermission('fornecedor.gerenciar')
+  suppliers(@CurrentTenant() tenant: TenantContext, @Query('q') query = '') {
     return this.service.searchSuppliers(tenant.tenantId, query);
   }
-  @Get('customers/:id/history') history(@Param('id') id: string) {
+  @Get('customers/:id/history')
+  @RequirePermission('cliente.gerenciar')
+  history(@Param('id') id: string) {
     return this.service.history(id);
   }
   @Patch('customers/:id/financial-status')
+  @RequirePermission('cliente.gerenciar')
   @AuditedMutation({ domain: 'CUSTOMER', entity: 'Customer', collection: 'customers' })
   status(
     @CurrentTenant() tenant: TenantContext,

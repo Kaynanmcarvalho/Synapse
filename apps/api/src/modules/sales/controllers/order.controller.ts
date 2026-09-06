@@ -1,11 +1,12 @@
 import { Body, Controller, Param, Post } from '@nestjs/common';
 import type { PosItem, OrderChannel } from '@synapse/types';
 import { AuditedMutation } from '../../audit/audit.decorator';
-import { CurrentTenant } from '../../iam/iam.decorators';
+import { CurrentTenant, RequirePermission } from '../../iam/iam.decorators';
 import type { TenantContext } from '../../iam/iam.types';
 import { OrderService } from '../services/order.service';
 
 @Controller('sales/orders')
+@RequirePermission('venda.criar')
 @AuditedMutation({ domain: 'PRICE', entity: 'SalesOrder', collection: 'salesOrders' })
 export class OrderController {
   constructor(private readonly orders: OrderService) {}

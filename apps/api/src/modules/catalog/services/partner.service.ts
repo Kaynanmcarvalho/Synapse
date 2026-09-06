@@ -41,6 +41,11 @@ export class PartnerService {
       version: 1,
     });
   }
+  getCustomer(tenantId: string, customerId: string) {
+    const customer = this.repository.findCustomer(tenantId, customerId);
+    if (!customer) throw new NotFoundException('Cliente não encontrado');
+    return customer;
+  }
   assertCredit(tenantId: string, customerId: string, saleAmount: number) {
     const customer = this.repository.findCustomer(tenantId, customerId);
     if (!customer) throw new NotFoundException('Cliente não encontrado');
@@ -56,6 +61,27 @@ export class PartnerService {
     return this.repository.updateCustomer({
       ...customer,
       financialStatus: status,
+      version: customer.version + 1,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+  /** LGPD §49: so anonimiza quando nao ha obrigacao financeira em aberto — o
+   *  historico de venda em si permanece (fiscal exige guarda-lo), so os dados
+   *  pessoais somem. Devolve null quando a anonimizacao foi recusada. */
+  anonymizeCustomer(tenantId: string, customerId: string): Customer | null {
+    const customer = this.repository.findCustomer(tenantId, customerId);
+    if (!customer) throw new NotFoundException('Cliente não encontrado');
+    if (customer.openCredit > 0) return null;
+
+    return this.repository.updateCustomer({
+      ...customer,
+      name: 'Cliente anonimizado',
+      legalName: null,
+      taxId: '00000000000',
+      phone: '',
+      whatsapp: null,
+      email: null,
+      address: { ...customer.address, street: '', number: '', complement: null },
       version: customer.version + 1,
       updatedAt: new Date().toISOString(),
     });

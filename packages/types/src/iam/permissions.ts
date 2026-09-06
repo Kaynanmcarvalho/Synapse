@@ -18,6 +18,7 @@ export const PERMISSIONS = [
   'fiscal.emitir',
   'fiscal.cancelar',
   'fiscal.visualizar',
+  'fiscal.configurar',
   'financeiro.visualizar',
   'financeiro.editar',
   'financeiro.conciliar',
@@ -27,6 +28,9 @@ export const PERMISSIONS = [
   'usuario.gerenciar',
   'preco.gerenciar',
   'preco.negociarExtra',
+  'cliente.gerenciar',
+  'fornecedor.gerenciar',
+  'auditoria.visualizar',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];

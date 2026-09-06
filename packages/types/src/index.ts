@@ -9,3 +9,4 @@ export * from './sales';
 export * from './fiscal';
 export * from './finance';
 export * from './pricing';
+export * from './compliance';
