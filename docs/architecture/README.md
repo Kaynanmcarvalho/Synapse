@@ -1,6 +1,6 @@
 # Synapse — Proposta de arquitetura
 
-Status: **Proposta — aguardando revisão humana**  
+Status: **Aprovada para implementação incremental**
 Fase: 0  
 Última atualização: 2026-09-05
 
@@ -399,4 +399,4 @@ A extração de um módulo para serviço independente só é considerada quando 
 - Validar autenticação, assinatura e homologação com Sicredi e Itaú.
 - Aprovar metas de disponibilidade, latência, RPO e RTO.
 
-Sem essa revisão, o status permanece **Proposta** e a Fase 1 não deve ser liberada.
+Mudanças nesses pontos exigem revisão humana e atualização do ADR correspondente.

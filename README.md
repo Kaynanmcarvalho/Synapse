@@ -3,8 +3,7 @@
 ERP SaaS multi-tenant para distribuidoras de racao, agropecuarias e lojas pet.
 Matriz e filiais, vendedores externos, PDV, fiscal (NF-e, NFC-e, DF-e, MDF-e) e integracao bancaria.
 
-> Fase atual: **F0 — fundacao**. O monorepo compila, roda e passa no CI; as regras de negocio
-> chegam a partir da Fase 1.
+> Implementação em evolução pelas fases do roadmap. Consulte os cartões em revisão no Muvta e a documentação de cada domínio antes de ativar integrações reais.
 
 ## Estrutura
 
@@ -14,7 +13,7 @@ apps/
   web-erp             retaguarda    · React + Vite + Tailwind · :5173
   web-admin           console SaaS  · React + Vite + Tailwind · :5174
   web-vendedor        portal do vendedor externo             · :5175
-  android-vendedor    reservado para o app nativo (F7)
+  android-vendedor    app Kotlin/Compose offline-first do vendedor
 packages/
   config              tsconfig, eslint e presets compartilhados
   types               contratos e tipos do dominio
@@ -43,6 +42,18 @@ pnpm dev              # sobe api e apps web em paralelo
 | `pnpm check`     | lint + typecheck + build, o que o CI roda   |
 
 Para rodar um workspace so: `pnpm --filter @synapse/api dev`.
+
+A API usa o prefixo versionado `/api/v1`. Com a API ativa, a interface OpenAPI fica em <http://localhost:3333/api/v1/docs> e o documento JSON em <http://localhost:3333/api/v1/openapi.json>.
+
+## Documentação
+
+- [Arquitetura e ADRs](docs/ARCHITECTURE.md)
+- [Banco de dados](docs/DATABASE.md)
+- [Fiscal](docs/FISCAL.md)
+- [Bancos](docs/BANKING.md)
+- [Segurança](docs/SECURITY.md) e [permissões](docs/PERMISSIONS.md)
+- [Deployment](docs/DEPLOYMENT.md) e [sincronização offline](docs/OFFLINE_SYNC.md)
+- [Dependências de documentação oficial](docs/OFFICIAL_DOCS_PENDING.md)
 
 ## Convencoes
 

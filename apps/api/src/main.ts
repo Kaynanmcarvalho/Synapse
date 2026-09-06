@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { type NestExpressApplication } from '@nestjs/platform-express';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import compression from 'compression';
 import helmet from 'helmet';
 import { mkdirSync } from 'node:fs';
@@ -26,13 +27,38 @@ async function bootstrap(): Promise<void> {
 
   const config = app.get(ConfigService).getOrThrow<AppConfig>(APP_CONFIG_KEY);
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
+        },
+      },
+    }),
+  );
   app.use(compression());
   app.enableCors({ origin: [...config.corsOrigins], credentials: true });
   app.setGlobalPrefix(`${config.prefix}/${config.version}`);
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalInterceptors(new LoggingInterceptor());
   app.enableShutdownHooks();
+
+  const openApi = SwaggerModule.createDocument(
+    app,
+    new DocumentBuilder()
+      .setTitle('Synapse API')
+      .setDescription('API multi-tenant do ERP Synapse. Todas as rotas de negócio usam /api/v1.')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .addApiKey({ type: 'apiKey', in: 'header', name: 'X-Device-Session' }, 'device-session')
+      .build(),
+  );
+  SwaggerModule.setup(`${config.prefix}/${config.version}/docs`, app, openApi, {
+    jsonDocumentUrl: `${config.prefix}/${config.version}/openapi.json`,
+  });
 
   // Fotos de produto (c8-2). So para dev: producao serve pelo Firebase Storage.
   mkdirSync(UPLOADS_DIR, { recursive: true });
