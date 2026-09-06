@@ -21,7 +21,7 @@ export class AdminUsersService {
   async block(tenantId: string, actorId: string, userId: string, blocked: boolean) {
     await this.assertMember(tenantId, userId);
     await this.auth.updateUser(userId, { disabled: blocked });
-    await this.memberships.setStatus(tenantId, userId, blocked ? 'blocked' : 'active');
+    await this.memberships.setStatus(tenantId, userId, blocked ? 'blocked' : 'active', actorId);
     if (blocked) {
       await this.sessions.revokeAll(tenantId, userId);
       await this.auth.revokeRefreshTokens(userId);
@@ -31,7 +31,7 @@ export class AdminUsersService {
 
   async requireMfa(tenantId: string, actorId: string, userId: string, required: boolean) {
     await this.assertMember(tenantId, userId);
-    await this.memberships.setMfaRequired(tenantId, userId, required);
+    await this.memberships.setMfaRequired(tenantId, userId, required, actorId);
     return { userId, mfaRequired: required, updatedBy: actorId };
   }
 
