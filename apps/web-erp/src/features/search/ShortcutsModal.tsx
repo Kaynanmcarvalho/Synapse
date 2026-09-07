@@ -1,4 +1,9 @@
 const SHORTCUTS: ReadonlyArray<{ keys: string; description: string }> = [
+  { keys: 'Alt 1', description: 'Abrir visão geral' },
+  { keys: 'Alt 2', description: 'Abrir PDV' },
+  { keys: 'Alt 3', description: 'Abrir estoque' },
+  { keys: 'Alt 4', description: 'Abrir compras' },
+  { keys: 'Alt 5', description: 'Abrir boletos' },
   { keys: 'Ctrl K', description: 'Abrir a busca global' },
   { keys: 'Esc', description: 'Fechar busca, modal ou painel aberto' },
   { keys: '↑ ↓', description: 'Navegar pelos resultados da busca' },

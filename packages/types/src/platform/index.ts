@@ -3,6 +3,7 @@ import type { UserId } from '../common';
 export type IntegrationServiceId = 'SEFAZ_NFE' | 'SEFAZ_NFCE' | 'MDFE' | 'SICREDI' | 'ITAU';
 
 export interface IntegrationTestResult {
+  readonly qualifiesForProduction?: boolean;
   readonly success: boolean;
   readonly message: string;
   readonly occurredAt: string;

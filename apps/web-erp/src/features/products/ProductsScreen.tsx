@@ -129,7 +129,7 @@ function ProductRow({
         <div className="flex items-center justify-between">
           <div>
             <p className="font-medium">{product.name}</p>
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               SKU {product.sku} · {product.status} · R$ {product.pricing.salePrice.toFixed(2)}
             </p>
           </div>
@@ -260,7 +260,9 @@ export function ProductsScreen() {
     <main className="mx-auto flex max-w-3xl flex-col gap-6 p-8">
       <header>
         <h1 className="text-2xl font-bold">Produtos</h1>
-        <p className="text-sm text-slate-500">Cadastro, foto e resolução de preço (§5 e §6).</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Cadastro, foto e resolução de preço (§5 e §6).
+        </p>
       </header>
 
       <CreateProductForm onCreated={refresh} />
@@ -281,7 +283,9 @@ export function ProductsScreen() {
         <Spinner />
       ) : (
         <div className="flex flex-col gap-3">
-          {products.length === 0 && <p className="text-sm text-slate-500">Nenhum produto ainda.</p>}
+          {products.length === 0 && (
+            <p className="text-sm text-slate-500 dark:text-slate-400">Nenhum produto ainda.</p>
+          )}
           {products.map((product) => (
             <ProductRow key={product.id} product={product} onChanged={refresh} />
           ))}

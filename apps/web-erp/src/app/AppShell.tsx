@@ -23,7 +23,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { CommandPalette } from '../features/search/CommandPalette';
 import { ShortcutsModal } from '../features/search/ShortcutsModal';
 import { applyTheme, getStoredTheme, type Theme } from './theme';
@@ -50,6 +50,7 @@ const NAVIGATION: Array<{ title: string; items: NavItem[] }> = [
         badge: 'F8',
       },
       { label: 'Compras', path: '/compras', icon: ShoppingCart, badge: 'F8' },
+      { label: 'Boletos', path: '/financeiro/boletos', icon: ShoppingCart },
     ],
   },
   {
@@ -149,15 +150,40 @@ export function AppShell() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [theme, setTheme] = useState<Theme>('light');
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => setMobileOpen(false), [location.pathname]);
 
-  useEffect(() => setTheme(getStoredTheme()), []);
+  useEffect(() => {
+    const stored = getStoredTheme();
+    setTheme(stored);
+    applyTheme(stored);
+  }, []);
 
   // §59 "atalho Ctrl+K" — precisa funcionar em qualquer tela, então o
   // listener vive no AppShell (montado sempre), não dentro do palette.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setPaletteOpen(false);
+        setShortcutsOpen(false);
+        setMobileOpen(false);
+      }
+      if (event.altKey && !event.ctrlKey && !event.metaKey) {
+        const paths: Record<string, string> = {
+          '1': '/visao-geral',
+          '2': '/vendas/pdv',
+          '3': '/estoque',
+          '4': '/compras',
+          '5': '/financeiro/boletos',
+        };
+        const path = paths[event.key];
+        if (path) {
+          event.preventDefault();
+          navigate(path);
+        }
+      }
+
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
         setPaletteOpen(true);
@@ -165,7 +191,7 @@ export function AppShell() {
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, []);
+  }, [navigate]);
 
   const toggleTheme = () => {
     const next = theme === 'dark' ? 'light' : 'dark';
@@ -226,6 +252,14 @@ export function AppShell() {
             <span className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] font-semibold text-slate-400 shadow-sm dark:border-slate-700 dark:bg-slate-800">
               <Command size={9} /> K
             </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setPaletteOpen(true)}
+            aria-label="Abrir busca global"
+            className="rounded-lg p-2 sm:hidden"
+          >
+            <Search size={20} />
           </button>
           <div className="ml-auto flex items-center gap-1">
             <button

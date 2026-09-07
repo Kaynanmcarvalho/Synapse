@@ -1,5 +1,11 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import type { Page, Product, StockIntelligenceMetric, Supplier } from '@synapse/types';
+import type {
+  Page,
+  Product,
+  StockBalance,
+  StockIntelligenceMetric,
+  Supplier,
+} from '@synapse/types';
 import { MAX_PAGE_LIMIT } from '@synapse/types';
 import { PartnerService } from '../../catalog/services/partner.service';
 import { ProductService } from '../../catalog/services/product.service';
@@ -58,7 +64,14 @@ export class StockIntelligenceService {
     if (products.length === 0) return 0;
 
     const salesByProduct = aggregateSales(movements);
-    const balanceByProduct = new Map(balances.map((balance) => [balance.productId, balance]));
+    const balanceByProduct = new Map<string, StockBalance>();
+    for (const balance of balances) {
+      const previous = balanceByProduct.get(balance.productId);
+      balanceByProduct.set(balance.productId, {
+        ...balance,
+        available: balance.available + (previous?.available ?? 0),
+      });
+    }
     const supplierById = new Map(suppliers.map((supplier) => [supplier.id, supplier]));
 
     const revenueByProduct = new Map<string, number>();
@@ -97,7 +110,24 @@ export class StockIntelligenceService {
       }),
     );
 
-    await this.repository.saveMetrics(tenantId, metrics);
+    const previous = new Map(
+      (await this.repository.list(tenantId, branchId)).map((metric) => [metric.id, metric]),
+    );
+    await this.repository.saveMetrics(
+      tenantId,
+      metrics.map((metric) => {
+        const old = previous.get(metric.id);
+        return old
+          ? {
+              ...metric,
+              approvedPurchaseQty: old.approvedPurchaseQty,
+              adjustedBy: old.adjustedBy,
+              adjustedAt: old.adjustedAt,
+              adjustmentNote: old.adjustmentNote,
+            }
+          : metric;
+      }),
+    );
     this.logger.log(
       `Recalculado: tenant=${tenantId} filial=${branchId} produtos=${metrics.length}`,
     );

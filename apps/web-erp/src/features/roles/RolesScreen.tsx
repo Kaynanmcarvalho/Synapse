@@ -39,10 +39,10 @@ function Cabecalho({ aoNovo }: { readonly aoNovo: () => void }) {
   return (
     <header className="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 className="text-2xl font-extrabold tracking-[-0.02em] text-slate-950">
+        <h1 className="text-2xl font-extrabold tracking-[-0.02em] text-slate-950 dark:text-slate-100">
           Cargos e permissões
         </h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Cada permissão é verificada no backend a cada requisição. Cargos padrão são só de leitura
           — para um recorte diferente, crie um cargo.
         </p>
@@ -68,14 +68,14 @@ function ListaDeCargos({
   readonly aoExcluir: (cargo: RoleView) => void;
 }) {
   return (
-    <ul className="divide-y divide-slate-100 rounded-2xl border border-slate-200/80 bg-white">
+    <ul className="divide-y divide-slate-100 rounded-2xl border border-slate-200/80 bg-white dark:bg-slate-900">
       {cargos.map((cargo) => (
         <li key={cargo.id} className="flex items-center justify-between gap-3 px-4 py-3">
           <div className="min-w-0">
-            <p className="truncate text-[13px] font-bold text-slate-900">
+            <p className="truncate text-[13px] font-bold text-slate-900 dark:text-slate-100">
               {cargo.name}
               {cargo.isCustom ? null : (
-                <span className="ml-2 rounded-md bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-500">
+                <span className="ml-2 rounded-md bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                   padrão
                 </span>
               )}
@@ -88,7 +88,7 @@ function ListaDeCargos({
             <button
               type="button"
               onClick={() => aoAbrir(cargo)}
-              className="h-9 rounded-lg px-3 text-xs font-semibold text-slate-600 transition hover:bg-slate-100"
+              className="h-9 rounded-lg px-3 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 dark:text-slate-300"
             >
               {cargo.isCustom ? 'Editar' : 'Ver'}
             </button>
@@ -131,7 +131,7 @@ function LinhaDePermissao({
           disabled={somenteLeitura}
           className="h-4 w-4 rounded border-slate-300"
         />
-        <code className="text-slate-700">{permission}</code>
+        <code className="text-slate-700 dark:text-slate-300">{permission}</code>
       </label>
 
       {grant && (
@@ -141,7 +141,7 @@ function LinhaDePermissao({
           disabled={somenteLeitura}
           placeholder="todas as filiais"
           aria-label={`Filiais onde ${permission} vale`}
-          className="h-8 w-56 rounded-lg border border-slate-200 px-2 text-xs outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 disabled:bg-slate-50"
+          className="h-8 w-56 rounded-lg border border-slate-200 px-2 text-xs outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 disabled:bg-slate-50 dark:border-slate-700"
         />
       )}
     </div>
@@ -268,14 +268,17 @@ export function RolesScreen() {
         />
       ) : (
         <form
-          className="flex flex-col gap-5 rounded-2xl border border-slate-200/80 bg-white p-5"
+          className="flex flex-col gap-5 rounded-2xl border border-slate-200/80 bg-white p-5 dark:bg-slate-900"
           onSubmit={(evento) => {
             evento.preventDefault();
             void enviar();
           }}
         >
           <div className="flex flex-col gap-1">
-            <label htmlFor={nomeId} className="text-[13px] font-semibold text-slate-700">
+            <label
+              htmlFor={nomeId}
+              className="text-[13px] font-semibold text-slate-700 dark:text-slate-300"
+            >
               Nome do cargo
             </label>
             <input
@@ -290,7 +293,7 @@ export function RolesScreen() {
               required
               maxLength={80}
               placeholder="Supervisor Regional"
-              className="h-10 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 disabled:bg-slate-50"
+              className="h-10 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-500/10 disabled:bg-slate-50 dark:border-slate-700"
             />
           </div>
 
@@ -302,8 +305,11 @@ export function RolesScreen() {
 
           <div className="flex flex-col gap-4">
             {MODULOS.map(([modulo, permissions]) => (
-              <fieldset key={modulo} className="rounded-xl border border-slate-200 p-3">
-                <legend className="px-1 text-[13px] font-bold capitalize text-slate-800">
+              <fieldset
+                key={modulo}
+                className="rounded-xl border border-slate-200 p-3 dark:border-slate-700"
+              >
+                <legend className="px-1 text-[13px] font-bold capitalize text-slate-800 dark:text-slate-200">
                   {modulo}
                 </legend>
                 <div className="mt-1 flex flex-col gap-2">
@@ -322,7 +328,7 @@ export function RolesScreen() {
             ))}
           </div>
 
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Campo de filial vazio quer dizer <strong>todas as filiais</strong>, e não nenhuma.
             Separe vários ids por vírgula.
           </p>
@@ -341,7 +347,7 @@ export function RolesScreen() {
                 setForm(null);
                 setErro(null);
               }}
-              className="h-10 rounded-xl border border-slate-200 px-4 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-100"
+              className="h-10 rounded-xl border border-slate-200 px-4 text-[13px] font-semibold text-slate-600 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300"
             >
               Cancelar
             </button>

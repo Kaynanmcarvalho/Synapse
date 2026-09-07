@@ -1,5 +1,6 @@
+import { BoletoRepository } from '../../finance/repositories/boleto.repository';
 import { Injectable } from '@nestjs/common';
-import type { BankAccountConfig, IntegrationServiceId, IntegrationStatus } from '@synapse/types';
+import type { IntegrationServiceId, IntegrationStatus } from '@synapse/types';
 import { randomUUID } from 'node:crypto';
 import { BankProviderRegistry } from '../../finance/services/bank-provider.registry';
 import { FiscalConfigService } from '../../fiscal/services/fiscal-config.service';
@@ -18,26 +19,6 @@ const LABEL: Record<IntegrationServiceId, string> = {
 const FISCAL_SERVICES: readonly IntegrationServiceId[] = ['SEFAZ_NFE', 'SEFAZ_NFCE', 'MDFE'];
 const BANK_SERVICES: readonly IntegrationServiceId[] = ['SICREDI', 'ITAU'];
 
-/** Uma conta MOCK sintética, nunca persistida: o financeiro (Renier, em
- *  paralelo) ainda não tem um repositório de `BankAccountConfig` — sem
- *  isso, não há credencial real de Sicredi/Itaú pra testar. O teste de
- *  conexão aqui prova que o encanamento (registry -> provider) funciona no
- *  ambiente de desenvolvimento; vira teste de verdade assim que a conta
- *  bancária ganhar persistência própria. */
-const mockBankConfig = (bankId: 'SICREDI' | 'ITAU'): BankAccountConfig => ({
-  id: 'mock',
-  bankId,
-  environment: 'MOCK',
-  apelido: `${bankId} (mock)`,
-  ativo: true,
-  baseUrl: null,
-});
-
-/** §64: um card por serviço fiscal/bancário, com teste de conexão leve e um
- *  teste de homologação mais completo (emite e cancela um documento/boleto
- *  de teste de verdade). "companyId" é tratado como o próprio tenantId —
- *  simplificação para o caso comum de uma empresa por tenant; o cadastro de
- *  múltiplas empresas por tenant, se vier a existir, precisa revisitar isso. */
 @Injectable()
 export class IntegrationsService {
   constructor(
@@ -46,23 +27,37 @@ export class IntegrationsService {
     private readonly nfe: NfeService,
     private readonly bankProviders: BankProviderRegistry,
     private readonly repository: PlatformRepository,
+    private readonly accounts: BoletoRepository,
   ) {}
 
   async list(tenantId: string): Promise<IntegrationStatus[]> {
     const status = await this.repository.getStatus(tenantId);
     const config = this.fiscalConfig.get(tenantId);
+    const accounts = await this.accounts.accounts(tenantId);
 
     return [...FISCAL_SERVICES, ...BANK_SERVICES].map((service) => {
       const isFiscal = FISCAL_SERVICES.includes(service);
+      const account = accounts.find((a) => a.bankId === service && a.ativo);
+      const lastTest = status.integrationTests[service]?.lastTest ?? null;
+      const lastHomologationTest =
+        status.integrationHomologationTests[service]?.lastHomologationTest ?? null;
       return {
         service,
         label: LABEL[service],
-        environment: isFiscal ? (config?.environment ?? 'NÃO CONFIGURADO') : 'MOCK',
-        credentialsConfigured: isFiscal ? Boolean(config?.certificateSecretRef) : false,
+        environment: isFiscal
+          ? (config?.environment ?? 'NÃO CONFIGURADO')
+          : (account?.environment ?? 'NÃO CONFIGURADO'),
+        credentialsConfigured: isFiscal
+          ? Boolean(config?.certificateSecretRef)
+          : Boolean(account && account.environment !== 'MOCK' && (account.sicredi || account.itau)),
         lastTest: status.integrationTests[service]?.lastTest ?? null,
         lastHomologationTest:
           status.integrationHomologationTests[service]?.lastHomologationTest ?? null,
-        lastCommunicationAt: status.integrationTests[service]?.lastTest?.occurredAt ?? null,
+        lastCommunicationAt:
+          [lastTest?.occurredAt, lastHomologationTest?.occurredAt]
+            .filter((at): at is string => Boolean(at))
+            .sort()
+            .at(-1) ?? null,
       };
     });
   }
@@ -85,13 +80,20 @@ export class IntegrationsService {
       if (FISCAL_SERVICES.includes(service)) {
         await this.testFiscal(tenantId, service, thorough);
       } else {
-        await this.testBank(service as 'SICREDI' | 'ITAU', thorough);
+        await this.testBank(tenantId, service as 'SICREDI' | 'ITAU', thorough);
       }
+      const simulated = FISCAL_SERVICES.includes(service)
+        ? this.fiscalConfig.get(tenantId)?.provider === 'MOCK'
+        : (await this.accounts.accounts(tenantId)).find((a) => a.bankId === service && a.ativo)
+            ?.environment === 'MOCK';
       return {
         success: true,
-        message: thorough
-          ? 'Teste de homologação concluído: emitiu e cancelou um documento/boleto de teste.'
-          : 'Conexão respondeu normalmente.',
+        qualifiesForProduction: !simulated,
+        message: simulated
+          ? 'Simulação MOCK concluída; não comprova homologação bancária/fiscal.'
+          : thorough
+            ? 'Teste de homologação concluído: emitiu e cancelou um documento/boleto de teste.'
+            : 'Conexão respondeu normalmente.',
         occurredAt: now(),
       };
     } catch (error) {
@@ -106,6 +108,8 @@ export class IntegrationsService {
   ): Promise<void> {
     const config = this.fiscalConfig.get(tenantId);
     if (!config) throw new Error('Configuração fiscal ainda não foi salva para este tenant');
+    if (thorough && config.environment === 'PRODUCAO')
+      throw new Error('Teste de homologação não pode emitir documentos em produção');
     const provider = this.fiscalProviders.resolve(config);
 
     if (!thorough) {
@@ -148,8 +152,18 @@ export class IntegrationsService {
     });
   }
 
-  private async testBank(bankId: 'SICREDI' | 'ITAU', thorough: boolean): Promise<void> {
-    const provider = this.bankProviders.resolve(mockBankConfig(bankId));
+  private async testBank(
+    tenantId: string,
+    bankId: 'SICREDI' | 'ITAU',
+    thorough: boolean,
+  ): Promise<void> {
+    const account = (await this.accounts.accounts(tenantId)).find(
+      (a) => a.bankId === bankId && a.ativo,
+    );
+    if (!account) throw new Error('Cadastre uma conta bancária antes de testar');
+    if (thorough && account.environment === 'PRODUCAO')
+      throw new Error('Teste de homologação não pode emitir boletos em produção');
+    const provider = this.bankProviders.resolve(account);
 
     if (!thorough) {
       const today = new Date().toISOString().slice(0, 10);

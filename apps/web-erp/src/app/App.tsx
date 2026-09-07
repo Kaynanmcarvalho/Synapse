@@ -9,6 +9,7 @@ import { StockIntelligenceScreen } from '../features/stock-intelligence/StockInt
 import { PurchasingScreen } from '../features/purchasing/PurchasingScreen';
 import { PlatformScreen } from '../features/platform/PlatformScreen';
 import { AppShell } from './AppShell';
+import { BoletosScreen } from '../features/finance/BoletosScreen';
 import { BranchConfigScreen } from '../features/config/BranchConfigScreen';
 
 export function App() {
@@ -21,6 +22,7 @@ export function App() {
           <Route path="/estoque/inventarios" element={<InventoryScreen />} />
           <Route path="/estoque/inteligencia" element={<StockIntelligenceScreen />} />
           <Route path="/compras" element={<PurchasingScreen />} />
+          <Route path="/financeiro/boletos" element={<BoletosScreen />} />
           <Route path="/vendas/pdv" element={<PosScreen />} />
           <Route path="/cadastros/produtos" element={<ProductsScreen />} />
           <Route path="/configuracoes/cargos" element={<RolesScreen />} />

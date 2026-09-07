@@ -26,6 +26,13 @@ export const assinaturaConfere = (
 export class SegredosDeWebhook {
   private readonly porProvedor = new Map<WebhookProvider, string>();
 
+  constructor() {
+    for (const provider of ['sicredi', 'itau', 'fiscal'] as const) {
+      const secret = process.env[`WEBHOOK_${provider.toUpperCase()}_SECRET`];
+      if (secret) this.porProvedor.set(provider, secret);
+    }
+  }
+
   definir(provedor: WebhookProvider, segredo: string): void {
     this.porProvedor.set(provedor, segredo);
   }

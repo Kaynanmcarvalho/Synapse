@@ -38,15 +38,14 @@ export function aggregateSales(
     let quantitySold = 0;
     let stockoutCount = 0;
     let lastStockoutAt: string | null = null;
-    let wasAvailable = true;
     for (const movement of ordered) {
-      quantitySold += movement.quantity;
+      if (movement.kind === 'SALE') quantitySold += movement.quantity;
+      if (movement.kind === 'RETURN') quantitySold -= movement.quantity;
       const isAvailable = movement.after.available > 0;
-      if (wasAvailable && !isAvailable) {
+      if (movement.before.available > 0 && !isAvailable) {
         stockoutCount += 1;
         lastStockoutAt = movement.occurredAt;
       }
-      wasAvailable = isAvailable;
     }
     result.set(productId, { quantitySold, stockoutCount, lastStockoutAt });
   }
@@ -161,7 +160,7 @@ export function calculateMetric(input: CalculateMetricInput): StockIntelligenceM
   );
 
   const leadTimeDays = supplier?.averageLeadDays ?? DEFAULT_LEAD_TIME_DAYS;
-  const safetyStock = product.logistics.minStock;
+  const safetyStock = supplier?.safetyStockByProduct?.[product.id] ?? product.logistics.minStock;
   const suggestedPurchaseQty = computeSuggestion(
     avgDailySales,
     leadTimeDays,

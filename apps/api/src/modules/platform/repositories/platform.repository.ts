@@ -70,7 +70,8 @@ export class PlatformRepository {
           ...current.integrationHomologationTests,
           [service]: { lastHomologationTest: result },
         },
-        homologationPassed: current.homologationPassed || result.success,
+        homologationPassed:
+          current.homologationPassed || (result.success && result.qualifiesForProduction === true),
       },
       { merge: true },
     );

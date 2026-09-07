@@ -1,3 +1,4 @@
+import type { BoletoRepository } from '../../finance/repositories/boleto.repository';
 import type { BankProvider, FiscalCompanyConfig, FiscalProvider } from '@synapse/types';
 import type { BankProviderRegistry } from '../../finance/services/bank-provider.registry';
 import type { FiscalConfigService } from '../../fiscal/services/fiscal-config.service';
@@ -54,6 +55,12 @@ function buildService(
     nfe as unknown as NfeService,
     bankProviders as unknown as BankProviderRegistry,
     repository as unknown as PlatformRepository,
+    {
+      accounts: jest.fn(async () => [
+        { id: 'mock', bankId: 'SICREDI', environment: 'MOCK', ativo: true },
+        { id: 'mock2', bankId: 'ITAU', environment: 'MOCK', ativo: true },
+      ]),
+    } as unknown as BoletoRepository,
   );
   return { service, fiscalConfig, fiscalProvider, fiscalProviders, nfe, bankProvider, repository };
 }

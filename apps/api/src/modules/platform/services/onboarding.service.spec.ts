@@ -1,3 +1,4 @@
+import type { BoletoRepository } from '../../finance/repositories/boleto.repository';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import type { FiscalCompanyConfig, Page, Product } from '@synapse/types';
 import type { StockIntelligenceService } from '../../analytics/services/stock-intelligence.service';
@@ -73,6 +74,7 @@ function buildService(overrides: {
     products as unknown as ProductService,
     memberships as unknown as MembershipRepository,
     repository as unknown as PlatformRepository,
+    { accounts: jest.fn(async () => []) } as unknown as BoletoRepository,
   );
   return { service, repository, activateProduction };
 }

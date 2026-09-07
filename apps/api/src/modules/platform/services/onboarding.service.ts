@@ -1,3 +1,4 @@
+import { BoletoRepository } from '../../finance/repositories/boleto.repository';
 import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
 import type { OnboardingStatus, OnboardingStep, OnboardingStepId } from '@synapse/types';
 import { StockIntelligenceService } from '../../analytics/services/stock-intelligence.service';
@@ -22,6 +23,7 @@ export class PlatformOnboardingService {
     private readonly products: ProductService,
     private readonly memberships: MembershipRepository,
     private readonly repository: PlatformRepository,
+    private readonly accounts: BoletoRepository,
   ) {}
 
   async getStatus(context: TenantContext): Promise<OnboardingStatus> {
@@ -41,6 +43,25 @@ export class PlatformOnboardingService {
       homologationPassed: platformStatus.homologationPassed,
       productionActivatedAt: platformStatus.productionActivatedAt,
     });
+    const accounts = await this.accounts.accounts(context.tenantId);
+    const bankReady = accounts.some(
+      (a) =>
+        a.ativo &&
+        a.environment !== 'MOCK' &&
+        Boolean(a.sicredi || a.itau) &&
+        platformStatus.integrationHomologationTests[a.bankId as 'SICREDI' | 'ITAU']
+          ?.lastHomologationTest?.qualifiesForProduction === true,
+    );
+    const bankIndex = steps.findIndex((step) => step.id === 'BANCO');
+    steps[bankIndex] = this.step(
+      'BANCO',
+      'Conta bancária',
+      bankReady,
+      true,
+      bankReady
+        ? 'Conta cadastrada e homologada'
+        : 'Cadastre e homologue uma conta real; MOCK não libera produção',
+    );
     const readyForProduction = steps
       .filter((step) => step.required)
       .every((step) => step.completed);
