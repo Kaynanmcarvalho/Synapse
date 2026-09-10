@@ -1,13 +1,14 @@
 {
   "mcpServers": {
     "muvta": {
-      "command": "node",
+      "command": "C:\\Users\\Kaynan\\AppData\\Local\\Programs\\muvta-code\\MuvtaCode.exe",
       "args": [
-        "${MUVTA_MCP_SERVER:-c:/Users/renie/OneDrive/Área de Trabalho/Synapse/tools/muvta-mcp/server.mjs}"
+        "C:\\Users\\Kaynan\\AppData\\Local\\Programs\\muvta-code\\resources\\muvta\\mcp-server.mjs"
       ],
       "env": {
         "MUVTA_API_URL": "https://muvtaapi-production.up.railway.app",
-        "MUVTA_API_KEY": "${MUVTA_API_KEY}"
+        "MUVTA_API_KEY": "muvta_bb65861bae3c9e90506ef84f373b3e1436c4e278b988433c1ebd8d40e0c05c30",
+        "ELECTRON_RUN_AS_NODE": "1"
       }
     }
   }
