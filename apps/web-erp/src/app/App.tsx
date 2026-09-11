@@ -5,8 +5,13 @@ import { ProductsScreen } from '../features/products/ProductsScreen';
 import { PosScreen } from '../features/pos/PosScreen';
 import { InventoryScreen } from '../features/inventory/InventoryScreen';
 import { RolesScreen } from '../features/roles/RolesScreen';
+import { StockIntelligenceScreen } from '../features/stock-intelligence/StockIntelligenceScreen';
+import { PurchasingScreen } from '../features/purchasing/PurchasingScreen';
+import { PlatformScreen } from '../features/platform/PlatformScreen';
 import { AppShell } from './AppShell';
 import { DfeScreen } from '../features/inbound/DfeScreen';
+import { BoletosScreen } from '../features/finance/BoletosScreen';
+import { BranchConfigScreen } from '../features/config/BranchConfigScreen';
 
 export function App() {
   return (
@@ -17,9 +22,14 @@ export function App() {
           <Route path="/estoque" element={<StockScreen />} />
           <Route path="/estoque/inventarios" element={<InventoryScreen />} />
           <Route path="/estoque/entradas-xml" element={<DfeScreen />} />
+          <Route path="/estoque/inteligencia" element={<StockIntelligenceScreen />} />
+          <Route path="/compras" element={<PurchasingScreen />} />
+          <Route path="/financeiro/boletos" element={<BoletosScreen />} />
           <Route path="/vendas/pdv" element={<PosScreen />} />
           <Route path="/cadastros/produtos" element={<ProductsScreen />} />
           <Route path="/configuracoes/cargos" element={<RolesScreen />} />
+          <Route path="/configuracoes/filiais" element={<BranchConfigScreen />} />
+          <Route path="/configuracoes/integracoes" element={<PlatformScreen />} />
           <Route path="*" element={<Navigate to="/visao-geral" replace />} />
         </Route>
       </Routes>

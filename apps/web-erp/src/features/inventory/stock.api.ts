@@ -55,3 +55,29 @@ export const getLotBalance = (
   apiRequest(
     `/inventory/lots/balance?branchId=${encodeURIComponent(branchId)}&warehouseId=${encodeURIComponent(warehouseId)}&productId=${encodeURIComponent(productId)}`,
   );
+
+/** Ajuste rápido de saldo — os únicos tipos de movimento que fazem sentido
+ *  fora de uma venda ou transferência (essas já têm fluxo próprio). */
+export type QuickMovementKind = 'INBOUND' | 'OUTBOUND' | 'ADJUSTMENT';
+
+export interface QuickMovementPayload {
+  readonly branchId: string;
+  readonly warehouseId: string;
+  readonly productId: string;
+  readonly quantity: number;
+  readonly reason: string;
+  readonly allowNegative: boolean;
+}
+
+export const moveStock = (kind: QuickMovementKind, payload: QuickMovementPayload) =>
+  apiRequest(`/inventory/movement/${kind}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      ...payload,
+      sourceId: 'estoque-ui',
+      destinationId: null,
+      document: null,
+      idempotencyKey: crypto.randomUUID(),
+    }),
+  });

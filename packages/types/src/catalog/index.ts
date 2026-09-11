@@ -123,6 +123,7 @@ export interface Supplier extends AuditStamp {
   readonly contacts: readonly { name: string; phone: string; email: string | null }[];
   readonly paymentTermId: string | null;
   readonly averageLeadDays: number;
+  readonly safetyStockByProduct?: Readonly<Record<string, number>>;
   readonly averagePrice: number;
   readonly productIds: readonly ProductId[];
   readonly active: boolean;

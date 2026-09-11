@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { FiscalCompanyConfig, FiscalDocument } from '@synapse/types';
+import { TenantSearchIndex } from '../../../common/search/tenant-search-index';
 
 export interface NfceContingencyItem {
   readonly documentId: string;
@@ -11,12 +12,17 @@ export interface NfceContingencyItem {
 
 @Injectable()
 export class FiscalRepository {
+  readonly searchIndex = new TenantSearchIndex<FiscalDocument>();
   private readonly documents = new Map<string, FiscalDocument>();
   private readonly configs = new Map<string, FiscalCompanyConfig>();
   private readonly sequences = new Map<string, number>();
   private readonly idempotency = new Map<string, string>();
   private readonly nfceContingency = new Map<string, NfceContingencyItem>();
   saveDocument(document: FiscalDocument): FiscalDocument {
+    this.searchIndex.put(
+      document,
+      `${document.accessKey ?? ''} ${document.number} ${document.series} ${document.kind}`,
+    );
     this.documents.set(document.id, document);
     this.idempotency.set(document.idempotencyKey, document.id);
     return document;
@@ -27,6 +33,9 @@ export class FiscalRepository {
   findByIdempotency(key: string): FiscalDocument | undefined {
     const id = this.idempotency.get(key);
     return id ? this.documents.get(id) : undefined;
+  }
+  listByTenant(tenantId: string): FiscalDocument[] {
+    return [...this.documents.values()].filter((document) => document.tenantId === tenantId);
   }
   saveConfig(config: FiscalCompanyConfig): FiscalCompanyConfig {
     this.configs.set(config.companyId, config);

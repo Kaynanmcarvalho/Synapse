@@ -26,7 +26,7 @@ export function FiscalSettingsScreen() {
             <option>PRODUCAO</option>
           </select>
         </label>
-        <p className="mt-4 text-sm text-slate-600">
+        <p className="mt-4 text-sm text-slate-600 dark:text-slate-300">
           Certificado A1 e senha são enviados somente ao backend e armazenados criptografados. A
           interface recebe apenas referências opacas.
         </p>

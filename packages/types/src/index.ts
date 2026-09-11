@@ -11,3 +11,8 @@ export * from './finance';
 export * from './pricing';
 export * from './compliance';
 export * from './banking';
+export * from './analytics';
+export * from './purchasing';
+export * from './search';
+export * from './platform';
+export * from './field-sales';

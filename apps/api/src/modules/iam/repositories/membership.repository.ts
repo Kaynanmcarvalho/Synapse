@@ -13,6 +13,11 @@ export class MembershipRepository {
     return snapshot.data() as MembershipRecord;
   }
 
+  async listByTenant(tenantId: string): Promise<MembershipRecord[]> {
+    const snapshot = await this.db.collection(`tenants/${tenantId}/users`).get();
+    return snapshot.docs.map((document) => document.data() as MembershipRecord);
+  }
+
   /** actorId e quem fez a mudanca, nunca o alvo: gravar o alvo em updatedBy
    *  registraria a vitima como autora da propria alteracao. */
   async setMfaRequired(

@@ -26,6 +26,6 @@ import { MdfeService } from './services/mdfe.service';
     MdfeRepository,
     MdfeService,
   ],
-  exports: [FiscalRepository, FiscalProviderRegistry, NfeService, NfceService],
+  exports: [FiscalRepository, FiscalProviderRegistry, NfeService, NfceService, FiscalConfigService],
 })
 export class FiscalModule {}

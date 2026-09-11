@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { CurrentTenant, RequirePermission } from '../../iam/iam.decorators';
 import { AuditedMutation } from '../../audit/audit.decorator';
@@ -22,6 +22,12 @@ export class PosController {
     private readonly service: PosService,
     private readonly nfce: NfceService,
   ) {}
+  @Get('cash-sessions/current') current(
+    @CurrentTenant() tenant: TenantContext,
+    @Query('branchId') branchId: string,
+  ) {
+    return this.service.getCurrentSession(tenant, branchId);
+  }
   @Post('cash-sessions') open(
     @CurrentTenant() tenant: TenantContext,
     @Body(new ZodValidationPipe(openCashSessionSchema))
@@ -44,10 +50,11 @@ export class PosController {
     return this.service.addMovement(id, 'WITHDRAWAL', input, tenant.userId);
   }
   @Post('cash-sessions/:id/sales') sale(
+    @CurrentTenant() tenant: TenantContext,
     @Param('id') id: string,
     @Body(new ZodValidationPipe(completePosSaleSchema)) input: CompletePosSaleInput,
   ) {
-    return this.service.completeSale(id, input, this.nfce);
+    return this.service.completeSale(id, input, this.nfce, tenant);
   }
   @Post('cash-sessions/:id/close') close(
     @Param('id') id: string,

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { join } from 'node:path';
 import { appConfig } from './config/app.config';
 import { HealthModule } from './modules/health/health.module';
@@ -17,6 +18,12 @@ import { SaasModule } from './modules/saas/saas.module';
 import { NotificationModule } from './modules/notifications/notification.module';
 import { ObservabilityModule } from './common/observability/observability.module';
 import { PerformanceModule } from './modules/performance/performance.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { FinanceModule } from './modules/finance/finance.module';
+import { PurchasingModule } from './modules/purchasing/purchasing.module';
+import { SearchModule } from './modules/search/search.module';
+import { PlatformModule } from './modules/platform/platform.module';
+import { FieldSalesModule } from './modules/field-sales/field-sales.module';
 
 @Module({
   imports: [
@@ -30,6 +37,7 @@ import { PerformanceModule } from './modules/performance/performance.module';
       // raiz esta sempre tres niveis acima, entao resolvemos a partir de __dirname.
       envFilePath: [join(__dirname, '../../../.env.local'), join(__dirname, '../../../.env')],
     }),
+    ScheduleModule.forRoot(),
     HealthModule,
     IamModule,
     WebhooksModule,
@@ -45,6 +53,12 @@ import { PerformanceModule } from './modules/performance/performance.module';
     NotificationModule,
     ObservabilityModule,
     PerformanceModule,
+    AnalyticsModule,
+    FinanceModule,
+    PurchasingModule,
+    SearchModule,
+    PlatformModule,
+    FieldSalesModule,
   ],
 })
 export class AppModule {}

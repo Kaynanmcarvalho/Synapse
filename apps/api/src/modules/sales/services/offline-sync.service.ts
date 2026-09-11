@@ -1,4 +1,3 @@
-/* eslint-disable max-lines-per-function */
 import { Injectable } from '@nestjs/common';
 import type { PosItem } from '@synapse/types';
 import type { TenantContext } from '../../iam/iam.types';
@@ -74,7 +73,6 @@ export class OfflineSyncService {
       customerId: input.customerId,
       channel: 'EXTERNAL',
       items,
-      sellerDiscountLimitBasisPoints: 0,
     });
     const order = await this.orders.convertToOrder(context, quote.id, {
       reserve: async (id, lines) => {

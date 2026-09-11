@@ -1,4 +1,7 @@
-import type { PosItem } from '@synapse/types';
+import type { PosItem, Product } from '@synapse/types';
+import { PricingRepository } from '../../catalog/repositories/pricing.repository';
+import { ProductRepository } from '../../catalog/repositories/product.repository';
+import { PricingService } from '../../catalog/services/pricing.service';
 import { OrderRepository } from '../repositories/order.repository';
 import { OrderService, type SalesInventoryPort } from './order.service';
 
@@ -30,13 +33,19 @@ describe('OrderService', () => {
         },
       ]),
     ) as unknown as SalesInventoryPort;
-    const service = new OrderService(new OrderRepository());
+    const products = new ProductRepository();
+    products.save({ id: 'p', tenantId: 't', pricing: { salePrice: 10 } } as Product);
+    const pricing = new PricingService(new PricingRepository(), products);
+    // 20% de desconto no item; limite do vendedor em 1% -> exige aprovação.
+    // O limite é resolvido no service a partir do PricingService, nunca do
+    // corpo da requisição (§27/§1) — é isso que este teste está provando.
+    pricing.setSellerDiscountLimit(context, context.userId, 1);
+    const service = new OrderService(new OrderRepository(), pricing);
     const quote = service.quote(context, {
       branchId: 'b',
       customerId: 'c',
       channel: 'WHATSAPP',
       items: [item],
-      sellerDiscountLimitBasisPoints: 100,
     });
     expect(calls).toEqual([]);
     expect(quote.requiresApproval).toBe(true);

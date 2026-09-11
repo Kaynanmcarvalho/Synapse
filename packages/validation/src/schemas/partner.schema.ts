@@ -73,6 +73,7 @@ export const supplierSchema = z.object({
     .max(20),
   paymentTermId: z.string().nullable().default(null),
   averageLeadDays: z.number().int().nonnegative(),
+  safetyStockByProduct: z.record(z.number().int().nonnegative()).optional(),
   averagePrice: z.number().int().nonnegative(),
   productIds: z.array(z.string()).max(500),
   active: z.boolean().default(true),

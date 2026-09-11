@@ -4,6 +4,10 @@ import { FiscalRepository } from '../../fiscal/repositories/fiscal.repository';
 import { MockFiscalProvider } from '../../fiscal/providers/mock-fiscal.provider';
 import type { FiscalProviderRegistry } from '../../fiscal/services/fiscal-provider.registry';
 import { NfceService } from '../../fiscal/services/nfce.service';
+import { PricingService } from '../../catalog/services/pricing.service';
+import { PricingRepository } from '../../catalog/repositories/pricing.repository';
+import { ProductRepository } from '../../catalog/repositories/product.repository';
+import type { Product } from '@synapse/types';
 
 const context = {
   tenantId: 'tenant',
@@ -39,7 +43,12 @@ describe('Venda -> NFC-e -> recebimento', () => {
       resolve: () => new MockFiscalProvider(),
     } as unknown as FiscalProviderRegistry);
     const cashRepository = new CashSessionRepository();
-    const pos = new PosService(cashRepository);
+    const products = new ProductRepository();
+    products.save({ id: 'product', tenantId: 'tenant', pricing: { salePrice: 150 } } as Product);
+    // salePrice e em reais: o PricingService converte para centavos (x100).
+    const pricing = new PricingService(new PricingRepository(), products);
+    pricing.setSellerDiscountLimit(context, context.userId, 1_000);
+    const pos = new PosService(cashRepository, pricing);
     const cash = pos.openCash(context, 'branch', 2_000);
 
     const sale = await pos.completeSale(
@@ -47,7 +56,6 @@ describe('Venda -> NFC-e -> recebimento', () => {
       {
         companyId: 'company',
         sellerId: 'seller',
-        operatorDiscountLimitBasisPoints: 1_000,
         items: [
           {
             productId: 'product',
@@ -61,11 +69,10 @@ describe('Venda -> NFC-e -> recebimento', () => {
         payments: [{ method: 'CASH', amount: 15_000 }],
       },
       nfce,
+      context,
     );
 
-    expect(sale.payments).toEqual([
-      expect.objectContaining({ method: 'CASH', amount: 15_000 }),
-    ]);
+    expect(sale.payments).toEqual([expect.objectContaining({ method: 'CASH', amount: 15_000 })]);
     expect(fiscalRepository.findDocument(sale.nfceDocumentId)).toMatchObject({
       kind: 'NFCE',
       status: 'AUTHORIZED',

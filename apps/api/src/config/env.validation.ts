@@ -6,7 +6,9 @@ export const envSchema = z.object({
   API_PORT: z.coerce.number().int().min(1).max(65535).default(3333),
   API_PREFIX: z.string().default('api'),
   API_VERSION: z.string().default('v1'),
-  CORS_ORIGINS: z.string().default('http://localhost:5173'),
+  CORS_ORIGINS: z
+    .string()
+    .default('http://localhost:5173,http://localhost:5174,http://localhost:5175'),
 });
 
 export type Env = z.infer<typeof envSchema>;

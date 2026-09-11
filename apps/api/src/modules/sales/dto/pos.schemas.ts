@@ -19,7 +19,6 @@ export const completePosSaleSchema = z.object({
     .nullable()
     .optional(),
   sellerId: z.string().min(1),
-  operatorDiscountLimitBasisPoints: z.number().int().min(0).max(10_000),
   items: z
     .array(
       z.object({

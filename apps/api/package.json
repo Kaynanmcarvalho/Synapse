@@ -21,6 +21,7 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/swagger": "11.4.7",
+    "@nestjs/schedule": "^5.0.1",
     "@nestjs/throttler": "^6.4.0",
     "@synapse/firebase": "workspace:*",
     "@synapse/types": "workspace:*",

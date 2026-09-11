@@ -46,6 +46,11 @@ export class PartnerService {
     if (!customer) throw new NotFoundException('Cliente não encontrado');
     return customer;
   }
+  getSupplier(tenantId: string, supplierId: string) {
+    const supplier = this.repository.findSupplier(tenantId, supplierId);
+    if (!supplier) throw new NotFoundException('Fornecedor não encontrado');
+    return supplier;
+  }
   assertCredit(tenantId: string, customerId: string, saleAmount: number) {
     const customer = this.repository.findCustomer(tenantId, customerId);
     if (!customer) throw new NotFoundException('Cliente não encontrado');
@@ -101,6 +106,14 @@ export class PartnerService {
   }
   searchSuppliers(tenantId: string, term: string, limit = 50, cursor?: string) {
     return this.repository.searchSuppliers(tenantId, term, limit, cursor);
+  }
+  /** Lista inteira do tenant, para agregacao interna. A busca pagina em 50 por
+   *  padrao: usa-la aqui cortaria a carteira do vendedor no 50º cliente, calada. */
+  listCustomers(tenantId: string) {
+    return this.repository.listCustomers(tenantId);
+  }
+  listSuppliers(tenantId: string) {
+    return this.repository.listSuppliers(tenantId);
   }
   private actor(context: TenantContext): AuditActor {
     return { uid: context.userId as AuditActor['uid'], email: '', name: '', source: 'api' };

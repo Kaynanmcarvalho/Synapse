@@ -15,6 +15,7 @@ import { randomUUID } from 'node:crypto';
 import type { TenantContext } from '../../iam/iam.types';
 import type { CashMovementInput, CompletePosSaleInput } from '../dto/pos.schemas';
 import { CashSessionRepository } from '../repositories/cash-session.repository';
+import { PricingService } from '../../catalog/services/pricing.service';
 
 export interface PosFiscalIssuer {
   issueNfce(
@@ -26,7 +27,14 @@ export interface PosFiscalIssuer {
 
 @Injectable()
 export class PosService {
-  constructor(private readonly repository: CashSessionRepository) {}
+  constructor(
+    private readonly repository: CashSessionRepository,
+    private readonly pricing: PricingService,
+  ) {}
+
+  getCurrentSession(context: TenantContext, branchId: string): CashSession | null {
+    return this.repository.findOpenByOperator(context.tenantId, branchId, context.userId) ?? null;
+  }
 
   openCash(context: TenantContext, branchId: string, openingAmount: number): CashSession {
     return this.repository.save({
@@ -73,14 +81,23 @@ export class PosService {
     sessionId: string,
     input: CompletePosSaleInput,
     fiscal: PosFiscalIssuer,
+    context: TenantContext,
   ): Promise<PosSale> {
     const session = this.openSession(sessionId);
-    const items: PosItem[] = input.items.map((item) => ({
-      ...item,
-      productId: asProductId(item.productId),
-      barcode: item.barcode ?? null,
-      total: Math.round((item.quantity * item.unitPrice) / 1000) - item.discount + item.surcharge,
-    }));
+    if (session.tenantId !== context.tenantId || session.operatorId !== context.userId) {
+      throw new NotFoundException('Caixa não encontrado');
+    }
+    const items: PosItem[] = this.pricing.priceSaleItems(
+      context,
+      session.branchId,
+      input.customerId ?? null,
+      input.items.map((item) => ({
+        ...item,
+        productId: asProductId(item.productId),
+        barcode: item.barcode ?? null,
+        total: Math.round((item.quantity * item.unitPrice) / 1000) - item.discount + item.surcharge,
+      })),
+    );
     const subtotal = items.reduce(
       (sum, item) => sum + Math.round((item.quantity * item.unitPrice) / 1000),
       0,
@@ -88,7 +105,7 @@ export class PosService {
     const discount = items.reduce((sum, item) => sum + item.discount, 0);
     const surcharge = items.reduce((sum, item) => sum + item.surcharge, 0);
     const total = subtotal - discount + surcharge;
-    if (discount * 10_000 > subtotal * input.operatorDiscountLimitBasisPoints)
+    if (discount * 100 > subtotal * this.pricing.getSellerDiscountLimit(context, context.userId))
       throw new BadRequestException('Desconto excede o limite do operador');
     if (input.payments.reduce((sum, payment) => sum + payment.amount, 0) !== total)
       throw new BadRequestException('A soma dos pagamentos deve ser igual ao total da venda');

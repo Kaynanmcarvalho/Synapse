@@ -1,5 +1,6 @@
 /* eslint-disable max-lines, max-lines-per-function */
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import { Modal, useOverlayClose } from '@synapse/ui';
 
 type InventoryType = 'GENERAL' | 'PARTIAL' | 'CATEGORY' | 'WAREHOUSE' | 'CYCLE';
 type MovementPolicy = 'FREEZE' | 'SNAPSHOT';
@@ -161,14 +162,14 @@ function SelectField({
 }) {
   return (
     <label className="group block">
-      <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
+      <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
         {label}
       </span>
       <span className="relative block">
         <select
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm font-semibold text-slate-800 shadow-sm outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+          className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm font-semibold text-slate-800 shadow-sm outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
         >
           {children}
         </select>
@@ -187,360 +188,364 @@ function NewInventoryModal({
   readonly onClose: () => void;
   readonly onCreate: (draft: InventoryDraft) => void;
 }) {
-  const titleId = useId();
-  const closeButton = useRef<HTMLButtonElement>(null);
   const [step, setStep] = useState(1);
   const [draft, setDraft] = useState(INITIAL_DRAFT);
 
-  useEffect(() => {
-    closeButton.current?.focus();
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', closeOnEscape);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', closeOnEscape);
-      document.body.style.overflow = '';
-    };
-  }, [onClose]);
+  return (
+    <Modal onClose={onClose} bare label="Novo inventário" size="xl" className="sm:max-w-5xl">
+      <NewInventoryModalBody
+        step={step}
+        setStep={setStep}
+        draft={draft}
+        setDraft={setDraft}
+        onCreate={onCreate}
+      />
+    </Modal>
+  );
+}
 
+function NewInventoryModalBody({
+  step,
+  setStep,
+  draft,
+  setDraft,
+  onCreate,
+}: {
+  readonly step: number;
+  readonly setStep: (step: number) => void;
+  readonly draft: InventoryDraft;
+  readonly setDraft: (draft: InventoryDraft) => void;
+  readonly onCreate: (draft: InventoryDraft) => void;
+}) {
+  const requestClose = useOverlayClose();
   const selectedType = TYPE_OPTIONS.find((option) => option.value === draft.type)!;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 p-0 backdrop-blur-md sm:items-center sm:p-6">
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="relative flex max-h-[96vh] w-full max-w-5xl overflow-hidden rounded-t-[28px] bg-white shadow-[0_32px_90px_-20px_rgba(2,6,23,.55)] sm:max-h-[88vh] sm:rounded-[28px]"
-      >
-        <aside className="relative hidden w-[290px] shrink-0 overflow-hidden bg-slate-950 p-8 text-white lg:block">
-          <div className="absolute -right-24 -top-20 h-64 w-64 rounded-full bg-blue-600/25 blur-3xl" />
-          <div className="absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-cyan-400/10 blur-3xl" />
-          <div className="relative flex h-full flex-col">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-cyan-300 ring-1 ring-white/15">
-              {icons.scan}
-            </div>
-            <p className="mt-7 text-xs font-bold uppercase tracking-[0.22em] text-blue-300">
-              Nova contagem
-            </p>
-            <h2 className="mt-3 text-2xl font-semibold leading-tight">
-              Precisão começa com um bom escopo.
-            </h2>
-            <p className="mt-3 text-sm leading-6 text-slate-400">
-              Configure a operação. O saldo do sistema só aparece após a conferência, evitando viés
-              na contagem.
-            </p>
-
-            <ol className="mt-10 space-y-1">
-              {[
-                ['Tipo de inventário', 'Defina o universo da contagem'],
-                ['Operação', 'Escolha local e segurança'],
-                ['Revisão', 'Confira antes de começar'],
-              ].map(([label, description], index) => {
-                const number = index + 1;
-                const active = step === number;
-                const done = step > number;
-                return (
-                  <li key={label} className="relative flex gap-4 pb-7 last:pb-0">
-                    {index < 2 && (
-                      <span className="absolute left-[15px] top-9 h-[calc(100%-32px)] w-px bg-white/10" />
-                    )}
-                    <span
-                      className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold transition ${
-                        active
-                          ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
-                          : done
-                            ? 'bg-emerald-400 text-slate-950'
-                            : 'bg-white/5 text-slate-500 ring-1 ring-white/10'
-                      }`}
-                    >
-                      {done ? icons.check : number}
-                    </span>
-                    <span>
-                      <span
-                        className={`block text-sm font-semibold ${active ? 'text-white' : 'text-slate-400'}`}
-                      >
-                        {label}
-                      </span>
-                      <span className="mt-0.5 block text-xs leading-5 text-slate-500">
-                        {description}
-                      </span>
-                    </span>
-                  </li>
-                );
-              })}
-            </ol>
-
-            <div className="mt-auto rounded-2xl border border-white/10 bg-white/[0.06] p-4">
-              <div className="flex items-center gap-2 text-xs font-semibold text-emerald-300">
-                {icons.shield} Rastro de auditoria ativo
-              </div>
-              <p className="mt-2 text-xs leading-5 text-slate-400">
-                Responsável, horário e cada ajuste ficam registrados permanentemente.
-              </p>
-            </div>
+    <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+      <aside className="relative hidden w-[290px] shrink-0 overflow-hidden bg-slate-950 p-8 text-white lg:block">
+        <div className="absolute -right-24 -top-20 h-64 w-64 rounded-full bg-blue-600/25 blur-3xl" />
+        <div className="absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-cyan-400/10 blur-3xl" />
+        <div className="relative flex h-full flex-col">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/10 text-cyan-300 ring-1 ring-white/15">
+            {icons.scan}
           </div>
-        </aside>
+          <p className="mt-7 text-xs font-bold uppercase tracking-[0.22em] text-blue-300">
+            Nova contagem
+          </p>
+          <h2 className="mt-3 text-2xl font-semibold leading-tight">
+            Precisão começa com um bom escopo.
+          </h2>
+          <p className="mt-3 text-sm leading-6 text-slate-400">
+            Configure a operação. O saldo do sistema só aparece após a conferência, evitando viés na
+            contagem.
+          </p>
 
-        <div className="flex min-w-0 flex-1 flex-col">
-          <header className="flex items-start justify-between border-b border-slate-100 px-6 py-5 sm:px-8">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
-                Etapa {step} de 3
-              </p>
-              <h2
-                id={titleId}
-                className="mt-1 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl"
-              >
-                {step === 1 && 'Como você quer contar?'}
-                {step === 2 && 'Configure a operação'}
-                {step === 3 && 'Tudo pronto para começar'}
-              </h2>
-            </div>
-            <button
-              ref={closeButton}
-              type="button"
-              onClick={onClose}
-              aria-label="Fechar modal"
-              className="flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-4 focus:ring-blue-500/15"
-            >
-              {icons.close}
-            </button>
-          </header>
-
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 sm:px-8 sm:py-7">
-            {step === 1 && (
-              <div>
-                <p className="mb-5 max-w-xl text-sm leading-6 text-slate-500">
-                  Escolha o formato que melhor representa a conferência de hoje. Você poderá refinar
-                  o escopo na próxima etapa.
-                </p>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {TYPE_OPTIONS.map((option, index) => {
-                    const selected = draft.type === option.value;
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => setDraft({ ...draft, type: option.value })}
-                        className={`group relative flex min-h-[102px] items-center gap-4 overflow-hidden rounded-2xl border p-4 text-left transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500/10 ${
-                          selected
-                            ? 'border-blue-500 bg-blue-50/70 shadow-[0_8px_24px_-12px_rgba(37,99,235,.45)]'
-                            : 'border-slate-200 bg-white hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg hover:shadow-slate-200/50'
-                        } ${index === 0 ? 'sm:col-span-2' : ''}`}
-                      >
-                        <span
-                          className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition ${
-                            selected
-                              ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                              : 'bg-slate-100 text-slate-500 group-hover:bg-slate-900 group-hover:text-white'
-                          }`}
-                        >
-                          {option.icon}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-sm font-bold text-slate-900">
-                            {option.label}
-                          </span>
-                          <span className="mt-1 block text-xs leading-5 text-slate-500">
-                            {option.description}
-                          </span>
-                        </span>
-                        <span
-                          className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${
-                            selected
-                              ? 'border-blue-600 bg-blue-600 text-white'
-                              : 'border-slate-300 text-transparent'
-                          }`}
-                        >
-                          {icons.check}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {step === 2 && (
-              <div className="space-y-7">
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <SelectField
-                    label="Filial"
-                    value={draft.branch}
-                    onChange={(branch) => setDraft({ ...draft, branch })}
-                  >
-                    <option>Goiânia — Matriz</option>
-                    <option>Anápolis — Filial</option>
-                  </SelectField>
-                  <SelectField
-                    label="Depósito"
-                    value={draft.warehouse}
-                    onChange={(warehouse) => setDraft({ ...draft, warehouse })}
-                  >
-                    <option>Depósito Central</option>
-                    <option>Loja / Pronta-entrega</option>
-                    <option>Quarentena</option>
-                  </SelectField>
-                  {draft.type === 'CATEGORY' && (
-                    <SelectField
-                      label="Categoria"
-                      value={draft.category}
-                      onChange={(category) => setDraft({ ...draft, category })}
-                    >
-                      <option value="">Selecione uma categoria</option>
-                      <option>Sementes</option>
-                      <option>Fertilizantes</option>
-                      <option>Defensivos</option>
-                    </SelectField>
+          <ol className="mt-10 space-y-1">
+            {[
+              ['Tipo de inventário', 'Defina o universo da contagem'],
+              ['Operação', 'Escolha local e segurança'],
+              ['Revisão', 'Confira antes de começar'],
+            ].map(([label, description], index) => {
+              const number = index + 1;
+              const active = step === number;
+              const done = step > number;
+              return (
+                <li key={label} className="relative flex gap-4 pb-7 last:pb-0">
+                  {index < 2 && (
+                    <span className="absolute left-[15px] top-9 h-[calc(100%-32px)] w-px bg-white/10" />
                   )}
-                  <SelectField
-                    label="Responsável"
-                    value={draft.responsible}
-                    onChange={(responsible) => setDraft({ ...draft, responsible })}
+                  <span
+                    className={`relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold transition ${
+                      active
+                        ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                        : done
+                          ? 'bg-emerald-400 text-slate-950 dark:text-slate-100'
+                          : 'bg-white/5 text-slate-500 ring-1 ring-white/10 dark:text-slate-400'
+                    }`}
                   >
-                    <option>Marina Alves</option>
-                    <option>Carlos Henrique</option>
-                    <option>Equipe de conferência</option>
-                  </SelectField>
-                </div>
-
-                <fieldset>
-                  <legend className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
-                    Movimentações durante a contagem
-                  </legend>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {[
-                      {
-                        value: 'FREEZE' as const,
-                        title: 'Congelar estoque',
-                        copy: 'Bloqueia entradas e saídas até a conclusão.',
-                        badge: 'Mais seguro',
-                      },
-                      {
-                        value: 'SNAPSHOT' as const,
-                        title: 'Permitir e conciliar',
-                        copy: 'Registra movimentos para compensar na revisão.',
-                        badge: 'Operação contínua',
-                      },
-                    ].map((policy) => (
-                      <button
-                        key={policy.value}
-                        type="button"
-                        onClick={() => setDraft({ ...draft, policy: policy.value })}
-                        className={`rounded-2xl border p-4 text-left transition focus:outline-none focus:ring-4 focus:ring-blue-500/10 ${
-                          draft.policy === policy.value
-                            ? 'border-blue-500 bg-blue-50/60'
-                            : 'border-slate-200 hover:border-slate-300'
-                        }`}
-                      >
-                        <span className="flex items-center justify-between gap-3">
-                          <span className="text-sm font-bold text-slate-900">{policy.title}</span>
-                          <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
-                            {policy.badge}
-                          </span>
-                        </span>
-                        <span className="mt-2 block text-xs leading-5 text-slate-500">
-                          {policy.copy}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </fieldset>
-
-                <label className="block">
-                  <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
-                    Observação{' '}
-                    <span className="font-medium normal-case tracking-normal text-slate-400">
-                      (opcional)
+                    {done ? icons.check : number}
+                  </span>
+                  <span>
+                    <span
+                      className={`block text-sm font-semibold ${active ? 'text-white' : 'text-slate-400'}`}
+                    >
+                      {label}
+                    </span>
+                    <span className="mt-0.5 block text-xs leading-5 text-slate-500 dark:text-slate-400">
+                      {description}
                     </span>
                   </span>
-                  <textarea
-                    rows={3}
-                    value={draft.notes}
-                    onChange={(event) => setDraft({ ...draft, notes: event.target.value })}
-                    placeholder="Ex.: priorizar o corredor B e produtos com validade próxima"
-                    className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-                  />
-                </label>
-              </div>
-            )}
+                </li>
+              );
+            })}
+          </ol>
 
-            {step === 3 && (
-              <div>
-                <div className="relative overflow-hidden rounded-3xl bg-slate-950 p-6 text-white sm:p-7">
-                  <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-blue-600/30 blur-3xl" />
-                  <div className="relative">
-                    <div className="flex items-start justify-between gap-4">
-                      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500 text-white shadow-lg shadow-blue-500/25">
-                        {selectedType.icon}
+          <div className="mt-auto rounded-2xl border border-white/10 bg-white/[0.06] p-4">
+            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-300">
+              {icons.shield} Rastro de auditoria ativo
+            </div>
+            <p className="mt-2 text-xs leading-5 text-slate-400">
+              Responsável, horário e cada ajuste ficam registrados permanentemente.
+            </p>
+          </div>
+        </div>
+      </aside>
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="flex items-start justify-between border-b border-slate-100 px-6 py-5 sm:px-8">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
+              Etapa {step} de 3
+            </p>
+            <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl dark:text-slate-100">
+              {step === 1 && 'Como você quer contar?'}
+              {step === 2 && 'Configure a operação'}
+              {step === 3 && 'Tudo pronto para começar'}
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={requestClose}
+            aria-label="Fechar modal"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-800 focus:outline-none focus:ring-4 focus:ring-blue-500/15"
+          >
+            {icons.close}
+          </button>
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 sm:px-8 sm:py-7">
+          {step === 1 && (
+            <div>
+              <p className="mb-5 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+                Escolha o formato que melhor representa a conferência de hoje. Você poderá refinar o
+                escopo na próxima etapa.
+              </p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {TYPE_OPTIONS.map((option, index) => {
+                  const selected = draft.type === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setDraft({ ...draft, type: option.value })}
+                      className={`group relative flex min-h-[102px] items-center gap-4 overflow-hidden rounded-2xl border p-4 text-left transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500/10 ${
+                        selected
+                          ? 'border-blue-500 bg-blue-50/70 shadow-[0_8px_24px_-12px_rgba(37,99,235,.45)]'
+                          : 'border-slate-200 bg-white hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg hover:shadow-slate-200/50 dark:border-slate-700 dark:bg-slate-900'
+                      } ${index === 0 ? 'sm:col-span-2' : ''}`}
+                    >
+                      <span
+                        className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition ${
+                          selected
+                            ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                            : 'bg-slate-100 text-slate-500 group-hover:bg-slate-900 group-hover:text-white dark:bg-slate-800 dark:text-slate-400'
+                        }`}
+                      >
+                        {option.icon}
                       </span>
-                      <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-300">
-                        Pronto para abrir
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-bold text-slate-900 dark:text-slate-100">
+                          {option.label}
+                        </span>
+                        <span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">
+                          {option.description}
+                        </span>
                       </span>
-                    </div>
-                    <h3 className="mt-5 text-2xl font-semibold">
-                      Inventário {selectedType.label.toLowerCase()}
-                    </h3>
-                    <p className="mt-1 text-sm text-slate-400">
-                      {draft.branch} <span className="px-1 text-slate-600">/</span>{' '}
-                      {draft.warehouse}
-                    </p>
-                    <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-white/10 sm:grid-cols-3">
-                      {[
-                        ['Responsável', draft.responsible],
-                        ['Movimentações', draft.policy === 'FREEZE' ? 'Congeladas' : 'Conciliadas'],
-                        ['Início', 'Agora'],
-                      ].map(([label, value]) => (
-                        <div
-                          key={label}
-                          className="bg-white/[0.06] p-4 last:col-span-2 sm:last:col-span-1"
-                        >
-                          <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
-                            {label}
-                          </span>
-                          <span className="mt-1.5 block truncate text-sm font-semibold text-slate-100">
-                            {value}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
+                      <span
+                        className={`flex h-5 w-5 items-center justify-center rounded-full border transition ${
+                          selected
+                            ? 'border-blue-600 bg-blue-600 text-white'
+                            : 'border-slate-300 text-transparent'
+                        }`}
+                      >
+                        {icons.check}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-7">
+              <div className="grid gap-5 sm:grid-cols-2">
+                <SelectField
+                  label="Filial"
+                  value={draft.branch}
+                  onChange={(branch) => setDraft({ ...draft, branch })}
+                >
+                  <option>Goiânia — Matriz</option>
+                  <option>Anápolis — Filial</option>
+                </SelectField>
+                <SelectField
+                  label="Depósito"
+                  value={draft.warehouse}
+                  onChange={(warehouse) => setDraft({ ...draft, warehouse })}
+                >
+                  <option>Depósito Central</option>
+                  <option>Loja / Pronta-entrega</option>
+                  <option>Quarentena</option>
+                </SelectField>
+                {draft.type === 'CATEGORY' && (
+                  <SelectField
+                    label="Categoria"
+                    value={draft.category}
+                    onChange={(category) => setDraft({ ...draft, category })}
+                  >
+                    <option value="">Selecione uma categoria</option>
+                    <option>Sementes</option>
+                    <option>Fertilizantes</option>
+                    <option>Defensivos</option>
+                  </SelectField>
+                )}
+                <SelectField
+                  label="Responsável"
+                  value={draft.responsible}
+                  onChange={(responsible) => setDraft({ ...draft, responsible })}
+                >
+                  <option>Marina Alves</option>
+                  <option>Carlos Henrique</option>
+                  <option>Equipe de conferência</option>
+                </SelectField>
+              </div>
+
+              <fieldset>
+                <legend className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                  Movimentações durante a contagem
+                </legend>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {[
+                    {
+                      value: 'FREEZE' as const,
+                      title: 'Congelar estoque',
+                      copy: 'Bloqueia entradas e saídas até a conclusão.',
+                      badge: 'Mais seguro',
+                    },
+                    {
+                      value: 'SNAPSHOT' as const,
+                      title: 'Permitir e conciliar',
+                      copy: 'Registra movimentos para compensar na revisão.',
+                      badge: 'Operação contínua',
+                    },
+                  ].map((policy) => (
+                    <button
+                      key={policy.value}
+                      type="button"
+                      onClick={() => setDraft({ ...draft, policy: policy.value })}
+                      className={`rounded-2xl border p-4 text-left transition focus:outline-none focus:ring-4 focus:ring-blue-500/10 ${
+                        draft.policy === policy.value
+                          ? 'border-blue-500 bg-blue-50/60'
+                          : 'border-slate-200 hover:border-slate-300 dark:border-slate-700'
+                      }`}
+                    >
+                      <span className="flex items-center justify-between gap-3">
+                        <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                          {policy.title}
+                        </span>
+                        <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                          {policy.badge}
+                        </span>
+                      </span>
+                      <span className="mt-2 block text-xs leading-5 text-slate-500 dark:text-slate-400">
+                        {policy.copy}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </fieldset>
+
+              <label className="block">
+                <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                  Observação{' '}
+                  <span className="font-medium normal-case tracking-normal text-slate-400">
+                    (opcional)
+                  </span>
+                </span>
+                <textarea
+                  rows={3}
+                  value={draft.notes}
+                  onChange={(event) => setDraft({ ...draft, notes: event.target.value })}
+                  placeholder="Ex.: priorizar o corredor B e produtos com validade próxima"
+                  className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                />
+              </label>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div>
+              <div className="relative overflow-hidden rounded-3xl bg-slate-950 p-6 text-white sm:p-7">
+                <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-blue-600/30 blur-3xl" />
+                <div className="relative">
+                  <div className="flex items-start justify-between gap-4">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500 text-white shadow-lg shadow-blue-500/25">
+                      {selectedType.icon}
+                    </span>
+                    <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-300">
+                      Pronto para abrir
+                    </span>
+                  </div>
+                  <h3 className="mt-5 text-2xl font-semibold">
+                    Inventário {selectedType.label.toLowerCase()}
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-400">
+                    {draft.branch}{' '}
+                    <span className="px-1 text-slate-600 dark:text-slate-300">/</span>{' '}
+                    {draft.warehouse}
+                  </p>
+                  <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-white/10 sm:grid-cols-3">
+                    {[
+                      ['Responsável', draft.responsible],
+                      ['Movimentações', draft.policy === 'FREEZE' ? 'Congeladas' : 'Conciliadas'],
+                      ['Início', 'Agora'],
+                    ].map(([label, value]) => (
+                      <div
+                        key={label}
+                        className="bg-white/[0.06] p-4 last:col-span-2 sm:last:col-span-1"
+                      >
+                        <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                          {label}
+                        </span>
+                        <span className="mt-1.5 block truncate text-sm font-semibold text-slate-100">
+                          {value}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-
-                <div className="mt-5 flex gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-blue-900">
-                  <span className="mt-0.5 shrink-0 text-blue-600">{icons.spark}</span>
-                  <p className="text-xs leading-5">
-                    <strong className="font-bold">Contagem cega ativada.</strong> A quantidade do
-                    sistema ficará oculta para o conferente e aparecerá somente na revisão das
-                    divergências.
-                  </p>
-                </div>
               </div>
-            )}
-          </div>
 
-          <footer className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/70 px-6 py-4 sm:px-8">
-            <button
-              type="button"
-              onClick={() => (step === 1 ? onClose() : setStep(step - 1))}
-              className="h-11 rounded-xl px-4 text-sm font-bold text-slate-600 transition hover:bg-slate-200/70 hover:text-slate-950 focus:outline-none focus:ring-4 focus:ring-slate-400/15"
-            >
-              {step === 1 ? 'Cancelar' : 'Voltar'}
-            </button>
-            <button
-              type="button"
-              disabled={step === 2 && draft.type === 'CATEGORY' && !draft.category}
-              onClick={() => (step < 3 ? setStep(step + 1) : onCreate(draft))}
-              className="flex h-11 items-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 disabled:pointer-events-none disabled:opacity-40"
-            >
-              {step === 3 ? 'Abrir inventário' : 'Continuar'} {step < 3 && icons.arrow}
-            </button>
-          </footer>
+              <div className="mt-5 flex gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-blue-900">
+                <span className="mt-0.5 shrink-0 text-blue-600">{icons.spark}</span>
+                <p className="text-xs leading-5">
+                  <strong className="font-bold">Contagem cega ativada.</strong> A quantidade do
+                  sistema ficará oculta para o conferente e aparecerá somente na revisão das
+                  divergências.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
-      </section>
+
+        <footer className="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/70 px-6 py-4 sm:px-8">
+          <button
+            type="button"
+            onClick={() => (step === 1 ? requestClose() : setStep(step - 1))}
+            className="h-11 rounded-xl px-4 text-sm font-bold text-slate-600 transition hover:bg-slate-200/70 hover:text-slate-950 focus:outline-none focus:ring-4 focus:ring-slate-400/15 dark:text-slate-300"
+          >
+            {step === 1 ? 'Cancelar' : 'Voltar'}
+          </button>
+          <button
+            type="button"
+            disabled={step === 2 && draft.type === 'CATEGORY' && !draft.category}
+            onClick={() => (step < 3 ? setStep(step + 1) : (onCreate(draft), requestClose()))}
+            className="flex h-11 items-center gap-2 rounded-xl bg-blue-600 px-5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition hover:-translate-y-0.5 hover:bg-blue-700 hover:shadow-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 disabled:pointer-events-none disabled:opacity-40"
+          >
+            {step === 3 ? 'Abrir inventário' : 'Continuar'} {step < 3 && icons.arrow}
+          </button>
+        </footer>
+      </div>
     </div>
   );
 }
@@ -583,7 +588,7 @@ export function InventoryScreen() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#f6f8fb] text-slate-950">
+    <main className="relative min-h-screen overflow-hidden bg-[#f6f8fb] text-slate-950 dark:bg-slate-950 dark:text-slate-100">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-blue-50/90 to-transparent" />
       <div className="relative mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">
         <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -591,10 +596,10 @@ export function InventoryScreen() {
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
               <span className="h-1.5 w-1.5 rounded-full bg-blue-600" /> Operações de estoque
             </div>
-            <h1 className="mt-3 text-3xl font-bold tracking-[-0.035em] text-slate-950 sm:text-4xl">
+            <h1 className="mt-3 text-3xl font-bold tracking-[-0.035em] text-slate-950 sm:text-4xl dark:text-slate-100">
               Inventário
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
               Conte, concilie e ajuste seu estoque com rastreabilidade de ponta a ponta.
             </p>
           </div>
@@ -645,8 +650,10 @@ export function InventoryScreen() {
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-slate-500">{metric.label}</p>
-                  <strong className="mt-2 block text-2xl font-bold tracking-tight text-slate-950">
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    {metric.label}
+                  </p>
+                  <strong className="mt-2 block text-2xl font-bold tracking-tight text-slate-950 dark:text-slate-100">
                     {metric.value}
                   </strong>
                 </div>
@@ -661,7 +668,7 @@ export function InventoryScreen() {
           ))}
         </section>
 
-        <section className="mt-5 overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_50px_-30px_rgba(15,23,42,.28)]">
+        <section className="mt-5 overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_50px_-30px_rgba(15,23,42,.28)] dark:bg-slate-900">
           <div className="flex flex-col gap-5 border-b border-slate-100 p-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
               <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white">
@@ -670,39 +677,43 @@ export function InventoryScreen() {
               </span>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="font-bold text-slate-950">Inventário rotativo · Setembro</h2>
+                  <h2 className="font-bold text-slate-950 dark:text-slate-100">
+                    Inventário rotativo · Setembro
+                  </h2>
                   <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
                     Em contagem
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                   Depósito Central · iniciado hoje às 08:42 por Marina Alves
                 </p>
               </div>
             </div>
             <button
               type="button"
-              className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+              className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:text-slate-300"
             >
               Continuar contagem {icons.arrow}
             </button>
           </div>
           <div className="px-6 py-5">
-            <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
               <span>Progresso da conferência</span>
-              <span className="text-slate-900">1.002 / 1.284</span>
+              <span className="text-slate-900 dark:text-slate-100">1.002 / 1.284</span>
             </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
               <div className="h-full w-[78%] rounded-full bg-gradient-to-r from-blue-600 to-cyan-400 shadow-sm" />
             </div>
           </div>
         </section>
 
-        <section className="mt-5 overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_50px_-30px_rgba(15,23,42,.22)]">
+        <section className="mt-5 overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_50px_-30px_rgba(15,23,42,.22)] dark:bg-slate-900">
           <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
             <div>
-              <h2 className="font-bold text-slate-950">Divergências recentes</h2>
-              <p className="mt-1 text-xs text-slate-500">
+              <h2 className="font-bold text-slate-950 dark:text-slate-100">
+                Divergências recentes
+              </h2>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                 Comparativo entre saldo do sistema e quantidade contada
               </p>
             </div>
@@ -728,15 +739,17 @@ export function InventoryScreen() {
                   return (
                     <tr key={row.sku} className="text-sm transition hover:bg-slate-50/80">
                       <td className="px-6 py-4">
-                        <span className="block font-semibold text-slate-800">{row.product}</span>
+                        <span className="block font-semibold text-slate-800 dark:text-slate-200">
+                          {row.product}
+                        </span>
                         <span className="mt-0.5 block text-[11px] text-slate-400">
                           SKU {row.sku}
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-right font-medium text-slate-500">
+                      <td className="px-4 py-4 text-right font-medium text-slate-500 dark:text-slate-400">
                         {row.system}
                       </td>
-                      <td className="px-4 py-4 text-right font-bold text-slate-800">
+                      <td className="px-4 py-4 text-right font-bold text-slate-800 dark:text-slate-200">
                         {row.counted}
                       </td>
                       <td
@@ -769,7 +782,7 @@ export function InventoryScreen() {
           role="status"
           className="fixed bottom-6 right-6 z-40 flex max-w-sm items-center gap-3 rounded-2xl bg-slate-950 px-5 py-4 text-sm font-semibold text-white shadow-2xl"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-400 text-slate-950">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-400 text-slate-950 dark:text-slate-100">
             {icons.check}
           </span>
           Inventário aberto. A equipe já pode iniciar a leitura.
