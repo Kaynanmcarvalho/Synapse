@@ -6,7 +6,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import type { AppCheck } from '@synapse/firebase/admin';
+import { isEmulatorMode, type AppCheck } from '@synapse/firebase/admin';
 import { IS_PUBLIC_KEY } from '../../../common/decorators/public.decorator';
 import { FIREBASE_APP_CHECK } from '../firebase.tokens';
 import { SKIP_APP_CHECK_KEY } from '../iam.decorators';
@@ -16,9 +16,14 @@ import type { AuthenticatedRequest } from '../iam.types';
 export class AppCheckGuard implements CanActivate {
   /** App Check nao tem emulador oficial verificavel pelo Admin SDK, entao nao da
    *  para exigi-lo em desenvolvimento local sem um site key real. Em producao o
-   *  enforcement e sempre obrigatorio, ignorando a flag. */
+   *  enforcement e sempre obrigatorio, ignorando a flag e o emulador.
+   *
+   *  Rodando contra o Firebase Emulator Suite (o `pnpm dev`), nao existe token
+   *  de App Check que o Admin SDK consiga verificar: exigir ali so bloquearia
+   *  toda requisicao do web-erp local. */
   static isEnforced(): boolean {
     if (process.env['NODE_ENV'] === 'production') return true;
+    if (isEmulatorMode()) return false;
     return process.env['APP_CHECK_ENFORCEMENT'] !== 'false';
   }
 

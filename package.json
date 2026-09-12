@@ -10,7 +10,8 @@
     "pnpm": ">=10"
   },
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "firebase emulators:exec --project demo-synapse --only auth,firestore --import=.firebase/emulators --export-on-exit=.firebase/emulators \"node scripts/seed-dev.mjs && turbo run dev\"",
+    "dev:cloud": "turbo run dev",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint -- --fix",

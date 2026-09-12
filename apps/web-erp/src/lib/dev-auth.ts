@@ -3,8 +3,9 @@ import { connectAuthEmulator, getAuth, signInWithEmailAndPassword, type Auth } f
 
 /** Bootstrap de dev compartilhado entre as telas que ainda nao dependem do
  *  AuthService de producao (MFA, App Check real) — fala direto com o
- *  emulador do Firebase Auth (127.0.0.1:9099). O backend ja aceita isso fora
- *  de producao (APP_CHECK_ENFORCEMENT=false). */
+ *  emulador do Firebase Auth (127.0.0.1:9099). A API, rodando contra o mesmo
+ *  emulador (`pnpm dev`), dispensa o App Check. O usuario de teste e criado
+ *  por scripts/seed-dev.mjs. */
 const app = initializeApp({ apiKey: 'demo-key', projectId: 'demo-synapse', appId: 'demo-app' });
 let auth: Auth | null = null;
 let sessionId: string | null = null;

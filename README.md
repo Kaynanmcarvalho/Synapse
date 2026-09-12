@@ -23,23 +23,56 @@ packages/
 docs/                 arquitetura, ADRs e convencoes
 ```
 
-## Comecando
+## Começando
+
+Requisitos: Node 24 (`.nvmrc`), pnpm 10 e Java 11 ou mais novo — o emulador do
+Firestore roda na JVM.
 
 ```bash
-pnpm install          # Node >= 20.11, pnpm >= 10
-cp .env.example .env  # preencha as chaves
-pnpm dev              # sobe api e apps web em paralelo
+corepack enable pnpm   # uma vez por máquina; no Windows sem admin:
+                       # corepack enable --install-directory "$env:APPDATA/npm" pnpm
+pnpm install
+pnpm dev               # emuladores do Firebase + usuário de teste + api e apps web
 ```
 
-| Script           | O que faz                                   |
-| ---------------- | ------------------------------------------- |
-| `pnpm dev`       | tudo em modo watch                          |
-| `pnpm build`     | build de todos os pacotes, na ordem correta |
-| `pnpm lint`      | ESLint em todo o monorepo                   |
-| `pnpm typecheck` | `tsc --noEmit` em todo o monorepo           |
-| `pnpm test`      | testes de todos os pacotes                  |
-| `pnpm format`    | Prettier em tudo                            |
-| `pnpm check`     | lint + typecheck + build, o que o CI roda   |
+`npm run dev` faz o mesmo. O turbo precisa do pnpm instalado, mesmo quando o comando
+é chamado pelo npm.
+
+O `pnpm dev` não precisa de `.env` nem de conta no Firebase. Ele roda contra o
+Firebase Emulator Suite (projeto `demo-synapse`) e, a cada início, garante o usuário
+que as telas do web-erp já trazem preenchido:
+
+| Campo   | Valor                               |
+| ------- | ----------------------------------- |
+| E-mail  | `teste.rbac@synapse.dev`            |
+| Senha   | `Senha123!`                         |
+| Empresa | `tenant-dev`, cargo `ADMIN_EMPRESA` |
+
+| Serviço         | Endereço                       |
+| --------------- | ------------------------------ |
+| API             | <http://localhost:3333/api/v1> |
+| web-erp         | <http://localhost:5173>        |
+| web-admin       | <http://localhost:5174>        |
+| web-vendedor    | <http://localhost:5175>        |
+| Auth emulador   | 127.0.0.1:9099                 |
+| Firestore emul. | 127.0.0.1:8080                 |
+
+Os dados do emulador ficam em `.firebase/emulators` (fora do git) e voltam na
+próxima execução. Para começar do zero, apague essa pasta com o `pnpm dev` parado.
+
+Contra um projeto Firebase real: copie `.env.example` para `.env`, preencha as
+credenciais e use `pnpm dev:cloud`.
+
+| Script           | O que faz                                               |
+| ---------------- | ------------------------------------------------------- |
+| `pnpm dev`       | emuladores + usuário de teste + tudo em modo watch      |
+| `pnpm dev:cloud` | tudo em modo watch contra o Firebase real, com o `.env` |
+| `pnpm build`     | build de todos os pacotes, na ordem correta             |
+| `pnpm lint`      | ESLint em todo o monorepo                               |
+| `pnpm typecheck` | `tsc --noEmit` em todo o monorepo                       |
+| `pnpm test`      | testes de todos os pacotes                              |
+| `pnpm format`    | Prettier em tudo                                        |
+| `pnpm check`     | lint + typecheck + build, o que o CI roda               |
 
 Para rodar um workspace so: `pnpm --filter @synapse/api dev`.
 

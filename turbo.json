@@ -11,7 +11,14 @@
     "dev": {
       "cache": false,
       "persistent": true,
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "passThroughEnv": [
+        "FIRESTORE_EMULATOR_HOST",
+        "FIREBASE_AUTH_EMULATOR_HOST",
+        "GCLOUD_PROJECT",
+        "FIREBASE_PROJECT_ID",
+        "APP_CHECK_ENFORCEMENT"
+      ]
     },
     "lint": {
       "dependsOn": ["^build"],
