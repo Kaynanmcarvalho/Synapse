@@ -1,5 +1,11 @@
 import { initializeApp } from 'firebase/app';
-import { connectAuthEmulator, getAuth, signInWithEmailAndPassword, type Auth } from 'firebase/auth';
+import {
+  connectAuthEmulator,
+  getAuth,
+  signInWithEmailAndPassword,
+  signOut,
+  type Auth,
+} from 'firebase/auth';
 
 /** Bootstrap de dev compartilhado entre as telas que ainda nao dependem do
  *  AuthService de producao (MFA, App Check real) — fala direto com o
@@ -43,6 +49,12 @@ export const devSignIn = async (email: string, password: string): Promise<void> 
   });
   const session = (await response.json()) as { id?: string };
   sessionId = session.id ?? null;
+};
+
+/** "Sair" do menu: encerra a sessao do Firebase e esquece a sessao de dispositivo. */
+export const devSignOut = async (): Promise<void> => {
+  sessionId = null;
+  await signOut(getDevAuth());
 };
 
 export const apiRequest = async <T>(path: string, init?: RequestInit): Promise<T> => {

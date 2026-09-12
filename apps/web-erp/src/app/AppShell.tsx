@@ -1,121 +1,49 @@
 /* eslint-disable max-lines-per-function */
-import {
-  ChevronDown,
-  CircleHelp,
-  Command,
-  Menu,
-  Moon,
-  Search,
-  Settings,
-  Sparkles,
-  Sun,
-  X,
-} from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useTenantExperience, type FeatureKey } from './useTenantExperience';
+import { CircleHelp, Command, Menu, Moon, Search, Sparkles, Sun } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useTenantExperience } from './useTenantExperience';
 import { NotificationCenter } from '../features/notifications/NotificationCenter';
 import { CommandPalette } from '../features/search/CommandPalette';
 import { ShortcutsModal } from '../features/search/ShortcutsModal';
+import { devSignOut } from '../lib/dev-auth';
 import { applyTheme, getStoredTheme, type Theme } from './theme';
-import { NAVIGATION } from './navigation';
+import { MENUS } from './menu/menu.data';
+import { filtrarPorFeature } from './menu/menu.utils';
+import { MenuBar } from './menu/MenuBar';
+import { MobileMenu } from './menu/MobileMenu';
+import { useMenuShortcuts } from './menu/useMenuShortcuts';
+import { ROTAS } from './rotas';
 
-function SidebarContent({
-  closeMobile,
-  enabled,
+const BOTAO_DE_ICONE =
+  'flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white';
+
+function Marca({
   systemName,
   logoUrl,
 }: {
-  readonly closeMobile?: () => void;
-  readonly enabled: (feature?: FeatureKey) => boolean;
   readonly systemName: string;
   readonly logoUrl: string | null;
 }) {
   return (
-    <>
-      <div className="flex h-20 items-center gap-3 px-6">
-        <span className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-[14px] bg-slate-950 text-white shadow-lg shadow-slate-950/20 dark:bg-white dark:text-slate-950">
-          {logoUrl ? (
-            <img alt="" className="h-full w-full object-cover" src={logoUrl} />
-          ) : (
-            <Command size={21} strokeWidth={2.2} />
-          )}
-          <span className="absolute inset-x-1 bottom-0 h-px bg-gradient-to-r from-transparent via-blue-400 to-transparent" />
-        </span>
-        <span>
-          <strong className="block text-[15px] font-extrabold tracking-[-0.02em] text-slate-950 dark:text-white">
-            {systemName}
-          </strong>
-          <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
-            Business OS
-          </span>
-        </span>
-      </div>
-
-      <nav className="flex-1 overflow-y-auto px-3 pb-6" aria-label="Navegação principal">
-        {NAVIGATION.map((group) => (
-          <div key={group.title} className="mb-7">
-            <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">
-              {group.title}
-            </p>
-            <div className="space-y-1">
-              {group.items
-                .filter((item) => enabled(item.feature))
-                .map((item) => {
-                  const ItemIcon = item.icon;
-                  return (
-                    <NavLink
-                      key={item.path}
-                      to={item.path}
-                      end={item.path === '/estoque'}
-                      onClick={closeMobile}
-                      className={({ isActive }) =>
-                        `group flex h-11 items-center gap-3 rounded-xl px-3 text-[13px] font-semibold transition-all ${
-                          isActive
-                            ? 'bg-slate-950 text-white shadow-lg shadow-slate-950/10 dark:bg-white dark:text-slate-950'
-                            : 'text-slate-500 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white'
-                        }`
-                      }
-                    >
-                      {({ isActive }) => (
-                        <>
-                          <ItemIcon size={18} strokeWidth={isActive ? 2.2 : 1.8} />
-                          <span className="flex-1">{item.label}</span>
-                          {item.badge && (
-                            <span
-                              className={`rounded-md px-1.5 py-0.5 text-[9px] font-bold ${isActive ? 'bg-white/10 text-slate-300' : 'bg-slate-100 text-slate-400 dark:bg-slate-800'}`}
-                            >
-                              {item.badge}
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </NavLink>
-                  );
-                })}
-            </div>
-          </div>
-        ))}
-      </nav>
-
-      <div className="border-t border-slate-100 p-3 dark:border-slate-800">
-        <button className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition hover:bg-slate-100 dark:hover:bg-slate-800">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-xs font-bold text-white">
-            MA
-          </span>
-          <span className="min-w-0 flex-1">
-            <strong className="block truncate text-xs font-bold text-slate-800 dark:text-slate-100">
-              Marina Alves
-            </strong>
-            <span className="block truncate text-[10px] text-slate-400">Administradora</span>
-          </span>
-          <ChevronDown size={15} className="text-slate-400" />
-        </button>
-      </div>
-    </>
+    <Link to={ROTAS.visaoGeral} className="flex shrink-0 items-center gap-2.5">
+      <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-[10px] bg-slate-950 text-white shadow-md shadow-slate-950/20 dark:bg-white dark:text-slate-950">
+        {logoUrl ? (
+          <img alt="" className="h-full w-full object-cover" src={logoUrl} />
+        ) : (
+          <Command size={17} strokeWidth={2.2} />
+        )}
+      </span>
+      <strong className="text-[15px] font-extrabold tracking-[-0.02em] text-slate-950 dark:text-white">
+        {systemName}
+      </strong>
+    </Link>
   );
 }
 
+/** Casca da retaguarda. A navegacao segue a barra de menus do Syndata — mesmos
+ *  menus, mesmas opcoes, mesma ordem — para quem migra achar tudo onde ja
+ *  procurava; o visual e o do Synapse. */
 export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -124,7 +52,13 @@ export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const experience = useTenantExperience();
-  const enabled = (feature?: FeatureKey) => !feature || experience.flags[feature];
+
+  // Opcao de modulo desligado para o tenant nao aparece — nem no menu, nem no atalho.
+  const menus = useMemo(
+    () => filtrarPorFeature(MENUS, (feature) => !feature || experience.flags[feature]),
+    [experience.flags],
+  );
+  useMenuShortcuts(menus);
 
   useEffect(() => setMobileOpen(false), [location.pathname]);
 
@@ -145,11 +79,11 @@ export function AppShell() {
       }
       if (event.altKey && !event.ctrlKey && !event.metaKey) {
         const paths: Record<string, string> = {
-          '1': '/visao-geral',
-          '2': '/vendas/pdv',
-          '3': '/estoque',
-          '4': '/compras',
-          '5': '/financeiro/boletos',
+          '1': ROTAS.visaoGeral,
+          '2': ROTAS.pdv,
+          '3': ROTAS.estoque,
+          '4': ROTAS.compras,
+          '5': ROTAS.boletos,
         };
         const path = paths[event.key];
         if (path) {
@@ -157,7 +91,6 @@ export function AppShell() {
           navigate(path);
         }
       }
-
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
         setPaletteOpen(true);
@@ -173,82 +106,62 @@ export function AppShell() {
     applyTheme(next);
   };
 
+  const sair = async () => {
+    try {
+      await devSignOut();
+    } finally {
+      // Recarrega de proposito: as telas guardam o estado de login em memoria.
+      window.location.assign(ROTAS.visaoGeral);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#f6f7f9] text-slate-950 dark:bg-slate-950 dark:text-slate-100">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[244px] flex-col border-r border-slate-200/80 bg-white lg:flex dark:border-slate-800 dark:bg-slate-900">
-        <SidebarContent
-          enabled={enabled}
-          systemName={experience.branding.systemName}
-          logoUrl={experience.branding.logoUrl}
-        />
-      </aside>
-
-      {mobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button
-            type="button"
-            aria-label="Fechar menu"
-            className="absolute inset-0 bg-slate-950/35 backdrop-blur-sm"
-            onClick={() => setMobileOpen(false)}
-          />
-          <aside className="relative flex h-full w-[286px] flex-col bg-white shadow-2xl dark:bg-slate-900">
-            <button
-              type="button"
-              aria-label="Fechar menu"
-              onClick={() => setMobileOpen(false)}
-              className="absolute right-4 top-5 z-10 flex h-9 w-9 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-            >
-              <X size={18} />
-            </button>
-            <SidebarContent
-              closeMobile={() => setMobileOpen(false)}
-              enabled={enabled}
-              systemName={experience.branding.systemName}
-              logoUrl={experience.branding.logoUrl}
-            />
-          </aside>
-        </div>
-      )}
-
-      <div className="lg:pl-[244px]">
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200/70 bg-white/85 px-4 backdrop-blur-xl sm:px-6 lg:px-8 dark:border-slate-800 dark:bg-slate-950/85">
+      <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/90">
+        <div className="flex h-14 items-center gap-3 px-4 sm:px-6 lg:px-8">
           <button
             type="button"
             aria-label="Abrir menu"
             onClick={() => setMobileOpen(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-600 hover:bg-slate-100 lg:hidden dark:text-slate-300 dark:hover:bg-slate-800"
+            className={`${BOTAO_DE_ICONE} lg:hidden`}
           >
-            <Menu size={20} />
+            <Menu size={19} />
           </button>
+          <Marca
+            systemName={experience.branding.systemName}
+            logoUrl={experience.branding.logoUrl}
+          />
+
           <button
             type="button"
             onClick={() => setPaletteOpen(true)}
-            className="relative hidden max-w-md flex-1 text-left sm:block"
+            className="relative mx-auto hidden w-full max-w-lg text-left sm:block"
           >
             <Search
-              size={16}
+              size={15}
               className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
             />
-            <span className="flex h-10 w-full items-center rounded-xl border border-transparent bg-slate-100/80 pl-10 pr-20 text-xs font-medium text-slate-400 transition hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-500 dark:hover:bg-slate-800">
-              Buscar produto, pedido ou cliente...
+            <span className="flex h-9 w-full items-center rounded-xl border border-transparent bg-slate-100/80 pl-10 pr-16 text-[13px] text-slate-400 transition hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-500 dark:hover:bg-slate-800">
+              O que você precisa?
             </span>
-            <span className="absolute right-3 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] font-semibold text-slate-400 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <span className="absolute right-2.5 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] font-semibold text-slate-400 shadow-sm dark:border-slate-700 dark:bg-slate-800">
               <Command size={9} /> K
             </span>
           </button>
-          <button
-            type="button"
-            onClick={() => setPaletteOpen(true)}
-            aria-label="Abrir busca global"
-            className="rounded-lg p-2 sm:hidden"
-          >
-            <Search size={20} />
-          </button>
-          <div className="ml-auto flex items-center gap-1">
+
+          <div className="ml-auto flex items-center gap-1 sm:ml-0">
+            <button
+              type="button"
+              onClick={() => setPaletteOpen(true)}
+              aria-label="Abrir busca global"
+              className={`${BOTAO_DE_ICONE} sm:hidden`}
+            >
+              <Search size={18} />
+            </button>
             <button
               type="button"
               onClick={() => setShortcutsOpen(true)}
-              className="hidden h-10 items-center gap-2 rounded-xl px-3 text-xs font-semibold text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 sm:flex dark:text-slate-400 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
+              className="hidden h-9 items-center gap-2 rounded-xl px-3 text-xs font-semibold text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 md:flex dark:text-slate-400 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
             >
               <Sparkles size={15} /> Atalhos
             </button>
@@ -256,7 +169,7 @@ export function AppShell() {
               type="button"
               onClick={toggleTheme}
               aria-label={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
-              className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
+              className={BOTAO_DE_ICONE}
             >
               {theme === 'dark' ? (
                 <Sun size={18} strokeWidth={1.8} />
@@ -265,20 +178,27 @@ export function AppShell() {
               )}
             </button>
             <NotificationCenter />
-            {[CircleHelp, Settings].map((ActionIcon, index) => (
-              <button
-                key={index}
-                type="button"
-                aria-label={['Ajuda', 'Configurações'][index]}
-                className="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white"
-              >
-                <ActionIcon size={18} strokeWidth={1.8} />
-              </button>
-            ))}
+            <button type="button" aria-label="Ajuda" className={`${BOTAO_DE_ICONE} hidden sm:flex`}>
+              <CircleHelp size={18} strokeWidth={1.8} />
+            </button>
           </div>
-        </header>
-        <Outlet />
-      </div>
+        </div>
+
+        {/* Os paineis do menu abrem num portal: rolar esta faixa em tela estreita nao os corta. */}
+        <div className="hidden h-11 items-center overflow-x-auto border-t border-slate-100 px-4 [scrollbar-width:none] lg:flex lg:px-6 dark:border-slate-800/80">
+          <MenuBar menus={menus} onSair={() => void sair()} />
+        </div>
+      </header>
+
+      {mobileOpen && (
+        <MobileMenu
+          menus={menus}
+          onFechar={() => setMobileOpen(false)}
+          onSair={() => void sair()}
+        />
+      )}
+
+      <Outlet />
 
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
       {shortcutsOpen && <ShortcutsModal onClose={() => setShortcutsOpen(false)} />}
