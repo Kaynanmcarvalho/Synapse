@@ -14,6 +14,19 @@ Development, staging/homologação e produção usam projetos Firebase, bancos, 
 6. verificar `/api/v1/health`, `/api/v1/openapi.json` e uma operação sintética por integração habilitada;
 7. liberar os frontends e monitorar erros, filas e webhooks.
 
+Antes do primeiro deploy fiscal, crie no Secret Manager o segredo
+`FISCAL_MASTER_KEY` com exatamente 32 bytes aleatórios codificados em base64 e
+conceda ao service account de execução do Cloud Run o papel
+`roles/secretmanager.secretAccessor`. O workflow vincula a versão `latest` à
+variável homônima da API. A chave deve permanecer estável: sua perda ou troca
+sem uma migração coordenada de recriptografia impede a leitura de certificados
+e credenciais já persistidos.
+
+Assinaturas, limites e consumo do SaaS ficam em `saasSubscriptions/{tenantId}`;
+flags e identidade visual ficam em `tenantExperiences/{tenantId}`. Ambas as
+coleções são exclusivas da API/Admin SDK e as alterações concorrentes usam
+transações do Firestore.
+
 Rollback de aplicação usa a imagem anterior. Migrations destrutivas exigem estratégia expand/contract e nunca são revertidas automaticamente. Firestore, PostgreSQL e Storage precisam de backup e teste periódico de restauração. Os RPO/RTO definitivos ainda dependem de aprovação operacional.
 
 O Android requer Android SDK 35, JDK 17+, `google-services.json` por ambiente e assinatura armazenada fora do repositório.

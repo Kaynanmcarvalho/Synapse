@@ -51,4 +51,19 @@ describe('FeatureService', () => {
       service.setBranding(root, 'enterprise', { systemName: 'Marca', theme: 'dark' }),
     ).resolves.toMatchObject({ branding: { systemName: 'Marca', theme: 'dark' } });
   });
+
+  it('bloqueia módulos quando a assinatura SaaS está suspensa', async () => {
+    const firestore = new FakeFirestore() as unknown as Firestore;
+    const subscriptions = new SaasRepository(firestore);
+    const saas = new SaasService(subscriptions);
+    const service = new FeatureService(new FeatureRepository(firestore), subscriptions);
+    await saas.create(root, {
+      tenantId: 'suspenso',
+      name: 'Tenant Suspenso',
+      document: '12345678901234',
+      plan: 'PROFESSIONAL',
+    });
+    await saas.update(root, 'suspenso', { status: 'suspended' });
+    await expect(service.assertEnabled('suspenso', 'NFE')).rejects.toThrow(/suspensa/);
+  });
 });

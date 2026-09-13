@@ -10,6 +10,20 @@ O módulo fiscal isola integrações no contrato `FiscalProvider`. O mock cobre 
 
 ## Persistência e numeração
 
+O Assistente de Configuração salva os parâmetros em
+`tenants/{tenantId}/fiscal/config` no Firestore. Certificado A1, senha, CSC e
+credenciais da Gyn Fiscal são cifrados com AES-256-GCM e persistidos em
+`serverSecrets/fiscal/items/{hash}`; as regras do Firestore negam qualquer
+acesso do cliente a essa coleção. O tenant sempre vem da sessão autenticada,
+nunca do corpo enviado pelo navegador. O `SUPER_ADMIN_SAAS` pode consultar
+outro tenant, mas a gravação exige que ele esteja operando com o tenant-alvo
+como tenant ativo.
+
+`FISCAL_MASTER_KEY` deve ser estável por ambiente. Trocar ou perder essa chave
+torna os segredos já gravados indecifráveis; faça backup/versionamento seguro no
+Secret Manager. Uma rotação exige recriptografar todos os segredos numa migração
+coordenada antes de desativar a chave anterior.
+
 Execute `apps/api/migrations/001_fiscal.sql` no PostgreSQL. A numeração deve ser reservada pelo `UPSERT ... ON CONFLICT ... DO UPDATE RETURNING` documentado na migration, dentro da mesma transação que cria o documento. Isso impede que duas instâncias emitam o mesmo número; o frontend nunca recebe autoridade para escolher a numeração.
 
 ## Gyn Fiscal

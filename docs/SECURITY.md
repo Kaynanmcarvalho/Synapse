@@ -71,16 +71,16 @@ não só teste unitário, já que o bug só aparece na camada de pipes do Nest.
 
 ## Revisão item a item das proibições do §62
 
-| Proibição                                                 | Situação                                                                                                                                                   |
-| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Não gerar número de NF-e no frontend                      | ✅ `NfeService` gera; frontend só chama a API                                                                                                              |
-| Não baixar estoque só pelo frontend                       | ✅ toda baixa passa por `InventoryService`, transacional, com idempotência                                                                                 |
-| Não tratar estoque local do vendedor como definitivo      | N/A ainda — app offline (F7) não existe                                                                                                                    |
-| Não expor secret bancário nem certificado fiscal no React | ✅ `SecretVaultService` (AES-256-GCM) guarda o segredo; `FiscalConfigService` devolve só `*SecretRef`, nunca o valor. Ver ressalva de armazenamento abaixo |
-| Não confiar em role do cliente                            | ✅ `UntrustedClaimsGuard` recusa `role`/`roles`/`permission`/`permissions` no corpo ou query                                                               |
-| Não permitir troca de tenantId pelo navegador             | ✅ mesmo guard recusa `tenantId`; o tenant real vem do membership, nunca do request                                                                        |
-| Não permitir estoque negativo sem regra explícita         | ⚠️ a regra existe (`InventoryService.change`) mas o _override_ está morto — ver Pendências                                                                 |
-| Não duplicar webhook nem pedido offline                   | ✅ padrão de `idempotencyKey` já em uso em `InventoryRepository.transact`; webhooks (F6) ainda não existem                                                 |
+| Proibição                                                 | Situação                                                                                                                                      |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Não gerar número de NF-e no frontend                      | ✅ `NfeService` gera; frontend só chama a API                                                                                                 |
+| Não baixar estoque só pelo frontend                       | ✅ toda baixa passa por `InventoryService`, transacional, com idempotência                                                                    |
+| Não tratar estoque local do vendedor como definitivo      | N/A ainda — app offline (F7) não existe                                                                                                       |
+| Não expor secret bancário nem certificado fiscal no React | ✅ `SecretVaultService` persiste o segredo cifrado com AES-256-GCM no Firestore; `FiscalConfigService` devolve só `*SecretRef`, nunca o valor |
+| Não confiar em role do cliente                            | ✅ `UntrustedClaimsGuard` recusa `role`/`roles`/`permission`/`permissions` no corpo ou query                                                  |
+| Não permitir troca de tenantId pelo navegador             | ✅ mesmo guard recusa `tenantId`; o tenant real vem do membership, nunca do request                                                           |
+| Não permitir estoque negativo sem regra explícita         | ⚠️ a regra existe (`InventoryService.change`) mas o _override_ está morto — ver Pendências                                                    |
+| Não duplicar webhook nem pedido offline                   | ✅ padrão de `idempotencyKey` já em uso em `InventoryRepository.transact`; webhooks (F6) ainda não existem                                    |
 
 ## Consultas ao Firestore
 
@@ -133,16 +133,12 @@ abstração agora seria generalizar a partir de uma amostra de um.
    por `RoleService.hasPermission(context, 'estoque.ajustar')` (ou uma
    permissão dedicada) — não mexi porque são arquivos de outro cartão em
    desenvolvimento ativo no momento desta revisão.
-3. **Cofre de segredos fiscais é só em memória.** `SecretVaultService` guarda
-   o certificado A1/senha/CSC cifrados num `Map` — some a cada restart do
-   processo. Funciona para dev; produção precisa de um backend persistente
-   (Secret Manager, ou o próprio Firestore com o valor já cifrado).
-4. **`customerHistory` não filtra por tenant.** `partner.repository.ts`
+3. **`customerHistory` não filtra por tenant.** `partner.repository.ts`
    filtra o histórico só por `customerId` — como os ids são UUIDs
    praticamente não colidem entre tenants na prática, mas o filtro correto
    deveria checar `tenantId` também, pelo mesmo princípio de isolamento do
    resto do sistema.
-5. **Pentest interno (c39-9)** e **exportação de dados de USER** (só CUSTOMER
+4. **Pentest interno (c39-9)** e **exportação de dados de USER** (só CUSTOMER
    está coberto) ficam para quando o RH/onboarding de funcionário existir.
 
 ## Como testar

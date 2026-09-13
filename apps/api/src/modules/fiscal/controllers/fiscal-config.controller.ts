@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Put } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Param, Put } from '@nestjs/common';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { AuditedMutation } from '../../audit/audit.decorator';
 import { CurrentTenant, RequirePermission } from '../../iam/iam.decorators';
@@ -20,7 +20,7 @@ export class FiscalConfigController {
   }
   @Get(':companyId')
   @RequirePermission('fiscal.configurar')
-  get(@CurrentTenant() tenant: TenantContext, @Param('companyId') companyId: string) {
+  async get(@CurrentTenant() tenant: TenantContext, @Param('companyId') companyId: string) {
     return this.service.get(this.allowedCompanyId(tenant, companyId));
   }
   @Put()
@@ -37,6 +37,9 @@ export class FiscalConfigController {
   }
 
   private allowedCompanyId(tenant: TenantContext, requested: string): string {
-    return tenant.roleIds.includes('SUPER_ADMIN_SAAS') ? requested : tenant.tenantId;
+    if (requested === tenant.tenantId || tenant.roleIds.includes('SUPER_ADMIN_SAAS')) {
+      return requested;
+    }
+    throw new ForbiddenException('A configuração fiscal pertence a outro tenant');
   }
 }

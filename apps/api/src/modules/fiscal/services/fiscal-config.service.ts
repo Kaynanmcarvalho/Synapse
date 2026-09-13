@@ -52,38 +52,55 @@ export class FiscalConfigService {
     previous: FiscalCompanyConfig | undefined,
   ) {
     const base = `fiscal/${companyId}`;
-    return {
-      certificateSecretRef: await this.storeWhenPresent(
+    const [
+      certificateSecretRef,
+      certificatePasswordSecretRef,
+      cscSecretRef,
+      providerApiKeySecretRef,
+      providerTenantIdSecretRef,
+      smtpPasswordSecretRef,
+      nfceOfflinePasswordSecretRef,
+    ] = await Promise.all([
+      this.storeWhenPresent(
         `${base}/a1`,
         input.certificateBase64 ? Buffer.from(input.certificateBase64, 'base64') : null,
         previous?.certificateSecretRef,
       ),
-      certificatePasswordSecretRef: await this.storeWhenPresent(
+      this.storeWhenPresent(
         `${base}/a1-password`,
         input.certificatePassword,
         previous?.certificatePasswordSecretRef,
       ),
-      cscSecretRef: await this.storeWhenPresent(`${base}/csc`, input.csc, previous?.cscSecretRef),
-      providerApiKeySecretRef: await this.storeWhenPresent(
+      this.storeWhenPresent(`${base}/csc`, input.csc, previous?.cscSecretRef),
+      this.storeWhenPresent(
         `${base}/provider-api-key`,
         input.providerApiKey,
         previous?.providerApiKeySecretRef,
       ),
-      providerTenantIdSecretRef: await this.storeWhenPresent(
+      this.storeWhenPresent(
         `${base}/provider-tenant-id`,
         input.providerTenantId,
         previous?.providerTenantIdSecretRef,
       ),
-      smtpPasswordSecretRef: await this.storeWhenPresent(
+      this.storeWhenPresent(
         `${base}/smtp-password`,
         input.smtpPassword,
         previous?.smtpPasswordSecretRef,
       ),
-      nfceOfflinePasswordSecretRef: await this.storeWhenPresent(
+      this.storeWhenPresent(
         `${base}/nfce-offline-password`,
         input.nfceOfflinePassword,
         previous?.nfceOfflinePasswordSecretRef,
       ),
+    ]);
+    return {
+      certificateSecretRef,
+      certificatePasswordSecretRef,
+      cscSecretRef,
+      providerApiKeySecretRef,
+      providerTenantIdSecretRef,
+      smtpPasswordSecretRef,
+      nfceOfflinePasswordSecretRef,
     };
   }
 

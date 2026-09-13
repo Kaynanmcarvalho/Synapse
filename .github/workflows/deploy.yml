@@ -38,7 +38,11 @@ jobs:
       - name: Construir e publicar API
         run: |
           gcloud builds submit --tag "$REGION-docker.pkg.dev/$FIREBASE_PROJECT_ID/$ARTIFACT_REPOSITORY/synapse-api:$GITHUB_SHA" .
-          gcloud run deploy "$CLOUD_RUN_SERVICE" --image "$REGION-docker.pkg.dev/$FIREBASE_PROJECT_ID/$ARTIFACT_REPOSITORY/synapse-api:$GITHUB_SHA" --region "$REGION" --project "$FIREBASE_PROJECT_ID"
+          gcloud run deploy "$CLOUD_RUN_SERVICE" \
+            --image "$REGION-docker.pkg.dev/$FIREBASE_PROJECT_ID/$ARTIFACT_REPOSITORY/synapse-api:$GITHUB_SHA" \
+            --region "$REGION" \
+            --project "$FIREBASE_PROJECT_ID" \
+            --update-secrets "FISCAL_MASTER_KEY=FISCAL_MASTER_KEY:latest"
         env:
           FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID }}
           REGION: ${{ vars.GCP_REGION }}

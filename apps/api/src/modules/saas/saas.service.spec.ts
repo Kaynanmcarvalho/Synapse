@@ -15,8 +15,10 @@ const superAdmin: TenantContext = {
 
 describe('SaasService', () => {
   let service: SaasService;
+  let firestore: Firestore;
   beforeEach(() => {
-    service = new SaasService(new SaasRepository(new FakeFirestore() as unknown as Firestore));
+    firestore = new FakeFirestore() as unknown as Firestore;
+    service = new SaasService(new SaasRepository(firestore));
   });
 
   it('mede consumo, avisa em 80% e bloqueia acima do limite', async () => {
@@ -63,5 +65,22 @@ describe('SaasService', () => {
     await expect(service.list({ ...superAdmin, roleIds: ['ADMIN_EMPRESA'] })).rejects.toThrow(
       ForbiddenException,
     );
+  });
+
+  it('mantém assinatura e consumo depois de recriar o serviço', async () => {
+    await service.create(superAdmin, {
+      tenantId: 'tenant-persistente',
+      name: 'Loja Persistente',
+      document: '12345678901234',
+      plan: 'BASIC',
+    });
+    await service.consume(superAdmin, 'tenant-persistente', { resource: 'users', delta: 2 });
+    const restarted = new SaasService(new SaasRepository(firestore));
+    await expect(restarted.list(superAdmin)).resolves.toEqual([
+      expect.objectContaining({
+        tenantId: 'tenant-persistente',
+        usage: expect.objectContaining({ users: 2 }),
+      }),
+    ]);
   });
 });
