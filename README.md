@@ -78,10 +78,27 @@ A configuração vive em dois arquivos locais, que o git ignora (`*.local`):
 | `.env.local`              | `FIREBASE_PROJECT_ID` e `GOOGLE_APPLICATION_CREDENTIALS` |
 | `apps/web-erp/.env.local` | `VITE_FIREBASE_*` do app Web do projeto e `VITE_API_URL` |
 
-`GOOGLE_APPLICATION_CREDENTIALS` é o caminho da chave da conta de serviço (Console
-do Firebase → Configurações do projeto → Contas de serviço → Gerar nova chave
-privada). A chave fica fora do repositório e fora de pastas sincronizadas com nuvem;
-a API recusa uma chave de outro projeto. Modelo das variáveis: `.env.example`.
+`GOOGLE_APPLICATION_CREDENTIALS` é o caminho da chave da conta de serviço. Cada
+máquina tem a sua, e o caminho padrão é `~/.synapse/<projeto>-admin.json`. Modelo
+das variáveis: `.env.example`.
+
+**Entrar no projeto real, em qualquer máquina do time:**
+
+1. Console do Firebase → Configurações do projeto → Contas de serviço → **Gerar nova
+   chave privada**. O seletor Node/Java/Python/Go muda só o exemplo de código; o
+   arquivo baixado é o mesmo.
+2. `pnpm chave:instalar` — pega o JSON mais novo da pasta de Downloads (ou receba o
+   caminho como argumento), confere que é chave de conta de serviço do projeto certo,
+   copia para `~/.synapse/`, fecha as permissões para o seu usuário e aponta o
+   `.env.local`. Depois apague o arquivo baixado.
+3. `pnpm acesso:conferir` — diz quem consegue entrar e o que falta para quem não
+   consegue (conta no Authentication, claim `tenantId` e vínculo ativo com cargo).
+   Para conceder, `pnpm seed:cloud-admin --usuario email:uid --confirmar`.
+
+A chave nunca vai para o repositório, para pasta sincronizada com nuvem, nem para
+chat, e-mail ou print — quem vê o arquivo abre o banco de produção inteiro. Se uma
+chave vazar, apague-a em Google Cloud Console → IAM e administrador → Contas de
+serviço → a conta → Chaves, e gere outra. A API recusa chave de outro projeto.
 
 Só a API grava no Firestore, pelo Admin SDK. As regras (`firestore.rules`) deixam o
 navegador ler apenas o próprio tenant e negam todo o resto. Depois de mudar regras
