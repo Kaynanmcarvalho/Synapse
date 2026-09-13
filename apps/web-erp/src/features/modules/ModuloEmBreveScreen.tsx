@@ -12,22 +12,16 @@ export function ModuloEmBreveScreen() {
   const item = encontrarPorCaminho(MENUS, pathname);
 
   return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10 sm:px-6 lg:px-8">
+    <main className="mx-auto flex w-full max-w-[1200px] flex-col px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
       {item && (
         <nav
           aria-label="Localização no menu"
-          className="flex flex-wrap items-center gap-1 text-xs text-slate-400"
+          className="text-body-sm text-stone flex flex-wrap items-center gap-1"
         >
           {item.trilha.map((parte, indice) => (
             <span key={`${parte}-${indice}`} className="flex items-center gap-1">
-              {indice > 0 && <ChevronRight size={12} aria-hidden="true" />}
-              <span
-                className={
-                  indice === item.trilha.length - 1
-                    ? 'font-semibold text-slate-600 dark:text-slate-300'
-                    : ''
-                }
-              >
+              {indice > 0 && <ChevronRight size={14} aria-hidden="true" />}
+              <span className={indice === item.trilha.length - 1 ? 'text-ink font-semibold' : ''}>
                 {parte}
               </span>
             </span>
@@ -35,23 +29,23 @@ export function ModuloEmBreveScreen() {
         </nav>
       )}
 
-      <section className="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400">
+      <section className="border-hairline-light mt-6 max-w-2xl rounded-2xl border p-8 sm:p-10">
+        <span className="bg-surface-soft text-accent-warning flex h-12 w-12 items-center justify-center rounded-full">
           <Construction size={22} aria-hidden="true" />
         </span>
-        <h1 className="mt-5 text-xl font-extrabold tracking-[-0.02em] text-slate-950 dark:text-white">
+        <h1 className="font-display text-heading-lg text-ink mt-6">
           {item ? item.rotulo : 'Opção não encontrada'}
         </h1>
-        <p className="mt-2 max-w-xl text-sm leading-relaxed text-slate-500 dark:text-slate-400">
+        <p className="text-body-md text-mute mt-3">
           {item
             ? 'Esta rotina já tem lugar no menu, no mesmo ponto em que ficava no Syndata, mas a tela ainda está em desenvolvimento no Synapse.'
             : 'Este endereço não corresponde a nenhuma opção do menu.'}
         </p>
         <Link
-          to={ROTAS.visaoGeral}
-          className="mt-6 inline-flex h-10 items-center gap-2 rounded-xl bg-slate-950 px-4 text-[13px] font-semibold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+          to={ROTAS.inicio}
+          className="bg-canvas-dark text-button-md hover:bg-charcoal mt-8 inline-flex h-12 items-center gap-2 rounded-full px-7 text-white transition"
         >
-          <ArrowLeft size={15} aria-hidden="true" /> Voltar para a visão geral
+          <ArrowLeft size={17} aria-hidden="true" /> Voltar ao início
         </Link>
       </section>
     </main>

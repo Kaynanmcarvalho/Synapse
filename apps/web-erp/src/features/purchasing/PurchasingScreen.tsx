@@ -53,7 +53,7 @@ function LoginPanel({ onSignedIn }: { readonly onSignedIn: () => void }) {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#f6f8fb] p-8 dark:bg-slate-950">
+    <main className="bg-canvas-light flex min-h-screen items-center justify-center p-8 dark:bg-slate-950">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
           Entrar (emulador local)
@@ -576,8 +576,7 @@ export function PurchasingScreen() {
   if (!signedIn) return <LoginPanel onSignedIn={() => setSignedIn(true)} />;
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#f6f8fb] text-slate-950 dark:bg-slate-950 dark:text-slate-100">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-blue-50/90 to-transparent" />
+    <main className="bg-canvas-light relative min-h-screen overflow-hidden text-slate-950 dark:bg-slate-950 dark:text-slate-100">
       <div className="relative mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">
         <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -617,7 +616,7 @@ export function PurchasingScreen() {
           ].map((tile) => (
             <article
               key={tile.label}
-              className="rounded-2xl border border-white bg-white/90 p-5 shadow-[0_8px_30px_-18px_rgba(15,23,42,.25)] backdrop-blur"
+              className="border-hairline-light bg-canvas-light rounded-2xl border p-5"
             >
               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                 {tile.label}
@@ -632,7 +631,7 @@ export function PurchasingScreen() {
         <div className="mt-6 grid gap-5 lg:grid-cols-[380px_1fr]">
           <div className="space-y-4">
             <NewOrderForm branchId={branchId.trim()} onCreated={refresh} />
-            <div className="rounded-2xl border border-slate-200/70 bg-white shadow-[0_18px_50px_-30px_rgba(15,23,42,.28)] dark:bg-slate-900">
+            <div className="border-hairline-light bg-canvas-light rounded-2xl border dark:bg-slate-900">
               <div className="border-b border-slate-100 p-4">
                 <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Pedidos</h3>
               </div>

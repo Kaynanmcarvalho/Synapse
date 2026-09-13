@@ -52,7 +52,7 @@ function LoginPanel({ onSignedIn }: { readonly onSignedIn: () => void }) {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#f6f8fb] p-8 dark:bg-slate-950">
+    <main className="bg-canvas-light flex min-h-screen items-center justify-center p-8 dark:bg-slate-950">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
         <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
           Entrar (emulador local)
@@ -131,7 +131,7 @@ function IntegrationCard({ integration }: { readonly integration: IntegrationSta
   };
 
   return (
-    <article className="rounded-2xl border border-slate-200/70 bg-white p-5 shadow-[0_8px_30px_-18px_rgba(15,23,42,.25)] dark:bg-slate-900">
+    <article className="border-hairline-light bg-canvas-light rounded-2xl border p-5 dark:bg-slate-900">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
@@ -225,7 +225,7 @@ function OnboardingWizard({
   const alreadyActive = status.productionActivatedAt !== null;
 
   return (
-    <section className="mt-8 overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_50px_-30px_rgba(15,23,42,.28)] dark:bg-slate-900">
+    <section className="border-hairline-light bg-canvas-light mt-8 overflow-hidden rounded-3xl border dark:bg-slate-900">
       <div className="border-b border-slate-100 p-6">
         <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
           Assistente de ativação
@@ -328,8 +328,7 @@ export function PlatformScreen() {
   if (!signedIn) return <LoginPanel onSignedIn={() => setSignedIn(true)} />;
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#f6f8fb] text-slate-950 dark:bg-slate-950 dark:text-slate-100">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-blue-50/90 to-transparent" />
+    <main className="bg-canvas-light relative min-h-screen overflow-hidden text-slate-950 dark:bg-slate-950 dark:text-slate-100">
       <div className="relative mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">
         <header>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-600">

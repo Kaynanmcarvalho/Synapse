@@ -102,30 +102,30 @@ export function MenuBar({
                 if (aberto && !estaAberto) setAberto({ indice, teclado: false });
               }}
               onKeyDown={(evento) => aoTeclarNoBotao(evento, indice)}
-              className={`inline-flex h-8 items-center gap-1 whitespace-nowrap rounded-lg px-2.5 text-[13px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-blue-500/40 ${
+              className={`text-button-sm focus-visible:ring-primary/40 inline-flex h-9 items-center gap-1 whitespace-nowrap rounded-full px-3.5 outline-none transition-colors focus-visible:ring-2 ${
                 estaAberto
-                  ? 'bg-slate-100 text-slate-950 dark:bg-slate-800 dark:text-white'
-                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white'
+                  ? 'bg-surface-soft text-ink'
+                  : 'text-charcoal hover:bg-surface-soft hover:text-ink'
               }`}
             >
               {menu.rotulo}
               <ChevronDown
-                size={13}
+                size={14}
                 aria-hidden="true"
-                className={`text-slate-400 transition-transform ${estaAberto ? 'rotate-180' : ''}`}
+                className={`text-stone transition-transform ${estaAberto ? 'rotate-180' : ''}`}
               />
             </button>
           );
         })}
       </div>
 
-      <span aria-hidden="true" className="mx-2 h-5 w-px bg-slate-200 dark:bg-slate-700" />
+      <span aria-hidden="true" className="bg-hairline-light mx-2 h-5 w-px" />
       <button
         type="button"
         onClick={onSair}
-        className="inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 text-[13px] font-medium text-slate-600 outline-none transition-colors hover:bg-red-50 hover:text-red-700 focus-visible:ring-2 focus-visible:ring-blue-500/40 dark:text-slate-300 dark:hover:bg-red-500/10 dark:hover:text-red-300"
+        className="text-button-sm text-charcoal hover:text-accent-danger focus-visible:ring-primary/40 inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 outline-none transition-colors hover:bg-[#fdeced] focus-visible:ring-2"
       >
-        <LogOut size={14} aria-hidden="true" /> Sair
+        <LogOut size={15} aria-hidden="true" /> Sair
       </button>
 
       {menuAberto && aberto && ancora && (

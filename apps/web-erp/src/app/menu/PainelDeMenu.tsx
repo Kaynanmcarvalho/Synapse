@@ -30,10 +30,8 @@ export interface PropsDoPainel {
 const ATRASO_PARA_FECHAR_SUBMENU_MS = 180;
 
 const classeDaLinha = (destacado: boolean) =>
-  `flex h-8 w-full items-center gap-3 whitespace-nowrap rounded-lg px-2.5 text-left text-[13px] outline-none transition-colors ${
-    destacado
-      ? 'bg-slate-100 text-slate-950 dark:bg-slate-800 dark:text-white'
-      : 'text-slate-700 dark:text-slate-300'
+  `flex h-9 w-full items-center gap-3 whitespace-nowrap rounded-xl px-3 text-left text-body-sm outline-none transition-colors ${
+    destacado ? 'bg-surface-soft text-ink' : 'text-body'
   }`;
 
 function ConteudoDoItem({ item }: { readonly item: ItemDeMenu }) {
@@ -41,15 +39,11 @@ function ConteudoDoItem({ item }: { readonly item: ItemDeMenu }) {
     <>
       <span className="flex-1">{item.rotulo}</span>
       {item.situacao === 'em-breve' && (
-        <span className="rounded-md bg-slate-100 px-1.5 py-px text-[10px] font-medium text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+        <span className="border-hairline-light bg-canvas-light text-stone rounded-full border px-2 py-px text-[11px] font-medium">
           em breve
         </span>
       )}
-      {item.atalho && (
-        <kbd className="font-sans text-[11px] font-medium tracking-wide text-slate-400 dark:text-slate-500">
-          {item.atalho.rotulo}
-        </kbd>
-      )}
+      {item.atalho && <kbd className="text-stone font-sans text-[12px]">{item.atalho.rotulo}</kbd>}
     </>
   );
 }
@@ -139,16 +133,12 @@ export function PainelDeMenu(props: PropsDoPainel) {
       style={estilo}
       onKeyDown={aoTeclar}
       onMouseEnter={cancelarFechamento}
-      className="z-50 min-w-[260px] overflow-y-auto rounded-xl border border-slate-200/80 bg-white p-1.5 shadow-xl shadow-slate-950/10 outline-none dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/40"
+      className="border-hairline-light bg-canvas-light z-50 min-w-[280px] overflow-y-auto rounded-2xl border p-2 shadow-lg outline-none"
     >
       {entradas.map((entrada, indice) => {
         if (entrada.tipo === 'separador') {
           return (
-            <div
-              key={entrada.id}
-              role="separator"
-              className="mx-2 my-1 h-px bg-slate-100 dark:bg-slate-800"
-            />
+            <div key={entrada.id} role="separator" className="bg-hairline-light mx-3 my-1.5 h-px" />
           );
         }
         if (entrada.tipo === 'item') {
@@ -189,7 +179,7 @@ export function PainelDeMenu(props: PropsDoPainel) {
               className={classeDaLinha(destaque === indice || aberto)}
             >
               <span className="flex-1">{entrada.rotulo}</span>
-              <ChevronRight size={14} className="text-slate-400" aria-hidden="true" />
+              <ChevronRight size={15} className="text-stone" aria-hidden="true" />
             </button>
             {aberto && elementoDo(indice) && (
               <PainelDeMenu

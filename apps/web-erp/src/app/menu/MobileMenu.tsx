@@ -24,7 +24,7 @@ function ListaDeEntradas({
     });
 
   return (
-    <ul className={nivel > 0 ? 'ml-3 border-l border-slate-100 pl-2 dark:border-slate-800' : ''}>
+    <ul className={nivel > 0 ? 'border-hairline-light ml-4 border-l pl-2' : ''}>
       {entradas.map((entrada) => {
         if (entrada.tipo === 'separador') return null;
         if (entrada.tipo === 'item') {
@@ -33,11 +33,11 @@ function ListaDeEntradas({
               <Link
                 to={entrada.caminho}
                 onClick={onNavegar}
-                className="flex min-h-10 items-center gap-2 rounded-lg px-3 py-2 text-[13px] text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="text-body-sm text-body hover:bg-surface-soft flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 transition"
               >
                 <span className="flex-1">{entrada.rotulo}</span>
                 {entrada.situacao === 'em-breve' && (
-                  <span className="rounded-md bg-slate-100 px-1.5 py-px text-[10px] text-slate-400 dark:bg-slate-800">
+                  <span className="border-hairline-light text-stone rounded-full border px-2 py-px text-[11px] font-medium">
                     em breve
                   </span>
                 )}
@@ -52,13 +52,15 @@ function ListaDeEntradas({
               type="button"
               aria-expanded={aberto}
               onClick={() => alternar(entrada.id)}
-              className="flex min-h-10 w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-[13px] font-medium text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+              className={`text-button-sm hover:bg-surface-soft flex min-h-11 w-full items-center gap-2 rounded-xl px-3 py-2 text-left transition ${
+                aberto ? 'text-ink' : 'text-charcoal'
+              }`}
             >
               <span className="flex-1">{entrada.rotulo}</span>
               <ChevronDown
-                size={14}
+                size={15}
                 aria-hidden="true"
-                className={`text-slate-400 transition-transform ${aberto ? 'rotate-180' : ''}`}
+                className={`text-stone transition-transform ${aberto ? 'rotate-180' : ''}`}
               />
             </button>
             {aberto && (
@@ -92,31 +94,31 @@ export function MobileMenu({
       <button
         type="button"
         aria-label="Fechar menu"
-        className="absolute inset-0 bg-slate-950/35 backdrop-blur-sm"
+        className="bg-canvas-dark/40 absolute inset-0 backdrop-blur-sm"
         onClick={onFechar}
       />
-      <aside className="relative flex h-full w-[300px] max-w-[85vw] flex-col bg-white shadow-2xl dark:bg-slate-900">
-        <div className="flex h-14 items-center justify-between border-b border-slate-100 px-4 dark:border-slate-800">
-          <strong className="text-sm font-bold text-slate-900 dark:text-white">Menu</strong>
+      <aside className="bg-canvas-light relative flex h-full w-[320px] max-w-[88vw] flex-col">
+        <div className="border-hairline-light flex h-16 items-center justify-between border-b px-4">
+          <strong className="font-display text-heading-sm text-ink">Menu</strong>
           <button
             type="button"
             aria-label="Fechar menu"
             onClick={onFechar}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+            className="text-charcoal hover:bg-surface-soft flex h-10 w-10 items-center justify-center rounded-full transition"
           >
-            <X size={18} />
+            <X size={19} />
           </button>
         </div>
         <nav aria-label="Menu principal" className="flex-1 overflow-y-auto p-2">
           <ListaDeEntradas entradas={principais} nivel={0} onNavegar={onFechar} />
         </nav>
-        <div className="border-t border-slate-100 p-2 dark:border-slate-800">
+        <div className="border-hairline-light border-t p-3">
           <button
             type="button"
             onClick={onSair}
-            className="flex min-h-10 w-full items-center gap-2 rounded-lg px-3 text-[13px] font-medium text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10"
+            className="border-hairline-light text-button-md text-ink hover:border-accent-danger hover:text-accent-danger flex h-12 w-full items-center justify-center gap-2 rounded-full border transition"
           >
-            <LogOut size={15} aria-hidden="true" /> Sair
+            <LogOut size={17} aria-hidden="true" /> Sair
           </button>
         </div>
       </aside>

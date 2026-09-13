@@ -330,7 +330,7 @@ function NewInventoryModalBody({
                       onClick={() => setDraft({ ...draft, type: option.value })}
                       className={`group relative flex min-h-[102px] items-center gap-4 overflow-hidden rounded-2xl border p-4 text-left transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500/10 ${
                         selected
-                          ? 'border-blue-500 bg-blue-50/70 shadow-[0_8px_24px_-12px_rgba(37,99,235,.45)]'
+                          ? 'border-blue-500 bg-blue-50/70'
                           : 'border-slate-200 bg-white hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg hover:shadow-slate-200/50 dark:border-slate-700 dark:bg-slate-900'
                       } ${index === 0 ? 'sm:col-span-2' : ''}`}
                     >
@@ -588,8 +588,7 @@ export function InventoryScreen() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#f6f8fb] text-slate-950 dark:bg-slate-950 dark:text-slate-100">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-72 bg-gradient-to-b from-blue-50/90 to-transparent" />
+    <main className="bg-canvas-light relative min-h-screen overflow-hidden text-slate-950 dark:bg-slate-950 dark:text-slate-100">
       <div className="relative mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">
         <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -646,7 +645,7 @@ export function InventoryScreen() {
           ].map((metric) => (
             <article
               key={metric.label}
-              className="rounded-2xl border border-white bg-white/90 p-5 shadow-[0_8px_30px_-18px_rgba(15,23,42,.25)] backdrop-blur"
+              className="border-hairline-light bg-canvas-light rounded-2xl border p-5"
             >
               <div className="flex items-start justify-between">
                 <div>
@@ -668,7 +667,7 @@ export function InventoryScreen() {
           ))}
         </section>
 
-        <section className="mt-5 overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_50px_-30px_rgba(15,23,42,.28)] dark:bg-slate-900">
+        <section className="border-hairline-light bg-canvas-light mt-5 overflow-hidden rounded-3xl border dark:bg-slate-900">
           <div className="flex flex-col gap-5 border-b border-slate-100 p-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
               <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white">
@@ -707,7 +706,7 @@ export function InventoryScreen() {
           </div>
         </section>
 
-        <section className="mt-5 overflow-hidden rounded-3xl border border-slate-200/70 bg-white shadow-[0_18px_50px_-30px_rgba(15,23,42,.22)] dark:bg-slate-900">
+        <section className="border-hairline-light bg-canvas-light mt-5 overflow-hidden rounded-3xl border dark:bg-slate-900">
           <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
             <div>
               <h2 className="font-bold text-slate-950 dark:text-slate-100">

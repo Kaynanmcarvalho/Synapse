@@ -60,10 +60,7 @@ export function useTenantExperience() {
           '--brand-secondary',
           value.branding.secondaryColor,
         );
-        const dark =
-          value.branding.theme === 'dark' ||
-          (value.branding.theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
-        document.documentElement.classList.toggle('dark', dark);
+        // O tema da marca nao escurece a retaguarda: o design system e so claro.
         if (value.branding.faviconUrl) {
           const existing = document.querySelector("link[rel='icon']");
           const icon = (existing ??

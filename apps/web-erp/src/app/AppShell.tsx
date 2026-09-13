@@ -1,57 +1,61 @@
 /* eslint-disable max-lines-per-function */
-import { CircleHelp, Command, Menu, Moon, Search, Sparkles, Sun } from 'lucide-react';
+import { CircleHelp, Menu, Search, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useTenantExperience } from './useTenantExperience';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { NotificationCenter } from '../features/notifications/NotificationCenter';
 import { CommandPalette } from '../features/search/CommandPalette';
 import { ShortcutsModal } from '../features/search/ShortcutsModal';
-import { devSignOut } from '../lib/dev-auth';
-import { applyTheme, getStoredTheme, type Theme } from './theme';
+import { useAuth, useUsuario } from './auth/AuthContext';
 import { MENUS } from './menu/menu.data';
 import { filtrarPorFeature } from './menu/menu.utils';
 import { MenuBar } from './menu/MenuBar';
 import { MobileMenu } from './menu/MobileMenu';
 import { useMenuShortcuts } from './menu/useMenuShortcuts';
 import { ROTAS } from './rotas';
+import { LimiteDeFalha } from './shell/LimiteDeFalha';
+import { Marca } from './shell/Marca';
+import { ShellContext } from './shell/ShellContext';
+import { useTenantExperience } from './useTenantExperience';
 
 const BOTAO_DE_ICONE =
-  'flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white';
+  'flex h-10 w-10 items-center justify-center rounded-full text-charcoal transition hover:bg-surface-soft hover:text-ink';
 
-function Marca({
-  systemName,
-  logoUrl,
-}: {
-  readonly systemName: string;
-  readonly logoUrl: string | null;
-}) {
+const iniciais = (nome: string): string =>
+  nome
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((parte) => parte.charAt(0).toUpperCase())
+    .join('') || '?';
+
+function Usuario() {
+  const usuario = useUsuario();
   return (
-    <Link to={ROTAS.visaoGeral} className="flex shrink-0 items-center gap-2.5">
-      <span className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-[10px] bg-slate-950 text-white shadow-md shadow-slate-950/20 dark:bg-white dark:text-slate-950">
-        {logoUrl ? (
-          <img alt="" className="h-full w-full object-cover" src={logoUrl} />
-        ) : (
-          <Command size={17} strokeWidth={2.2} />
-        )}
+    <span className="ml-1 flex items-center gap-2.5" title={usuario.email}>
+      <span
+        aria-hidden="true"
+        className="bg-ink flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-semibold text-white"
+      >
+        {iniciais(usuario.nome)}
       </span>
-      <strong className="text-[15px] font-extrabold tracking-[-0.02em] text-slate-950 dark:text-white">
-        {systemName}
-      </strong>
-    </Link>
+      <span className="text-body-sm text-ink hidden max-w-[160px] truncate font-semibold xl:block">
+        {usuario.nome}
+      </span>
+    </span>
   );
 }
 
 /** Casca da retaguarda. A navegacao segue a barra de menus do Syndata — mesmos
- *  menus, mesmas opcoes, mesma ordem — para quem migra achar tudo onde ja
- *  procurava; o visual e o do Synapse. */
+ *  menus, mesmas opcoes, mesma ordem — e o visual segue o design system do
+ *  Synapse, em modo claro. So existe atras do login (RequireAuth). */
 export function AppShell() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
-  const [theme, setTheme] = useState<Theme>('light');
   const location = useLocation();
   const navigate = useNavigate();
   const experience = useTenantExperience();
+  const { sair } = useAuth();
 
   // Opcao de modulo desligado para o tenant nao aparece — nem no menu, nem no atalho.
   const menus = useMemo(
@@ -59,14 +63,9 @@ export function AppShell() {
     [experience.flags],
   );
   useMenuShortcuts(menus);
+  const casca = useMemo(() => ({ abrirBusca: () => setPaletteOpen(true), menus }), [menus]);
 
   useEffect(() => setMobileOpen(false), [location.pathname]);
-
-  useEffect(() => {
-    const stored = getStoredTheme();
-    setTheme(stored);
-    applyTheme(stored);
-  }, []);
 
   // §59 "atalho Ctrl+K" — precisa funcionar em qualquer tela, então o
   // listener vive no AppShell (montado sempre), não dentro do palette.
@@ -79,7 +78,7 @@ export function AppShell() {
       }
       if (event.altKey && !event.ctrlKey && !event.metaKey) {
         const paths: Record<string, string> = {
-          '1': ROTAS.visaoGeral,
+          '1': ROTAS.inicio,
           '2': ROTAS.pdv,
           '3': ROTAS.estoque,
           '4': ROTAS.compras,
@@ -100,108 +99,86 @@ export function AppShell() {
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [navigate]);
 
-  const toggleTheme = () => {
-    const next = theme === 'dark' ? 'light' : 'dark';
-    setTheme(next);
-    applyTheme(next);
-  };
-
-  const sair = async () => {
-    try {
-      await devSignOut();
-    } finally {
-      // Recarrega de proposito: as telas guardam o estado de login em memoria.
-      window.location.assign(ROTAS.visaoGeral);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-[#f6f7f9] text-slate-950 dark:bg-slate-950 dark:text-slate-100">
-      <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/90">
-        <div className="flex h-14 items-center gap-3 px-4 sm:px-6 lg:px-8">
-          <button
-            type="button"
-            aria-label="Abrir menu"
-            onClick={() => setMobileOpen(true)}
-            className={`${BOTAO_DE_ICONE} lg:hidden`}
-          >
-            <Menu size={19} />
-          </button>
-          <Marca
-            systemName={experience.branding.systemName}
-            logoUrl={experience.branding.logoUrl}
-          />
-
-          <button
-            type="button"
-            onClick={() => setPaletteOpen(true)}
-            className="relative mx-auto hidden w-full max-w-lg text-left sm:block"
-          >
-            <Search
-              size={15}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+    <ShellContext.Provider value={casca}>
+      <div className="bg-canvas-light text-ink min-h-screen">
+        <header className="border-hairline-light bg-canvas-light/95 sticky top-0 z-30 border-b backdrop-blur-xl">
+          <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
+            <button
+              type="button"
+              aria-label="Abrir menu"
+              onClick={() => setMobileOpen(true)}
+              className={`${BOTAO_DE_ICONE} -ml-2 lg:hidden`}
+            >
+              <Menu size={20} />
+            </button>
+            <Marca
+              nome={experience.branding.systemName}
+              logoUrl={experience.branding.logoUrl}
+              para={ROTAS.inicio}
             />
-            <span className="flex h-9 w-full items-center rounded-xl border border-transparent bg-slate-100/80 pl-10 pr-16 text-[13px] text-slate-400 transition hover:bg-slate-100 dark:bg-slate-900 dark:text-slate-500 dark:hover:bg-slate-800">
-              O que você precisa?
-            </span>
-            <span className="absolute right-2.5 top-1/2 flex -translate-y-1/2 items-center gap-1 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] font-semibold text-slate-400 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-              <Command size={9} /> K
-            </span>
-          </button>
 
-          <div className="ml-auto flex items-center gap-1 sm:ml-0">
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
-              aria-label="Abrir busca global"
-              className={`${BOTAO_DE_ICONE} sm:hidden`}
+              className="bg-surface-soft mx-auto hidden h-11 w-full max-w-[480px] items-center gap-3 rounded-full px-4 text-left transition hover:bg-[#ececee] sm:flex"
             >
-              <Search size={18} />
+              <Search size={17} className="text-stone" aria-hidden="true" />
+              <span className="text-body-sm text-stone flex-1">O que você precisa?</span>
+              <kbd className="bg-canvas-light text-ash rounded-full px-2 py-0.5 font-sans text-[11px] font-medium">
+                Ctrl K
+              </kbd>
             </button>
-            <button
-              type="button"
-              onClick={() => setShortcutsOpen(true)}
-              className="hidden h-9 items-center gap-2 rounded-xl px-3 text-xs font-semibold text-slate-500 transition hover:bg-blue-50 hover:text-blue-700 md:flex dark:text-slate-400 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
-            >
-              <Sparkles size={15} /> Atalhos
-            </button>
-            <button
-              type="button"
-              onClick={toggleTheme}
-              aria-label={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
-              className={BOTAO_DE_ICONE}
-            >
-              {theme === 'dark' ? (
-                <Sun size={18} strokeWidth={1.8} />
-              ) : (
-                <Moon size={18} strokeWidth={1.8} />
-              )}
-            </button>
-            <NotificationCenter />
-            <button type="button" aria-label="Ajuda" className={`${BOTAO_DE_ICONE} hidden sm:flex`}>
-              <CircleHelp size={18} strokeWidth={1.8} />
-            </button>
+
+            <div className="ml-auto flex items-center gap-1 sm:ml-0">
+              <button
+                type="button"
+                onClick={() => setPaletteOpen(true)}
+                aria-label="Abrir busca global"
+                className={`${BOTAO_DE_ICONE} sm:hidden`}
+              >
+                <Search size={19} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setShortcutsOpen(true)}
+                className="bg-surface-soft text-button-sm text-ink mr-1 hidden h-9 items-center gap-2 rounded-full px-4 transition hover:bg-[#ececee] md:flex"
+              >
+                <Sparkles size={15} aria-hidden="true" /> Atalhos
+              </button>
+              <NotificationCenter />
+              <button
+                type="button"
+                aria-label="Ajuda"
+                className={`${BOTAO_DE_ICONE} hidden sm:flex`}
+              >
+                <CircleHelp size={19} strokeWidth={1.8} />
+              </button>
+              <Usuario />
+            </div>
           </div>
-        </div>
 
-        {/* Os paineis do menu abrem num portal: rolar esta faixa em tela estreita nao os corta. */}
-        <div className="hidden h-11 items-center overflow-x-auto border-t border-slate-100 px-4 [scrollbar-width:none] lg:flex lg:px-6 dark:border-slate-800/80">
-          <MenuBar menus={menus} onSair={() => void sair()} />
-        </div>
-      </header>
+          {/* Os paineis do menu abrem num portal: rolar esta faixa em tela estreita nao os corta. */}
+          <div className="border-hairline-light hidden h-12 items-center overflow-x-auto border-t px-4 [scrollbar-width:none] lg:flex lg:px-6">
+            <MenuBar menus={menus} onSair={() => void sair()} />
+          </div>
+        </header>
 
-      {mobileOpen && (
-        <MobileMenu
-          menus={menus}
-          onFechar={() => setMobileOpen(false)}
-          onSair={() => void sair()}
-        />
-      )}
+        {mobileOpen && (
+          <MobileMenu
+            menus={menus}
+            onFechar={() => setMobileOpen(false)}
+            onSair={() => void sair()}
+          />
+        )}
 
-      <Outlet />
+        <LimiteDeFalha key={location.pathname}>
+          <Outlet />
+        </LimiteDeFalha>
 
-      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
-      {shortcutsOpen && <ShortcutsModal onClose={() => setShortcutsOpen(false)} />}
-    </div>
+        <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+        {shortcutsOpen && <ShortcutsModal onClose={() => setShortcutsOpen(false)} />}
+      </div>
+    </ShellContext.Provider>
   );
 }

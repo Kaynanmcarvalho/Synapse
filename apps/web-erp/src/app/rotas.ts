@@ -1,7 +1,9 @@
 /** Caminhos das telas que existem. App.tsx monta as rotas a partir daqui e o
  *  teste do menu confere que nenhum item "disponivel" aponta para tela inexistente. */
 export const ROTAS = {
-  visaoGeral: '/visao-geral',
+  login: '/login',
+  inicio: '/inicio',
+  painelDeControle: '/painel-de-controle',
   estoque: '/estoque',
   inventarios: '/estoque/inventarios',
   entradasXml: '/estoque/entradas-xml',
@@ -17,4 +19,7 @@ export const ROTAS = {
   historicoDeLogs: '/ferramentas/historico-de-logs',
 } as const;
 
-export const CAMINHOS_COM_TELA: readonly string[] = Object.values(ROTAS);
+/** Telas da retaguarda (atras do login). */
+export const CAMINHOS_COM_TELA: readonly string[] = Object.values(ROTAS).filter(
+  (caminho) => caminho !== ROTAS.login,
+);

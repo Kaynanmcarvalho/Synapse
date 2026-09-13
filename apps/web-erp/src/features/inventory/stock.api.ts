@@ -21,8 +21,9 @@ export interface ExpiringLot {
   readonly alertLevel: ExpiryAlertLevel;
 }
 
-export const listExpiryAlerts = (): Promise<ExpiringLot[]> =>
-  apiRequest('/inventory/lots/expiry-alerts');
+/** A rota e paginada (`{ items, nextCursor }`), nao uma lista solta. */
+export const listExpiryAlerts = async (): Promise<ExpiringLot[]> =>
+  (await apiRequest<{ items: ExpiringLot[] }>('/inventory/lots/expiry-alerts')).items;
 
 export interface CreateLotPayload {
   readonly branchId: string;

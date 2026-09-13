@@ -73,7 +73,7 @@ export function DashboardScreen() {
   return (
     <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-8">
       <header>
-        <h1 className="text-3xl font-bold">Visão geral</h1>
+        <h1 className="text-3xl font-bold">Painel de Controle</h1>
         <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
           Resultados do período e posição atual de estoque e contas.
         </p>

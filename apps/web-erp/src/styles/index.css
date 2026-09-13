@@ -5,11 +5,14 @@
 @layer base {
   html {
     font-family: theme('fontFamily.sans');
-    --brand-primary: #2563eb;
-    --brand-secondary: #4f46e5;
+    /* Com o eixo opsz da Inter, titulos grandes usam o corte Display sozinhos. */
+    font-optical-sizing: auto;
+    color-scheme: light;
+    --brand-primary: #494fdf;
+    --brand-secondary: #3a40c4;
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100;
+    @apply bg-canvas-light text-ink antialiased;
   }
 }
