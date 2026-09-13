@@ -27,6 +27,21 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Estado global do SaaS e segredos fiscais são exclusivos da API/Admin SDK.
+    // Mantê-los fora de /tenants evita que a regra de leitura do tenant exponha
+    // metadados comerciais ou até mesmo ciphertext aos clientes web/mobile.
+    match /saasSubscriptions/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /tenantExperiences/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /serverSecrets/{document=**} {
+      allow read, write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

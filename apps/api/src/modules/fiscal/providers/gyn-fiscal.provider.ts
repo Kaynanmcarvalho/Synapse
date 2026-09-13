@@ -36,10 +36,20 @@ export class GynFiscalProvider implements FiscalProvider {
   issueNFCe(command: FiscalIssueCommand) {
     return this.post('/fiscal/nfce/emitir', command.payload);
   }
-  /** O ambiente vem da chave da API: o Gyn recusa quando o informado nao bate.
-   *  Trava antes de emitir a nota de teste com uma chave de producao. */
-  async assertHomologationEnvironment(): Promise<void> {
-    await this.request('/fiscal/nfe/listar?ambiente=homologacao&$top=1');
+  /** Endpoint próprio da Gyn para validar credenciais e comunicação com a SEFAZ. */
+  async testConnection(input: {
+    readonly cpfCnpj: string;
+    readonly environment: 'homologation' | 'production';
+  }): Promise<void> {
+    await this.request(`/fiscal/nfe/status?ambiente=${input.environment}`);
+  }
+  /** O ambiente vem da chave da API: o Gyn recusa quando o informado não bate.
+   *  Trava antes de emitir a nota de teste com uma chave de produção. */
+  async assertHomologationEnvironment(input: {
+    readonly cpfCnpj: string;
+    readonly environment: 'homologation' | 'production';
+  }): Promise<void> {
+    await this.testConnection({ ...input, environment: 'homologation' });
   }
   async cancelDocument(command: FiscalEventCommand) {
     return this.waitForNFeJob(
@@ -90,7 +100,7 @@ export class GynFiscalProvider implements FiscalProvider {
   async queryDFe(query: Readonly<Json>) {
     const raw = await this.json('/fiscal/nfe/distribuicao/nfe', {
       method: 'POST',
-      body: JSON.stringify(query),
+      body: JSON.stringify(this.dfeQuery(query)),
     });
     return (Array.isArray(raw.documentos) ? raw.documentos : []).map((item) => ({
       ...this.map(item as Json),
@@ -126,6 +136,24 @@ export class GynFiscalProvider implements FiscalProvider {
   }
   private async post(path: string, payload: Json) {
     return this.map(await this.json(path, { method: 'POST', body: JSON.stringify(payload) }));
+  }
+  /** Aceita o contrato interno legado e sempre envia o contrato atual da Gyn. */
+  private dfeQuery(query: Readonly<Json>): Json {
+    const cpfCnpj = String(query.cpf_cnpj ?? query.cnpj ?? '').replace(/\D/g, '');
+    const rawEnvironment = String(query.ambiente ?? query.environment ?? '').toLowerCase();
+    const rawType = String(query.tipo_consulta ?? query.tipoConsulta ?? 'dist-nsu');
+    const type = rawType === 'ultimo_nsu' ? 'dist-nsu' : rawType.replaceAll('_', '-');
+    const lastNsu = query.dist_nsu ?? query.ultimoNsu;
+    return {
+      cpf_cnpj: cpfCnpj,
+      ambiente:
+        rawEnvironment === 'producao' || rawEnvironment === 'production'
+          ? 'production'
+          : 'homologation',
+      tipo_consulta: type,
+      ...(lastNsu !== undefined ? { dist_nsu: Number(lastNsu) } : {}),
+      ...(query.uf_autor || query.ufAutor ? { uf_autor: query.uf_autor ?? query.ufAutor } : {}),
+    };
   }
   /** Emissao e cancelamento sao assincronos: o POST devolve `jobId` e o resultado
    *  da SEFAZ so aparece quando o job termina (`concluido` ou `erro`). */

@@ -11,15 +11,15 @@ export class FiscalProviderRegistry {
     private readonly mock: MockFiscalProvider,
     private readonly vault: SecretVaultService,
   ) {}
-  resolve(config: FiscalCompanyConfig): FiscalProvider {
+  async resolve(config: FiscalCompanyConfig): Promise<FiscalProvider> {
     assertNonProductionTestTarget('fiscal', config.environment);
     if (config.provider === 'MOCK') return this.mock;
     if (!config.providerApiKeySecretRef || !config.providerTenantIdSecretRef) {
       throw new NotFoundException('Credenciais Gyn Fiscal não cadastradas para esta empresa');
     }
     return new GynFiscalProvider(
-      this.vault.read(config.providerApiKeySecretRef).toString('utf8'),
-      this.vault.read(config.providerTenantIdSecretRef).toString('utf8'),
+      (await this.vault.read(config.providerApiKeySecretRef)).toString('utf8'),
+      (await this.vault.read(config.providerTenantIdSecretRef)).toString('utf8'),
     );
   }
 }

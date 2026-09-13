@@ -1,4 +1,6 @@
 import type { Product, Supplier } from '@synapse/types';
+import type { Firestore } from '@synapse/firebase/admin';
+import { FakeFirestore } from '../../../../test/fake-firestore';
 import { PartnerRepository } from '../../catalog/repositories/partner.repository';
 import type { ClienteService } from '../../catalog/services/cliente.service';
 import { ProductRepository } from '../../catalog/repositories/product.repository';
@@ -23,8 +25,8 @@ function buildService() {
   const productRepository = new ProductRepository();
   const partnerRepository = new PartnerRepository();
   const orders = new OrderRepository();
-  const fiscal = new FiscalRepository();
   const clientes = { procurar: jest.fn(async () => []) };
+  const fiscal = new FiscalRepository(new FakeFirestore() as unknown as Firestore);
   const titulos = { search: jest.fn(async () => []) };
   const sellers = { search: jest.fn(async () => []) };
   const service = new SearchService(

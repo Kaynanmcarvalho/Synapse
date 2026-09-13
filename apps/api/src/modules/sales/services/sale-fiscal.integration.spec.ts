@@ -8,6 +8,8 @@ import { PricingService } from '../../catalog/services/pricing.service';
 import { PricingRepository } from '../../catalog/repositories/pricing.repository';
 import { ProductRepository } from '../../catalog/repositories/product.repository';
 import type { Product } from '@synapse/types';
+import type { Firestore } from '@synapse/firebase/admin';
+import { FakeFirestore } from '../../../../test/fake-firestore';
 
 const context = {
   tenantId: 'tenant',
@@ -19,8 +21,8 @@ const context = {
 
 describe('Venda -> NFC-e -> recebimento', () => {
   it('autoriza a NFC-e, persiste o pagamento e atualiza o caixa', async () => {
-    const fiscalRepository = new FiscalRepository();
-    fiscalRepository.saveConfig({
+    const fiscalRepository = new FiscalRepository(new FakeFirestore() as unknown as Firestore);
+    await fiscalRepository.saveConfig({
       companyId: 'company',
       environment: 'HOMOLOGACAO',
       provider: 'MOCK',

@@ -16,16 +16,27 @@ export class FiscalConfigController {
   @Get()
   @RequirePermission('fiscal.configurar')
   current(@CurrentTenant() tenant: TenantContext) {
-    return { companyId: tenant.tenantId, config: this.service.get(tenant.tenantId) ?? null };
+    return this.currentConfig(tenant.tenantId);
   }
   @Get(':companyId')
   @RequirePermission('fiscal.configurar')
-  get(@Param('companyId') companyId: string) {
-    return this.service.get(companyId);
+  get(@CurrentTenant() tenant: TenantContext, @Param('companyId') companyId: string) {
+    return this.service.get(this.allowedCompanyId(tenant, companyId));
   }
   @Put()
   @RequirePermission('fiscal.configurar')
-  save(@Body(new ZodValidationPipe(fiscalConfigSchema)) input: FiscalConfigInput) {
-    return this.service.save(input);
+  save(
+    @CurrentTenant() tenant: TenantContext,
+    @Body(new ZodValidationPipe(fiscalConfigSchema)) input: FiscalConfigInput,
+  ) {
+    return this.service.save(tenant.tenantId, input);
+  }
+
+  private async currentConfig(companyId: string) {
+    return { companyId, config: (await this.service.get(companyId)) ?? null };
+  }
+
+  private allowedCompanyId(tenant: TenantContext, requested: string): string {
+    return tenant.roleIds.includes('SUPER_ADMIN_SAAS') ? requested : tenant.tenantId;
   }
 }

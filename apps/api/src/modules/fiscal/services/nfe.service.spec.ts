@@ -1,3 +1,5 @@
+import type { Firestore } from '@synapse/firebase/admin';
+import { FakeFirestore } from '../../../../test/fake-firestore';
 import { FiscalRepository } from '../repositories/fiscal.repository';
 import { MockFiscalProvider } from '../providers/mock-fiscal.provider';
 import { FiscalProviderRegistry } from './fiscal-provider.registry';
@@ -5,8 +7,8 @@ import { NfeService } from './nfe.service';
 
 describe('NfeService', () => {
   it('gera número no backend, autoriza e mantém idempotência', async () => {
-    const repository = new FiscalRepository();
-    repository.saveConfig({
+    const repository = new FiscalRepository(new FakeFirestore() as unknown as Firestore);
+    await repository.saveConfig({
       companyId: 'company',
       environment: 'HOMOLOGACAO',
       provider: 'MOCK',

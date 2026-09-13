@@ -68,7 +68,7 @@ describe('ida e volta com a API', () => {
   });
 
   it('manda só os segredos digitados e confirma produção', () => {
-    const payload = paraPayload('tenant-dev', deConfig(CONFIG_ANTIGA), {
+    const payload = paraPayload(deConfig(CONFIG_ANTIGA), {
       ...segredosVazios(),
       csc: 'novo-csc',
     });
@@ -80,7 +80,7 @@ describe('ida e volta com a API', () => {
   });
 
   it('série da NFC-e: primeira linha do controle, ou a já gravada quando não há linhas', () => {
-    expect(paraPayload('t', deConfig(CONFIG_ANTIGA), segredosVazios()).nfceSeries).toBe(2);
+    expect(paraPayload(deConfig(CONFIG_ANTIGA), segredosVazios()).nfceSeries).toBe(2);
     const padrao = formularioPadrao();
     const linha = {
       id: 'a',
@@ -91,8 +91,8 @@ describe('ida e volta com a API', () => {
       nextNumber: 240,
     } as const;
     const comLinha = { ...padrao, nfce: { ...padrao.nfce, series: [linha] } };
-    expect(paraPayload('t', comLinha, segredosVazios()).nfceSeries).toBe(5);
-    expect(paraPayload('t', padrao, segredosVazios()).productionConfirmation).toBeUndefined();
+    expect(paraPayload(comLinha, segredosVazios()).nfceSeries).toBe(5);
+    expect(paraPayload(padrao, segredosVazios()).productionConfirmation).toBeUndefined();
   });
 });
 

@@ -17,14 +17,14 @@ export class FeatureInterceptor implements NestInterceptor {
     private readonly reflector: Reflector,
     private readonly features: FeatureService,
   ) {}
-  intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
+  async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<unknown>> {
     const feature = this.reflector.getAllAndOverride<FeatureKey>(REQUIRED_FEATURE_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
     if (feature) {
       const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-      if (request.tenant) this.features.assertEnabled(request.tenant.tenantId, feature);
+      if (request.tenant) await this.features.assertEnabled(request.tenant.tenantId, feature);
     }
     return next.handle();
   }

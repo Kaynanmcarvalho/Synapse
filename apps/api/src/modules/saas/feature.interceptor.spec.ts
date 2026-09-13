@@ -1,4 +1,6 @@
 import type { CallHandler, ExecutionContext } from '@nestjs/common';
+import type { Firestore } from '@synapse/firebase/admin';
+import { FakeFirestore } from '../../../test/fake-firestore';
 import { Reflector } from '@nestjs/core';
 import type { Observable } from 'rxjs';
 import { RequireFeature } from './feature.decorator';
@@ -15,9 +17,13 @@ class NfceRoute {
 }
 
 describe('FeatureInterceptor', () => {
-  it('devolve 403 antes de executar rota de módulo desligado', () => {
-    const features = new FeatureService(new FeatureRepository(), new SaasRepository());
-    features.setFeature(
+  it('devolve 403 antes de executar rota de módulo desligado', async () => {
+    const firestore = new FakeFirestore() as unknown as Firestore;
+    const features = new FeatureService(
+      new FeatureRepository(firestore),
+      new SaasRepository(firestore),
+    );
+    await features.setFeature(
       {
         tenantId: 'platform',
         userId: 'root',
@@ -38,7 +44,9 @@ describe('FeatureInterceptor', () => {
       handle: jest.fn(() => undefined as unknown as Observable<unknown>),
     } as CallHandler;
 
-    expect(() => interceptor.intercept(context, next)).toThrow(/Módulo NFCE está desabilitado/);
+    await expect(interceptor.intercept(context, next)).rejects.toThrow(
+      /Módulo NFCE está desabilitado/,
+    );
     expect(next.handle).not.toHaveBeenCalled();
   });
 });

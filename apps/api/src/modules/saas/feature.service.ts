@@ -13,6 +13,20 @@ import { SaasRepository } from './saas.repository';
 const allEnabled = (): FeatureFlags =>
   Object.fromEntries(FEATURE_KEYS.map((key) => [key, true])) as FeatureFlags;
 
+const defaultExperience = (tenantId: string): TenantExperience => ({
+  tenantId,
+  flags: allEnabled(),
+  branding: {
+    systemName: 'Synapse',
+    legalName: 'Synapse',
+    logoUrl: null,
+    faviconUrl: null,
+    primaryColor: '#2563eb',
+    secondaryColor: '#4f46e5',
+    theme: 'system',
+  },
+});
+
 @Injectable()
 export class FeatureService {
   constructor(
@@ -20,50 +34,41 @@ export class FeatureService {
     private readonly subscriptions: SaasRepository,
   ) {}
 
-  get(tenantId: string): TenantExperience {
-    return (
-      this.features.find(tenantId) ?? {
-        tenantId,
-        flags: allEnabled(),
-        branding: {
-          systemName: 'Synapse',
-          legalName: 'Synapse',
-          logoUrl: null,
-          faviconUrl: null,
-          primaryColor: '#2563eb',
-          secondaryColor: '#4f46e5',
-          theme: 'system',
-        },
-      }
-    );
+  async get(tenantId: string): Promise<TenantExperience> {
+    return (await this.features.find(tenantId)) ?? defaultExperience(tenantId);
   }
 
-  getForCurrentTenant(context: TenantContext): TenantExperience {
+  async getForCurrentTenant(context: TenantContext): Promise<TenantExperience> {
     return this.get(context.tenantId);
   }
 
-  setFeature(context: TenantContext, tenantId: string, input: UpdateFeatureInput) {
+  async setFeature(context: TenantContext, tenantId: string, input: UpdateFeatureInput) {
     this.assertSuperAdmin(context);
-    const current = this.get(tenantId);
-    return this.features.save({
+    return this.features.mutate(tenantId, defaultExperience(tenantId), (current) => ({
       ...current,
       flags: { ...current.flags, [input.feature]: input.enabled },
-    });
+    }));
   }
 
-  setBranding(context: TenantContext, tenantId: string, input: UpdateBrandingInput) {
+  async setBranding(context: TenantContext, tenantId: string, input: UpdateBrandingInput) {
     this.assertSuperAdmin(context);
-    const subscription = this.subscriptions.find(tenantId);
+    const subscription = await this.subscriptions.find(tenantId);
     if (!subscription) throw new NotFoundException('Empresa não encontrada');
     if (!['ENTERPRISE', 'CUSTOM'].includes(subscription.plan)) {
       throw new ForbiddenException('White-label disponível somente nos planos ENTERPRISE e CUSTOM');
     }
-    const current = this.get(tenantId);
-    return this.features.save({ ...current, branding: { ...current.branding, ...input } });
+    return this.features.mutate(tenantId, defaultExperience(tenantId), (current) => ({
+      ...current,
+      branding: { ...current.branding, ...input },
+    }));
   }
 
-  assertEnabled(tenantId: string, feature: FeatureKey): void {
-    if (!this.get(tenantId).flags[feature]) {
+  async assertEnabled(tenantId: string, feature: FeatureKey): Promise<void> {
+    const subscription = await this.subscriptions.find(tenantId);
+    if (subscription?.status === 'suspended') {
+      throw new ForbiddenException('Empresa suspensa no SaaS');
+    }
+    if (!(await this.get(tenantId)).flags[feature]) {
       throw new ForbiddenException(`Módulo ${feature} está desabilitado para esta empresa`);
     }
   }

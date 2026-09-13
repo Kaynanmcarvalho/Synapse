@@ -1,4 +1,6 @@
 import type { FiscalCompanyConfig } from '@synapse/types';
+import type { Firestore } from '@synapse/firebase/admin';
+import { FakeFirestore } from '../../../../test/fake-firestore';
 import { MockFiscalProvider } from '../providers/mock-fiscal.provider';
 import { FiscalRepository } from '../repositories/fiscal.repository';
 import type { FiscalProviderRegistry } from './fiscal-provider.registry';
@@ -33,8 +35,8 @@ const config: FiscalCompanyConfig = {
 
 describe('numeração vinda do assistente', () => {
   it('a primeira NF-e continua do próximo número configurado', async () => {
-    const repository = new FiscalRepository();
-    repository.saveConfig(config);
+    const repository = new FiscalRepository(new FakeFirestore() as unknown as Firestore);
+    await repository.saveConfig(config);
     const provider = new MockFiscalProvider();
     const service = new NfeService(repository, {
       resolve: () => provider,

@@ -85,6 +85,7 @@ export const buildHomologationNfePayload = (
   config: FiscalCompanyConfig,
 ): Record<string, unknown> => {
   const issuer = requireIssuer(config);
+  const issuerDocument = issuer.document.replace(/\D/g, '');
   const outbound = config.pisCofins?.outbound ?? PIS_COFINS_FALLBACK;
   const icms = icmsOf(config.crt, TEST_AMOUNT);
   const pis = contributionOf(outbound.cst, outbound.pisRate, TEST_AMOUNT);
@@ -99,7 +100,7 @@ export const buildHomologationNfePayload = (
     consumidorFinal: 1,
     presencaComprador: 1,
     emitente: {
-      cnpj: issuer.document,
+      ...(issuer.personType === 'PJ' ? { cnpj: issuerDocument } : { cpf: issuerDocument }),
       razaoSocial: issuer.legalName,
       nomeFantasia: issuer.tradeName || undefined,
       inscricaoEstadual: config.stateRegistration,

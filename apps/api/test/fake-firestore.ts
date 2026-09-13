@@ -5,7 +5,7 @@
  *  encosta no caminho de outro. */
 
 export interface RegistroDeAcesso {
-  readonly operacao: 'get' | 'set' | 'update' | 'query';
+  readonly operacao: 'get' | 'set' | 'update' | 'query' | 'create';
   readonly path: string;
 }
 
@@ -58,6 +58,16 @@ export class FakeFirestore {
       },
       set: (dados: Documento) => {
         registrar('set', path);
+        documentos.set(path, { ...dados });
+        return Promise.resolve();
+      },
+      create: (dados: Documento) => {
+        this.registrar('create', path);
+        if (documentos.has(path)) {
+          const error = new Error(`Documento já existe: ${path}`) as Error & { code?: number };
+          error.code = 6;
+          return Promise.reject(error);
+        }
         documentos.set(path, { ...dados });
         return Promise.resolve();
       },
@@ -116,5 +126,18 @@ export class FakeFirestore {
         for (const operacao of operacoes) await operacao();
       },
     };
+  }
+
+  runTransaction<T>(operation: (transaction: unknown) => Promise<T>): Promise<T> {
+    const transaction = {
+      get: (reference: { get: () => Promise<unknown> }) => reference.get(),
+      set: (reference: { set: (data: Documento) => Promise<void> }, data: Documento) => {
+        void reference.set(data);
+      },
+      update: (reference: { update: (data: Documento) => Promise<void> }, data: Documento) => {
+        void reference.update(data);
+      },
+    };
+    return operation(transaction);
   }
 }

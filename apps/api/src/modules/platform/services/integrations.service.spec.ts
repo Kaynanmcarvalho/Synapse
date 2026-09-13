@@ -110,13 +110,40 @@ describe('IntegrationsService.list', () => {
     const items = await service.list(tenantId);
     expect(items.find((item) => item.service === 'SEFAZ_NFE')?.environment).toBe('NÃO CONFIGURADO');
   });
+
+  it('considera as credenciais Gyn salvas no assistente, mesmo sem certificado local', async () => {
+    const { service } = buildService({
+      fiscalConfig: fiscalConfigFixture({
+        provider: 'GYN_FISCAL',
+        certificateSecretRef: null,
+        providerApiKeySecretRef: 'ref-api-key',
+        providerTenantIdSecretRef: 'ref-tenant-gyn',
+      }),
+    });
+    const items = await service.list(tenantId);
+    expect(items.find((item) => item.service === 'SEFAZ_NFE')?.credentialsConfigured).toBe(true);
+  });
 });
 
 describe('IntegrationsService.testConnection', () => {
   it('sucesso quando a configuração fiscal existe e o provider responde', async () => {
-    const { service, repository } = buildService({ fiscalConfig: fiscalConfigFixture() });
+    const testConnection = jest.fn(() => Promise.resolve());
+    const issuer = fiscalConfigFixture().issuer as NonNullable<FiscalCompanyConfig['issuer']>;
+    const { service, repository } = buildService({
+      fiscalConfig: fiscalConfigFixture({
+        issuer: {
+          ...issuer,
+          document: '38.242.542/0001-43',
+        },
+      }),
+      fiscalProvider: { testConnection } as unknown as Partial<FiscalProvider>,
+    });
     const result = await service.testConnection(tenantId, 'SEFAZ_NFE');
     expect(result.success).toBe(true);
+    expect(testConnection).toHaveBeenCalledWith({
+      cpfCnpj: '38242542000143',
+      environment: 'homologation',
+    });
     expect(repository.recordTest).toHaveBeenCalledWith(tenantId, 'SEFAZ_NFE', result);
   });
 
@@ -184,7 +211,10 @@ describe('IntegrationsService.runHomologationTest', () => {
     nfe.cancel.mockResolvedValue({ id: 'doc-3', status: 'CANCELLED' });
 
     await service.runHomologationTest(tenantId, 'SEFAZ_NFE');
-    expect(assertHomologationEnvironment).toHaveBeenCalled();
+    expect(assertHomologationEnvironment).toHaveBeenCalledWith({
+      cpfCnpj: '38242542000143',
+      environment: 'homologation',
+    });
   });
 
   it('SEFAZ_NFCE emite e cancela via o provider diretamente', async () => {

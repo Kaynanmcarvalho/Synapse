@@ -13,7 +13,6 @@ import type { FormularioFiscal, SegredosDigitados } from './assistente.tipos';
 
 /** Corpo do PUT /fiscal/config (fiscalConfigSchema na API). */
 export interface ConfigFiscalPayload {
-  readonly companyId: string;
   readonly environment: FiscalEnvironment;
   readonly provider: 'MOCK' | 'GYN_FISCAL';
   readonly crt: 1 | 2 | 3 | 4;
@@ -54,7 +53,6 @@ const SEGREDOS = [
 /** Segredo so viaja quando foi digitado agora; vazio mantem o que esta no cofre.
  *  A confirmacao de producao ja foi pedida ao trocar o ambiente na tela. */
 export const paraPayload = (
-  companyId: string,
   formulario: FormularioFiscal,
   segredos: SegredosDigitados,
 ): ConfigFiscalPayload => {
@@ -62,7 +60,6 @@ export const paraPayload = (
     SEGREDOS.filter((chave) => segredos[chave] !== '').map((chave) => [chave, segredos[chave]]),
   );
   return {
-    companyId,
     environment: formulario.environment,
     provider: formulario.provider,
     crt: formulario.crt,

@@ -106,7 +106,7 @@ export function useAssistente() {
     setSalvando(true);
     setAviso(null);
     try {
-      const config = await salvarConfigFiscal(paraPayload(companyId, formulario, segredos));
+      const config = await salvarConfigFiscal(paraPayload(formulario, segredos));
       aplicar(companyId, config);
       setAviso({ tom: 'sucesso', texto: 'Configuração salva no servidor.' });
       return { ok: true };

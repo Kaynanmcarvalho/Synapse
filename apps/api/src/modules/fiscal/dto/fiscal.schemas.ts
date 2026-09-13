@@ -8,35 +8,36 @@ import {
   pisCofinsSchema,
 } from './fiscal-settings.schemas';
 
-export const fiscalConfigSchema = z.object({
-  companyId: z.string().min(1),
-  environment: z.enum(['MOCK', 'SANDBOX', 'HOMOLOGACAO', 'PRODUCAO']),
-  provider: z.enum(['MOCK', 'GYN_FISCAL']),
-  crt: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
-  stateRegistration: z.string().min(2).max(20),
-  cscId: z.string().max(20).nullable().optional(),
-  csc: z.string().max(120).nullable().optional(),
-  nfeSeries: z.number().int().min(1).max(999),
-  nfceSeries: z.number().int().min(1).max(999),
-  nfceContingencyEnabled: z.boolean().default(true),
-  nfceCancellationWindowMinutes: z.number().int().min(1).max(1440).default(30),
-  state: z.string().length(2),
-  taxRegime: z.string().min(1).max(80),
-  certificateBase64: z.string().min(1).nullable().optional(),
-  certificatePassword: z.string().min(1).max(200).nullable().optional(),
-  providerApiKey: z.string().min(1).max(300).nullable().optional(),
-  providerTenantId: z.string().min(1).max(120).nullable().optional(),
-  productionConfirmation: z.literal('ATIVAR PRODUCAO').optional(),
-  // Assistente de Configuracao de NF-e: bloco ausente mantem o que ja estava salvo.
-  issuer: issuerSchema.nullable().optional(),
-  emission: emissionSchema.nullable().optional(),
-  email: emailSchema.nullable().optional(),
-  pisCofins: pisCofinsSchema.nullable().optional(),
-  nfe: nfeSettingsSchema.nullable().optional(),
-  nfce: nfceSettingsSchema.nullable().optional(),
-  smtpPassword: z.string().min(1).max(200).nullable().optional(),
-  nfceOfflinePassword: z.string().min(4).max(60).nullable().optional(),
-});
+export const fiscalConfigSchema = z
+  .object({
+    environment: z.enum(['MOCK', 'SANDBOX', 'HOMOLOGACAO', 'PRODUCAO']),
+    provider: z.enum(['MOCK', 'GYN_FISCAL']),
+    crt: z.union([z.literal(1), z.literal(2), z.literal(3), z.literal(4)]),
+    stateRegistration: z.string().min(2).max(20),
+    cscId: z.string().max(20).nullable().optional(),
+    csc: z.string().max(120).nullable().optional(),
+    nfeSeries: z.number().int().min(1).max(999),
+    nfceSeries: z.number().int().min(1).max(999),
+    nfceContingencyEnabled: z.boolean().default(true),
+    nfceCancellationWindowMinutes: z.number().int().min(1).max(1440).default(30),
+    state: z.string().length(2),
+    taxRegime: z.string().min(1).max(80),
+    certificateBase64: z.string().min(1).nullable().optional(),
+    certificatePassword: z.string().min(1).max(200).nullable().optional(),
+    providerApiKey: z.string().min(1).max(300).nullable().optional(),
+    providerTenantId: z.string().min(1).max(120).nullable().optional(),
+    productionConfirmation: z.literal('ATIVAR PRODUCAO').optional(),
+    // Assistente de Configuracao de NF-e: bloco ausente mantem o que ja estava salvo.
+    issuer: issuerSchema.nullable().optional(),
+    emission: emissionSchema.nullable().optional(),
+    email: emailSchema.nullable().optional(),
+    pisCofins: pisCofinsSchema.nullable().optional(),
+    nfe: nfeSettingsSchema.nullable().optional(),
+    nfce: nfceSettingsSchema.nullable().optional(),
+    smtpPassword: z.string().min(1).max(200).nullable().optional(),
+    nfceOfflinePassword: z.string().min(4).max(60).nullable().optional(),
+  })
+  .strict();
 
 export const issueNfeSchema = z.object({
   companyId: z.string().min(1),

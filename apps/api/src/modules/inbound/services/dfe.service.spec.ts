@@ -1,4 +1,6 @@
 import type { FiscalProvider, UserId } from '@synapse/types';
+import type { Firestore } from '@synapse/firebase/admin';
+import { FakeFirestore } from '../../../../test/fake-firestore';
 import { FiscalRepository } from '../../fiscal/repositories/fiscal.repository';
 import { MockFiscalProvider } from '../../fiscal/providers/mock-fiscal.provider';
 import type { FiscalProviderRegistry } from '../../fiscal/services/fiscal-provider.registry';
@@ -27,10 +29,10 @@ const tenant = {
   warehouseIds: ['warehouse'],
 };
 
-function setup() {
+async function setup() {
   const repository = new DfeRepository();
-  const fiscalRepository = new FiscalRepository();
-  fiscalRepository.saveConfig({
+  const fiscalRepository = new FiscalRepository(new FakeFirestore() as unknown as Firestore);
+  await fiscalRepository.saveConfig({
     companyId: 'company',
     environment: 'HOMOLOGACAO',
     provider: 'MOCK',
@@ -62,7 +64,7 @@ function setup() {
 
 describe('DfeService', () => {
   it('só lança estoque, lote, custo e contas a pagar depois da conferência humana', async () => {
-    const { service, repository, inventory, lots } = setup();
+    const { service, repository, inventory, lots } = await setup();
     service.importXml(tenant, { xml });
     await expect(
       service.launch(tenant, ACCESS_KEY, {
@@ -114,7 +116,7 @@ describe('DfeService', () => {
   });
 
   it('registra as quatro manifestações e valida justificativas negativas', async () => {
-    const { service } = setup();
+    const { service } = await setup();
     service.importXml(tenant, { xml });
     await expect(
       service.manifest(tenant, ACCESS_KEY, {
@@ -133,7 +135,7 @@ describe('DfeService', () => {
   });
 
   it('consulta periodicamente a partir do último NSU e importa XML completo', async () => {
-    const { service, provider } = setup();
+    const { service, provider } = await setup();
     jest.spyOn(provider as FiscalProvider, 'queryDFe').mockResolvedValue([
       {
         status: 'AUTHORIZED',

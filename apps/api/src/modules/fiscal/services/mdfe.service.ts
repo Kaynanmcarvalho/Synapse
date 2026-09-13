@@ -51,7 +51,7 @@ export class MdfeService {
       throw new BadRequestException('Percurso interestadual inválido');
     if (input.cargoWeightKg > vehicle.capacityKg)
       throw new BadRequestException('Peso excede a capacidade do veículo');
-    const { config, provider } = this.context(input.companyId);
+    const { config, provider } = await this.context(input.companyId);
     const document: FiscalDocument = {
       id: randomUUID(),
       tenantId: tenant.tenantId,
@@ -106,14 +106,14 @@ export class MdfeService {
   }
   async consult(tenant: TenantContext, id: string) {
     const manifest = this.get(tenant, id);
-    const provider = this.context(manifest.document.companyId).provider;
+    const provider = (await this.context(manifest.document.companyId)).provider;
     return manifest.document.providerJobId && provider.checkMDFeJob
       ? this.apply(manifest, await provider.checkMDFeJob(manifest.document.providerJobId))
       : manifest;
   }
   async close(tenant: TenantContext, id: string, input: MdfeEventInput) {
     const manifest = this.open(tenant, id);
-    const provider = this.context(manifest.document.companyId).provider;
+    const provider = (await this.context(manifest.document.companyId)).provider;
     if (!provider.closeMDFe) throw new BadRequestException('Provedor não suporta encerramento');
     await provider.closeMDFe(manifest.document.providerJobId ?? id, {
       codigoMunicipio: input.cityCode,
@@ -127,7 +127,7 @@ export class MdfeService {
   }
   async cancel(tenant: TenantContext, id: string, input: MdfeEventInput) {
     const manifest = this.open(tenant, id);
-    const provider = this.context(manifest.document.companyId).provider;
+    const provider = (await this.context(manifest.document.companyId)).provider;
     if (!provider.cancelMDFe) throw new BadRequestException('Provedor não suporta cancelamento');
     const result = await provider.cancelMDFe(manifest.document.providerJobId ?? id, {
       justificativa: input.justification,
@@ -142,7 +142,7 @@ export class MdfeService {
   }
   async damdfe(tenant: TenantContext, id: string) {
     const manifest = this.get(tenant, id);
-    const provider = this.context(manifest.document.companyId).provider;
+    const provider = (await this.context(manifest.document.companyId)).provider;
     if (!provider.getDamdfe) throw new BadRequestException('Provedor não suporta DAMDFE');
     return provider.getDamdfe(manifest.document.providerJobId ?? id);
   }
@@ -156,10 +156,10 @@ export class MdfeService {
     if (value.status !== 'OPEN') throw new BadRequestException('MDF-e não está aberto');
     return value;
   }
-  private context(companyId: string) {
-    const config = this.fiscal.findConfig(companyId);
+  private async context(companyId: string) {
+    const config = await this.fiscal.findConfig(companyId);
     if (!config) throw new NotFoundException('Configuração fiscal não encontrada');
-    return { config, provider: this.providers.resolve(config) as CapableProvider };
+    return { config, provider: (await this.providers.resolve(config)) as CapableProvider };
   }
   private apply(manifest: Manifest, result: FiscalProviderResult, forced?: Manifest['status']) {
     const fiscalStatus = forced === 'CANCELLED' ? 'CANCELLED' : result.status;

@@ -40,7 +40,7 @@ export class DfeService {
   ) {}
 
   async poll(tenant: TenantContext, input: PollDfeInput) {
-    const provider = this.provider(input.companyId);
+    const provider = await this.provider(input.companyId);
     const lastNsu =
       input.lastNsu ?? this.repository.lastNsu(tenant.tenantId, input.companyId) ?? '0';
     const documents = await provider.queryDFe({
@@ -140,7 +140,7 @@ export class DfeService {
       por: tenant.userId as UserId,
     };
     validarManifestacao(request);
-    const provider = this.provider(input.companyId);
+    const provider = await this.provider(input.companyId);
     if (!provider.manifestDFe)
       throw new BadRequestException('Provedor fiscal não suporta manifestação de DF-e');
     await provider.manifestDFe({
@@ -259,10 +259,10 @@ export class DfeService {
     return entry;
   }
 
-  private provider(companyId: string): DfeProvider {
-    const config = this.fiscalRepository.findConfig(companyId);
+  private async provider(companyId: string): Promise<DfeProvider> {
+    const config = await this.fiscalRepository.findConfig(companyId);
     if (!config) throw new NotFoundException('Configuração fiscal da empresa não encontrada');
-    return this.providers.resolve(config) as DfeProvider;
+    return (await this.providers.resolve(config)) as DfeProvider;
   }
 
   private text(value: unknown) {

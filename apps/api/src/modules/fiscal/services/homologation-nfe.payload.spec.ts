@@ -51,7 +51,10 @@ const bloco = (payload: Record<string, unknown>, chave: string) => payload[chave
 
 describe('buildHomologationNfePayload', () => {
   it('monta a NF-e de teste com os dados do assistente', () => {
-    const payload = buildHomologationNfePayload(config());
+    const issuer = config().issuer as NonNullable<FiscalCompanyConfig['issuer']>;
+    const payload = buildHomologationNfePayload(
+      config({ issuer: { ...issuer, document: '38.242.542/0001-43' } }),
+    );
     const emitente = bloco(payload, 'emitente');
     const destinatario = bloco(payload, 'destinatario');
     const item = (payload.itens as Bloco[])[0] as Bloco;

@@ -1,6 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import type { Firestore } from '@synapse/firebase/admin';
 import type { FiscalCompanyConfig, FiscalDocument } from '@synapse/types';
 import { TenantSearchIndex } from '../../../common/search/tenant-search-index';
+import { FIREBASE_FIRESTORE } from '../../iam/firebase.tokens';
 
 export interface NfceContingencyItem {
   readonly documentId: string;
@@ -12,9 +14,9 @@ export interface NfceContingencyItem {
 
 @Injectable()
 export class FiscalRepository {
+  constructor(@Inject(FIREBASE_FIRESTORE) private readonly firestore: Firestore) {}
   readonly searchIndex = new TenantSearchIndex<FiscalDocument>();
   private readonly documents = new Map<string, FiscalDocument>();
-  private readonly configs = new Map<string, FiscalCompanyConfig>();
   private readonly sequences = new Map<string, number>();
   private readonly idempotency = new Map<string, string>();
   private readonly nfceContingency = new Map<string, NfceContingencyItem>();
@@ -37,12 +39,13 @@ export class FiscalRepository {
   listByTenant(tenantId: string): FiscalDocument[] {
     return [...this.documents.values()].filter((document) => document.tenantId === tenantId);
   }
-  saveConfig(config: FiscalCompanyConfig): FiscalCompanyConfig {
-    this.configs.set(config.companyId, config);
+  async saveConfig(config: FiscalCompanyConfig): Promise<FiscalCompanyConfig> {
+    await this.firestore.doc(`tenants/${config.companyId}/fiscal/config`).set(config);
     return config;
   }
-  findConfig(companyId: string): FiscalCompanyConfig | undefined {
-    return this.configs.get(companyId);
+  async findConfig(companyId: string): Promise<FiscalCompanyConfig | undefined> {
+    const snapshot = await this.firestore.doc(`tenants/${companyId}/fiscal/config`).get();
+    return snapshot.exists ? (snapshot.data() as FiscalCompanyConfig) : undefined;
   }
   enqueueNfce(item: NfceContingencyItem): NfceContingencyItem {
     this.nfceContingency.set(item.documentId, item);

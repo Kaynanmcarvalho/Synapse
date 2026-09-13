@@ -64,11 +64,11 @@ export class SaasController {
     return this.features.getForCurrentTenant(context);
   }
 
-  @Get('companies/:tenantId/experience') tenantExperience(
+  @Get('companies/:tenantId/experience') async tenantExperience(
     @CurrentTenant() context: TenantContext,
     @Param('tenantId') tenantId: string,
   ) {
-    this.service.list(context);
+    await this.service.list(context);
     return this.features.get(tenantId);
   }
 

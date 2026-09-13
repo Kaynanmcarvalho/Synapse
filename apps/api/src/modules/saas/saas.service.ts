@@ -58,69 +58,83 @@ const EMPTY_USAGE: ResourceValues = {
 export class SaasService {
   constructor(private readonly repository: SaasRepository) {}
 
-  create(context: TenantContext, input: CreateTenantSubscriptionInput): TenantSubscription {
+  async create(
+    context: TenantContext,
+    input: CreateTenantSubscriptionInput,
+  ): Promise<TenantSubscription> {
     this.assertSuperAdmin(context);
-    if (this.repository.find(input.tenantId)) throw new ConflictException('Empresa já cadastrada');
     const now = new Date().toISOString();
-    return this.repository.save({
-      tenantId: input.tenantId,
-      name: input.name,
-      document: input.document,
-      status: 'trial',
-      plan: input.plan,
-      limits: this.resolveLimits(input.plan, input.limits),
-      usage: { ...EMPTY_USAGE },
-      createdAt: now,
-      updatedAt: now,
-    });
+    try {
+      return await this.repository.create({
+        tenantId: input.tenantId,
+        name: input.name,
+        document: input.document,
+        status: 'trial',
+        plan: input.plan,
+        limits: this.resolveLimits(input.plan, input.limits),
+        usage: { ...EMPTY_USAGE },
+        createdAt: now,
+        updatedAt: now,
+      });
+    } catch (error) {
+      const code = (error as { code?: string | number }).code;
+      if (code === 6 || code === 'already-exists') {
+        throw new ConflictException('Empresa já cadastrada');
+      }
+      throw error;
+    }
   }
 
-  list(context: TenantContext) {
+  async list(context: TenantContext) {
     this.assertSuperAdmin(context);
-    return this.repository.list().map((tenant) => ({
+    return (await this.repository.list()).map((tenant) => ({
       ...tenant,
       consumption: this.consumption(tenant),
     }));
   }
 
-  update(context: TenantContext, tenantId: string, input: UpdateTenantSubscriptionInput) {
+  async update(context: TenantContext, tenantId: string, input: UpdateTenantSubscriptionInput) {
     this.assertSuperAdmin(context);
-    const current = this.required(tenantId);
-    const plan = input.plan ?? current.plan;
-    return this.repository.save({
-      ...current,
-      ...input,
-      plan,
-      limits: input.limits ? this.resolveLimits(plan, input.limits) : current.limits,
-      updatedAt: new Date().toISOString(),
+    return this.repository.mutate(tenantId, (current) => {
+      const found = this.required(current);
+      const plan = input.plan ?? found.plan;
+      return {
+        ...found,
+        ...input,
+        plan,
+        limits: input.limits ? this.resolveLimits(plan, input.limits) : found.limits,
+        updatedAt: new Date().toISOString(),
+      };
     });
   }
 
-  consume(context: TenantContext, tenantId: string, input: ConsumeResourceInput) {
+  async consume(context: TenantContext, tenantId: string, input: ConsumeResourceInput) {
     this.assertSuperAdmin(context);
-    const current = this.required(tenantId);
-    if (current.status === 'suspended') {
-      throw new ForbiddenException('Empresa suspensa. Reative-a antes de registrar consumo.');
-    }
-    const used = Math.max(0, current.usage[input.resource] + input.delta);
-    const limit = current.limits[input.resource];
-    if (used > limit) {
-      throw new ConflictException(
-        `Limite de ${input.resource} excedido: ${current.usage[input.resource]}/${limit}. ` +
-          'Altere o plano ou o limite antes de continuar.',
-      );
-    }
-    const saved = this.repository.save({
-      ...current,
-      usage: { ...current.usage, [input.resource]: used },
-      updatedAt: new Date().toISOString(),
+    const saved = await this.repository.mutate(tenantId, (value) => {
+      const current = this.required(value);
+      if (current.status === 'suspended') {
+        throw new ForbiddenException('Empresa suspensa. Reative-a antes de registrar consumo.');
+      }
+      const used = Math.max(0, current.usage[input.resource] + input.delta);
+      const limit = current.limits[input.resource];
+      if (used > limit) {
+        throw new ConflictException(
+          `Limite de ${input.resource} excedido: ${current.usage[input.resource]}/${limit}. ` +
+            'Altere o plano ou o limite antes de continuar.',
+        );
+      }
+      return {
+        ...current,
+        usage: { ...current.usage, [input.resource]: used },
+        updatedAt: new Date().toISOString(),
+      };
     });
     return this.consumption(saved).find((item) => item.resource === input.resource);
   }
 
-  metrics(context: TenantContext) {
+  async metrics(context: TenantContext) {
     this.assertSuperAdmin(context);
-    const tenants = this.repository.list();
+    const tenants = await this.repository.list();
     return {
       companies: tenants.length,
       activeCompanies: tenants.filter((item) => item.status === 'active').length,
@@ -154,8 +168,7 @@ export class SaasService {
     return { ...base, ...overrides };
   }
 
-  private required(tenantId: string): TenantSubscription {
-    const tenant = this.repository.find(tenantId);
+  private required(tenant: TenantSubscription | undefined): TenantSubscription {
     if (!tenant) throw new NotFoundException('Empresa não encontrada');
     return tenant;
   }

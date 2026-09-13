@@ -1,11 +1,12 @@
 import { randomBytes } from 'node:crypto';
+import type { Firestore } from '@synapse/firebase/admin';
+import { FakeFirestore } from '../../../../test/fake-firestore';
 import { fiscalConfigSchema, type FiscalConfigInput } from '../dto/fiscal.schemas';
 import { FiscalRepository } from '../repositories/fiscal.repository';
 import { FiscalConfigService } from './fiscal-config.service';
 import { SecretVaultService } from './secret-vault.service';
 
 const base: FiscalConfigInput = fiscalConfigSchema.parse({
-  companyId: 'tenant-1',
   environment: 'HOMOLOGACAO',
   provider: 'MOCK',
   crt: 3,
@@ -28,32 +29,46 @@ const nfe = {
 
 describe('FiscalConfigService — assistente de NF-e', () => {
   let service: FiscalConfigService;
+  let firestore: FakeFirestore;
 
   beforeEach(() => {
     process.env.FISCAL_MASTER_KEY = randomBytes(32).toString('base64');
-    service = new FiscalConfigService(new FiscalRepository(), new SecretVaultService());
+    firestore = new FakeFirestore();
+    const db = firestore as unknown as Firestore;
+    service = new FiscalConfigService(new FiscalRepository(db), new SecretVaultService(db));
   });
   afterEach(() => {
     delete process.env.FISCAL_MASTER_KEY;
   });
 
-  it('guarda os blocos do assistente e mantém o salvo quando um bloco não é enviado', () => {
-    service.save({ ...base, nfe });
-    const saved = service.save({ ...base, nfeSeries: 3 });
+  it('guarda os blocos do assistente e mantém o salvo quando um bloco não é enviado', async () => {
+    await service.save('tenant-1', { ...base, nfe });
+    const saved = await service.save('tenant-1', { ...base, nfeSeries: 3 });
     expect(saved.nfe).toEqual(nfe);
     expect(saved.nfeSeries).toBe(3);
     expect(saved.state).toBe('GO');
     expect(saved.updatedAt).toEqual(expect.any(String));
   });
 
-  it('senha do SMTP e da contingência viram referência, nunca valor', () => {
-    const saved = service.save({ ...base, smtpPassword: 'smtp-123', nfceOfflinePassword: '9876' });
+  it('senha do SMTP e da contingência viram referência, nunca valor', async () => {
+    const saved = await service.save('tenant-1', {
+      ...base,
+      smtpPassword: 'smtp-123',
+      nfceOfflinePassword: '9876',
+    });
     expect(saved.smtpPasswordSecretRef).toEqual(expect.any(String));
     expect(saved.nfceOfflinePasswordSecretRef).toEqual(expect.any(String));
     expect(JSON.stringify(saved)).not.toContain('smtp-123');
     expect(JSON.stringify(saved)).not.toContain('9876');
-    const again = service.save(base);
+    const again = await service.save('tenant-1', base);
     expect(again.smtpPasswordSecretRef).toBe(saved.smtpPasswordSecretRef);
+    const restarted = new FiscalConfigService(
+      new FiscalRepository(firestore as unknown as Firestore),
+      new SecretVaultService(firestore as unknown as Firestore),
+    );
+    expect((await restarted.get('tenant-1'))?.smtpPasswordSecretRef).toBe(
+      saved.smtpPasswordSecretRef,
+    );
   });
 
   it('recusa CNPJ do emitente e CFOP malformados', () => {

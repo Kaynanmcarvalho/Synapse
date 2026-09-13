@@ -14,12 +14,12 @@ export class FiscalConfigService {
     private readonly repository: FiscalRepository,
     private readonly vault: SecretVaultService,
   ) {}
-  save(input: FiscalConfigInput): FiscalCompanyConfig {
+  async save(companyId: string, input: FiscalConfigInput): Promise<FiscalCompanyConfig> {
     if (input.environment === 'PRODUCAO' && input.productionConfirmation !== 'ATIVAR PRODUCAO')
       throw new BadRequestException('Confirme explicitamente ATIVAR PRODUCAO');
-    const previous = this.repository.findConfig(input.companyId);
+    const previous = await this.repository.findConfig(companyId);
     return this.repository.saveConfig({
-      companyId: input.companyId,
+      companyId,
       environment: input.environment,
       provider: input.provider,
       crt: input.crt,
@@ -37,45 +37,49 @@ export class FiscalConfigService {
       pisCofins: keep(input.pisCofins, previous?.pisCofins),
       nfe: keep(input.nfe, previous?.nfe),
       nfce: keep(input.nfce, previous?.nfce),
-      ...this.secretRefs(input, previous),
+      ...(await this.secretRefs(companyId, input, previous)),
       updatedAt: new Date().toISOString(),
     });
   }
-  get(companyId: string) {
+  async get(companyId: string) {
     return this.repository.findConfig(companyId);
   }
 
   /** Segredo so vai para o cofre quando vem preenchido; a config guarda a referencia. */
-  private secretRefs(input: FiscalConfigInput, previous: FiscalCompanyConfig | undefined) {
-    const base = `fiscal/${input.companyId}`;
+  private async secretRefs(
+    companyId: string,
+    input: FiscalConfigInput,
+    previous: FiscalCompanyConfig | undefined,
+  ) {
+    const base = `fiscal/${companyId}`;
     return {
-      certificateSecretRef: this.storeWhenPresent(
+      certificateSecretRef: await this.storeWhenPresent(
         `${base}/a1`,
         input.certificateBase64 ? Buffer.from(input.certificateBase64, 'base64') : null,
         previous?.certificateSecretRef,
       ),
-      certificatePasswordSecretRef: this.storeWhenPresent(
+      certificatePasswordSecretRef: await this.storeWhenPresent(
         `${base}/a1-password`,
         input.certificatePassword,
         previous?.certificatePasswordSecretRef,
       ),
-      cscSecretRef: this.storeWhenPresent(`${base}/csc`, input.csc, previous?.cscSecretRef),
-      providerApiKeySecretRef: this.storeWhenPresent(
+      cscSecretRef: await this.storeWhenPresent(`${base}/csc`, input.csc, previous?.cscSecretRef),
+      providerApiKeySecretRef: await this.storeWhenPresent(
         `${base}/provider-api-key`,
         input.providerApiKey,
         previous?.providerApiKeySecretRef,
       ),
-      providerTenantIdSecretRef: this.storeWhenPresent(
+      providerTenantIdSecretRef: await this.storeWhenPresent(
         `${base}/provider-tenant-id`,
         input.providerTenantId,
         previous?.providerTenantIdSecretRef,
       ),
-      smtpPasswordSecretRef: this.storeWhenPresent(
+      smtpPasswordSecretRef: await this.storeWhenPresent(
         `${base}/smtp-password`,
         input.smtpPassword,
         previous?.smtpPasswordSecretRef,
       ),
-      nfceOfflinePasswordSecretRef: this.storeWhenPresent(
+      nfceOfflinePasswordSecretRef: await this.storeWhenPresent(
         `${base}/nfce-offline-password`,
         input.nfceOfflinePassword,
         previous?.nfceOfflinePasswordSecretRef,
@@ -83,11 +87,11 @@ export class FiscalConfigService {
     };
   }
 
-  private storeWhenPresent(
+  private async storeWhenPresent(
     reference: string,
     value: string | Buffer | null | undefined,
     previous: string | null | undefined,
-  ): string | null {
+  ): Promise<string | null> {
     return value ? this.vault.store(reference, value) : (previous ?? null);
   }
 }

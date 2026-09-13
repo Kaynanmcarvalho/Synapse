@@ -1,4 +1,6 @@
 import type { UserId } from '@synapse/types';
+import type { Firestore } from '@synapse/firebase/admin';
+import { FakeFirestore } from '../../../../test/fake-firestore';
 import { MockFiscalProvider } from '../providers/mock-fiscal.provider';
 import { FiscalRepository } from '../repositories/fiscal.repository';
 import { MdfeRepository } from '../repositories/mdfe.repository';
@@ -28,8 +30,8 @@ const input = {
 
 describe('MdfeService', () => {
   it('cadastra frota, autoriza, alerta e encerra o MDF-e', async () => {
-    const fiscal = new FiscalRepository();
-    fiscal.saveConfig({
+    const fiscal = new FiscalRepository(new FakeFirestore() as unknown as Firestore);
+    await fiscal.saveConfig({
       companyId: 'company',
       environment: 'HOMOLOGACAO',
       provider: 'MOCK',
@@ -77,8 +79,8 @@ describe('MdfeService', () => {
   });
 
   it('recusa carga acima da capacidade do veículo', async () => {
-    const fiscal = new FiscalRepository();
-    fiscal.saveConfig({
+    const fiscal = new FiscalRepository(new FakeFirestore() as unknown as Firestore);
+    await fiscal.saveConfig({
       companyId: 'company',
       environment: 'MOCK',
       provider: 'MOCK',

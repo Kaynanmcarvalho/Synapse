@@ -1,4 +1,6 @@
 import { ForbiddenException } from '@nestjs/common';
+import type { Firestore } from '@synapse/firebase/admin';
+import { FakeFirestore } from '../../../test/fake-firestore';
 import type { TenantContext } from '../iam/iam.types';
 import { FeatureRepository } from './feature.repository';
 import { FeatureService } from './feature.service';
@@ -14,27 +16,39 @@ const root: TenantContext = {
 };
 
 describe('FeatureService', () => {
-  it('bloqueia rota de módulo desligado com 403', () => {
-    const service = new FeatureService(new FeatureRepository(), new SaasRepository());
-    service.setFeature(root, 'tenant', { feature: 'NFCE', enabled: false });
-    expect(() => service.assertEnabled('tenant', 'NFCE')).toThrow(ForbiddenException);
-    expect(() => service.assertEnabled('tenant', 'NFE')).not.toThrow();
+  it('bloqueia rota de módulo desligado com 403', async () => {
+    const firestore = new FakeFirestore() as unknown as Firestore;
+    const service = new FeatureService(
+      new FeatureRepository(firestore),
+      new SaasRepository(firestore),
+    );
+    await service.setFeature(root, 'tenant', { feature: 'NFCE', enabled: false });
+    await expect(service.assertEnabled('tenant', 'NFCE')).rejects.toThrow(ForbiddenException);
+    await expect(service.assertEnabled('tenant', 'NFE')).resolves.toBeUndefined();
   });
 
-  it('libera white-label somente conforme o plano', () => {
-    const subscriptions = new SaasRepository();
+  it('libera white-label somente conforme o plano', async () => {
+    const firestore = new FakeFirestore() as unknown as Firestore;
+    const subscriptions = new SaasRepository(firestore);
     const saas = new SaasService(subscriptions);
-    const service = new FeatureService(new FeatureRepository(), subscriptions);
-    saas.create(root, { tenantId: 'basic', name: 'Basic', document: '12345678901', plan: 'BASIC' });
-    saas.create(root, {
+    const service = new FeatureService(new FeatureRepository(firestore), subscriptions);
+    await saas.create(root, {
+      tenantId: 'basic',
+      name: 'Basic',
+      document: '12345678901',
+      plan: 'BASIC',
+    });
+    await saas.create(root, {
       tenantId: 'enterprise',
       name: 'Enterprise',
       document: '12345678902',
       plan: 'ENTERPRISE',
     });
-    expect(() => service.setBranding(root, 'basic', { systemName: 'Marca' })).toThrow(/ENTERPRISE/);
-    expect(
-      service.setBranding(root, 'enterprise', { systemName: 'Marca', theme: 'dark' }).branding,
-    ).toMatchObject({ systemName: 'Marca', theme: 'dark' });
+    await expect(service.setBranding(root, 'basic', { systemName: 'Marca' })).rejects.toThrow(
+      /ENTERPRISE/,
+    );
+    await expect(
+      service.setBranding(root, 'enterprise', { systemName: 'Marca', theme: 'dark' }),
+    ).resolves.toMatchObject({ branding: { systemName: 'Marca', theme: 'dark' } });
   });
 });

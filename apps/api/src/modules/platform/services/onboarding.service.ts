@@ -28,7 +28,7 @@ export class PlatformOnboardingService {
 
   async getStatus(context: TenantContext): Promise<OnboardingStatus> {
     const platformStatus = await this.repository.getStatus(context.tenantId);
-    const config = this.fiscalConfig.get(context.tenantId);
+    const config = await this.fiscalConfig.get(context.tenantId);
     const branches = this.branches.list(context);
     const hasStock = await this.stockIntelligence.hasAnyStock(context.tenantId);
     const productPage = this.products.search(context, {}, 1);
@@ -77,7 +77,7 @@ export class PlatformOnboardingService {
 
   private buildSteps(input: {
     branchCount: number;
-    config: ReturnType<FiscalConfigService['get']>;
+    config: Awaited<ReturnType<FiscalConfigService['get']>>;
     hasStock: boolean;
     hasProducts: boolean;
     memberCount: number;
@@ -92,7 +92,7 @@ export class PlatformOnboardingService {
 
   private buildSetupSteps(
     branchCount: number,
-    config: ReturnType<FiscalConfigService['get']>,
+    config: Awaited<ReturnType<FiscalConfigService['get']>>,
   ): OnboardingStep[] {
     return [
       this.step('DADOS_EMPRESA', 'Dados da empresa', true, true, 'Empresa criada no cadastro'),

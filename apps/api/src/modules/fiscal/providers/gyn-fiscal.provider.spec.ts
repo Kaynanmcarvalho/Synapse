@@ -151,9 +151,41 @@ describe('GynFiscalProvider', () => {
     });
   });
 
+  it('testa a conexão no endpoint de status sem disparar distribuição de DF-e', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(resposta(200, { sucesso: true, dados: [] }));
+    await provedor(fetchMock).testConnection({
+      cpfCnpj: '38242542000143',
+      environment: 'homologation',
+    });
+    expect(urlsChamadas(fetchMock)[0]).toContain('/fiscal/nfe/status?ambiente=homologation');
+  });
+
   it('confirma que a chave da API é de homologação', async () => {
     const fetchMock = jest.fn().mockResolvedValue(resposta(200, { sucesso: true, dados: [] }));
-    await provedor(fetchMock).assertHomologationEnvironment();
-    expect(urlsChamadas(fetchMock)[0]).toContain('/fiscal/nfe/listar?ambiente=homologacao');
+    await provedor(fetchMock).assertHomologationEnvironment({
+      cpfCnpj: '38242542000143',
+      environment: 'production',
+    });
+    expect(urlsChamadas(fetchMock)[0]).toContain('/fiscal/nfe/status?ambiente=homologation');
+  });
+
+  it('normaliza CNPJ mascarado e o contrato legado da distribuição de DF-e', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValue(resposta(201, { sucesso: true, dados: { documentos: [] } }));
+    await provedor(fetchMock).queryDFe({
+      cnpj: '38.242.542/0001-43',
+      ambiente: 'HOMOLOGACAO',
+      tipoConsulta: 'ultimo_nsu',
+      ultimoNsu: '12',
+      ufAutor: 'GO',
+    });
+    expect(corpoEnviado(fetchMock, 0)).toEqual({
+      cpf_cnpj: '38242542000143',
+      ambiente: 'homologation',
+      tipo_consulta: 'dist-nsu',
+      dist_nsu: 12,
+      uf_autor: 'GO',
+    });
   });
 });

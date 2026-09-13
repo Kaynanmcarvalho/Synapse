@@ -34,7 +34,7 @@ export class NfceService {
     const idempotencyKey = `pos-nfce:${sale.id}`;
     const existing = this.repository.findByIdempotency(idempotencyKey);
     if (existing) return existing.id;
-    const { config, provider } = this.context(companyId);
+    const { config, provider } = await this.context(companyId);
     if (config.provider !== 'MOCK' && (!config.cscId || !config.cscSecretRef))
       throw new BadRequestException('CSC e identificador do CSC são obrigatórios para NFC-e');
 
@@ -107,7 +107,7 @@ export class NfceService {
   }
 
   async consult(documentId: string) {
-    const { document, provider } = this.documentContext(documentId);
+    const { document, provider } = await this.documentContext(documentId);
     if (document.providerJobId && provider.checkNFCeJob) {
       const result = await provider.checkNFCeJob(document.providerJobId);
       if (result) return this.finishQueued(document, result);
@@ -119,7 +119,7 @@ export class NfceService {
   async retryContingency(documentId: string, input: RetryNfceInput) {
     const queued = this.repository.findQueuedNfce(documentId);
     if (!queued) throw new NotFoundException('NFC-e não está na fila de contingência');
-    const { document, provider } = this.documentContext(documentId);
+    const { document, provider } = await this.documentContext(documentId);
     if (document.providerJobId && provider.checkNFCeJob) {
       const result = await provider.checkNFCeJob(document.providerJobId);
       if (result) return this.finishQueued(document, result);
@@ -136,7 +136,7 @@ export class NfceService {
   }
 
   async cancel(documentId: string, input: FiscalEventInput) {
-    const { document, provider, config } = this.documentContext(documentId);
+    const { document, provider, config } = await this.documentContext(documentId);
     if (!document.accessKey || !document.protocol || !document.issuedAt)
       throw new BadRequestException('NFC-e ainda não autorizada');
     const elapsedMinutes = (Date.now() - new Date(document.issuedAt).getTime()) / 60_000;
@@ -158,7 +158,7 @@ export class NfceService {
   }
 
   async xml(documentId: string) {
-    const { document, provider } = this.documentContext(documentId);
+    const { document, provider } = await this.documentContext(documentId);
     if (document.xml) return document.xml;
     if (provider.downloadNFCeXml)
       return provider.downloadNFCeXml(
@@ -169,7 +169,7 @@ export class NfceService {
   }
 
   async print(documentId: string) {
-    const { provider } = this.documentContext(documentId);
+    const { provider } = await this.documentContext(documentId);
     const xml = await this.xml(documentId);
     const danfe = provider.getNFCeDanfe
       ? await provider.getNFCeDanfe(xml)
@@ -202,16 +202,16 @@ export class NfceService {
     };
   }
 
-  private context(companyId: string) {
-    const config = this.repository.findConfig(companyId);
+  private async context(companyId: string) {
+    const config = await this.repository.findConfig(companyId);
     if (!config) throw new NotFoundException('Configuração fiscal da empresa não encontrada');
-    return { config, provider: this.providers.resolve(config) as NfceProvider };
+    return { config, provider: (await this.providers.resolve(config)) as NfceProvider };
   }
 
-  private documentContext(id: string) {
+  private async documentContext(id: string) {
     const document = this.repository.findDocument(id);
     if (!document || document.kind !== 'NFCE') throw new NotFoundException('NFC-e não encontrada');
-    return { document, ...this.context(document.companyId) };
+    return { document, ...(await this.context(document.companyId)) };
   }
 
   private finishQueued(document: FiscalDocument, result: FiscalProviderResult) {

@@ -1,4 +1,6 @@
 import type { FiscalProvider, FiscalProviderResult } from '@synapse/types';
+import type { Firestore } from '@synapse/firebase/admin';
+import { FakeFirestore } from '../../../../test/fake-firestore';
 import { FiscalRepository } from '../repositories/fiscal.repository';
 import { MockFiscalProvider } from '../providers/mock-fiscal.provider';
 import { FiscalProviderRegistry } from './fiscal-provider.registry';
@@ -30,9 +32,9 @@ const sale = {
   completedAt: new Date().toISOString(),
 };
 
-function configuredRepository() {
-  const repository = new FiscalRepository();
-  repository.saveConfig({
+async function configuredRepository() {
+  const repository = new FiscalRepository(new FakeFirestore() as unknown as Firestore);
+  await repository.saveConfig({
     companyId: 'company',
     environment: 'HOMOLOGACAO',
     provider: 'MOCK',
@@ -56,7 +58,7 @@ function configuredRepository() {
 
 describe('NfceService', () => {
   it('emite a NFC-e no fechamento do PDV com idempotência e cancelamento', async () => {
-    const repository = configuredRepository();
+    const repository = await configuredRepository();
     const provider = new MockFiscalProvider();
     const service = new NfceService(repository, {
       resolve: () => provider,
@@ -75,7 +77,7 @@ describe('NfceService', () => {
   });
 
   it('entra em contingência e regulariza pela fila sem bloquear a venda', async () => {
-    const repository = configuredRepository();
+    const repository = await configuredRepository();
     const mock = new MockFiscalProvider();
     let calls = 0;
     const provider = {
