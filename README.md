@@ -65,8 +65,13 @@ próxima execução. Para começar do zero, apague essa pasta com o emulador par
 
 ### Projeto Firebase real
 
-O `pnpm dev` usa o projeto `synapse-erp-5b092` (o padrão do `.firebaserc`) como
-banco de dados. Ele lê dois arquivos locais, que o git ignora (`*.local`):
+O projeto `synapse-erp-5b092` (o padrão do `.firebaserc`) é o banco de dados de
+verdade. Para falar com ele, a máquina precisa da chave da conta de serviço; sem
+ela, o `pnpm dev` sobe no emulador e avisa no terminal, em vez de deixar a API
+morrer no boot. Quem tem a chave configurada continua com o `pnpm dev` no projeto
+real; `pnpm dev:cloud` exige o projeto real e falha explicando o que falta.
+
+A configuração vive em dois arquivos locais, que o git ignora (`*.local`):
 
 | Arquivo                   | Conteúdo                                                 |
 | ------------------------- | -------------------------------------------------------- |
@@ -91,8 +96,8 @@ Para dar acesso de dono a um usuário criado no Authentication do projeto, rode
 A senha passou no Firebase e a tela parou no passo seguinte — abrir a sessão na API.
 Quase sempre a API não subiu por falta da chave da conta de serviço (o arquivo de
 `GOOGLE_APPLICATION_CREDENTIALS` foi movido, apagado ou nunca foi baixado nesta
-máquina). O `pnpm dev` confere isso antes de subir qualquer coisa e diz o que fazer;
-rodando a API sozinha, a mensagem aparece no lugar do stack trace.
+máquina). Hoje o `pnpm dev` detecta isso e sobe no emulador, dizendo o motivo; a API
+rodando sozinha mostra a mesma explicação no lugar do stack trace.
 
 Duas saídas:
 
@@ -105,16 +110,17 @@ Duas saídas:
   está em `GOOGLE_APPLICATION_CREDENTIALS`, fora do repositório. A chave não vai
   para o git nem para pasta sincronizada com nuvem.
 
-| Script              | O que faz                                          |
-| ------------------- | -------------------------------------------------- |
-| `pnpm dev`          | tudo em modo watch contra o projeto Firebase real  |
-| `pnpm dev:emulador` | emuladores + usuário de teste + tudo em modo watch |
-| `pnpm build`        | build de todos os pacotes, na ordem correta        |
-| `pnpm lint`         | ESLint em todo o monorepo                          |
-| `pnpm typecheck`    | `tsc --noEmit` em todo o monorepo                  |
-| `pnpm test`         | testes de todos os pacotes                         |
-| `pnpm format`       | Prettier em tudo                                   |
-| `pnpm check`        | lint + typecheck + build, o que o CI roda          |
+| Script              | O que faz                                                          |
+| ------------------- | ------------------------------------------------------------------ |
+| `pnpm dev`          | escolhe pela máquina: projeto real se houver chave, senão emulador |
+| `pnpm dev:cloud`    | exige o projeto real; sem chave, para e diz o que falta            |
+| `pnpm dev:emulador` | emuladores + usuário de teste + tudo em modo watch                 |
+| `pnpm build`        | build de todos os pacotes, na ordem correta                        |
+| `pnpm lint`         | ESLint em todo o monorepo                                          |
+| `pnpm typecheck`    | `tsc --noEmit` em todo o monorepo                                  |
+| `pnpm test`         | testes de todos os pacotes                                         |
+| `pnpm format`       | Prettier em tudo                                                   |
+| `pnpm check`        | lint + typecheck + build, o que o CI roda                          |
 
 Para rodar um workspace so: `pnpm --filter @synapse/api dev`.
 
