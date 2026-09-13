@@ -35,20 +35,20 @@ function Cortina({ topo }: { readonly topo: number }) {
 
 function JanelaDaFila({
   fila,
-  clienteSelecionado,
   zIndex,
   ativa,
   aoRecarregar,
   aoEscolher,
+  aoAlternarImpressao,
   aoFechar,
   aoFocar,
 }: {
   readonly fila: EstadoDaFila;
-  readonly clienteSelecionado: string | null;
   readonly zIndex: number;
   readonly ativa: boolean;
   readonly aoRecarregar: () => void;
   readonly aoEscolher: (linha: PedidoNaFila) => void;
+  readonly aoAlternarImpressao: (linha: PedidoNaFila) => void;
   readonly aoFechar: () => void;
   readonly aoFocar: () => void;
 }) {
@@ -72,8 +72,8 @@ function JanelaDaFila({
         linhas={fila.status === 'pronto' ? fila.pedidos : []}
         carregando={fila.status === 'carregando'}
         erro={fila.status === 'erro' ? fila.mensagem : null}
-        clienteSelecionado={clienteSelecionado}
-        onEscolher={aoEscolher}
+        onAbrir={aoEscolher}
+        onAlternarImpressao={aoAlternarImpressao}
       />
     </Janela>
   );
@@ -139,7 +139,7 @@ function JanelaDoCliente({
 }
 
 export function AnaliseDeCreditoScreen() {
-  const { fila, painel, carregarFila, abrirCliente } = useAnaliseDeCredito();
+  const { fila, painel, carregarFila, abrirCliente, alternarImpressao } = useAnaliseDeCredito();
   const { area } = useAreaDaTela();
   // A ordem e a profundidade: a ultima da lista fica na frente.
   const [ordem, setOrdem] = useState<readonly Id[]>(['fila']);
@@ -196,11 +196,11 @@ export function AnaliseDeCreditoScreen() {
       {ordem.includes('fila') && (
         <JanelaDaFila
           fila={fila}
-          clienteSelecionado={cliente?.id ?? null}
           zIndex={profundidade('fila')}
           ativa={ordem.at(-1) === 'fila'}
           aoRecarregar={() => void carregarFila()}
           aoEscolher={escolher}
+          aoAlternarImpressao={(linha) => void alternarImpressao(linha.pedido.id, !linha.impresso)}
           aoFechar={() => fechar('fila')}
           aoFocar={() => focar('fila')}
         />

@@ -60,6 +60,7 @@ export class AnaliseDeCreditoService {
     return pedidos.map((pedido) => ({
       pedido,
       cliente: resumos.get(pedido.customerId) ?? SEM_TITULOS,
+      impresso: (pedido.impressoPor ?? []).includes(context.userId as UserId),
     }));
   }
 
@@ -96,6 +97,11 @@ export class AnaliseDeCreditoService {
       ultimasNotas: notasDosPedidos(faturados, limite),
       carteira: carteiraDoCliente(titulos, customerId, pedidosPorId, hojeISO(), limite),
     };
+  }
+
+  /** "Ja imprimi este" e marca de quem imprimiu, e nao do pedido. */
+  marcarImpressao(context: TenantContext, id: string, impresso: boolean) {
+    return this.pedidos.marcarImpressao(context.tenantId, id, context.userId, impresso);
   }
 
   /** Porta de entrada do pedido, venha do desktop ou do celular: os dois caem
@@ -136,6 +142,7 @@ export class AnaliseDeCreditoService {
       descontoCentavos: itens.reduce((soma, item) => soma + item.descontoCentavos, 0),
       itens,
       observacao: input.observacao,
+      impressoPor: [],
       nota: null,
       enviadoEm: new Date().toISOString(),
       analisadoEm: null,

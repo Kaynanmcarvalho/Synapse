@@ -5,6 +5,8 @@ import {
   aplicarAtalho,
   filtrarFila,
   moverColuna,
+  larguraPadrao,
+  limitarLargura,
   ordenarFila,
   ORDEM_PADRAO,
   proximaOrdenacao,
@@ -25,6 +27,7 @@ const linha = (
     readonly tipo?: string;
     readonly enviadoEm?: string;
     readonly customerId?: string;
+    readonly impresso?: boolean;
   } = {},
 ): PedidoNaFila =>
   ({
@@ -45,6 +48,7 @@ const linha = (
       enviadoEm: extra.enviadoEm ?? '2026-09-10T10:00:00.000Z',
       totalCentavos,
     },
+    impresso: extra.impresso ?? false,
     cliente: {
       vencidoCentavos: extra.vencidoCentavos ?? 0,
       aVencerCentavos: extra.aVencerCentavos ?? 0,
@@ -101,6 +105,18 @@ describe('colunas do usuário', () => {
   });
 });
 
+describe('largura das colunas', () => {
+  it('respeita o minimo, o maximo e arredonda', () => {
+    expect(limitarLargura(10)).toBe(64);
+    expect(limitarLargura(5_000)).toBe(640);
+    expect(limitarLargura(180.4)).toBe(180);
+  });
+
+  it('a largura de fabrica e a que o duplo clique devolve', () => {
+    expect(larguraPadrao('valor')).toBe(130);
+  });
+});
+
 describe('busca e atalhos', () => {
   const linhas = [
     linha(1, 'Mercado do Bairro', 1_000, {
@@ -114,6 +130,7 @@ describe('busca e atalhos', () => {
       cidade: 'Anápolis',
       aVencerCentavos: 900,
       enviadoEm: '2026-09-13T08:00:00.000Z',
+      impresso: true,
     }),
   ];
 
@@ -123,12 +140,12 @@ describe('busca e atalhos', () => {
     expect(numeros(filtrarFila(linhas, 'anapolis', ['cliente']))).toEqual([]);
   });
 
-  it('atalhos separam quem deve, quem não deve e o que não é venda', () => {
-    expect(numeros(aplicarAtalho(linhas, 'com-atraso', '2026-09-13'))).toEqual([1]);
-    expect(numeros(aplicarAtalho(linhas, 'sem-titulo', '2026-09-13'))).toEqual([2]);
-    expect(numeros(aplicarAtalho(linhas, 'nao-venda', '2026-09-13'))).toEqual([2]);
-    expect(numeros(aplicarAtalho(linhas, 'hoje', '2026-09-13'))).toEqual([3]);
-    expect(numeros(aplicarAtalho(linhas, 'todos', '2026-09-13'))).toEqual([1, 2, 3]);
+  it('atalhos separam quem deve, quem não deve, o que não é venda e o que falta imprimir', () => {
+    expect(numeros(aplicarAtalho(linhas, 'com-atraso'))).toEqual([1]);
+    expect(numeros(aplicarAtalho(linhas, 'sem-titulo'))).toEqual([2]);
+    expect(numeros(aplicarAtalho(linhas, 'nao-venda'))).toEqual([2]);
+    expect(numeros(aplicarAtalho(linhas, 'nao-impressos'))).toEqual([1, 2]);
+    expect(numeros(aplicarAtalho(linhas, 'todos'))).toEqual([1, 2, 3]);
   });
 
   it('totais contam a dívida do cliente uma vez, mesmo com dois pedidos dele', () => {

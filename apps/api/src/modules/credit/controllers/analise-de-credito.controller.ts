@@ -4,9 +4,11 @@ import { CurrentTenant, RequirePermission } from '../../iam/iam.decorators';
 import type { TenantContext } from '../../iam/iam.types';
 import {
   filaQuerySchema,
+  impressaoSchema,
   limiteQuerySchema,
   registrarPedidoSchema,
   type FilaQuery,
+  type ImpressaoInput,
   type LimiteQuery,
   type RegistrarPedidoInput,
 } from '../dto/credito.schemas';
@@ -34,6 +36,17 @@ export class AnaliseDeCreditoController {
     @Query(new ZodValidationPipe(limiteQuerySchema)) query: LimiteQuery,
   ) {
     return this.service.painel(context, customerId, query.limit);
+  }
+
+  /** Controle de impressao: cada usuario marca o que ja imprimiu. */
+  @Post('orders/:id/impressao')
+  @RequirePermission('financeiro.visualizar')
+  marcarImpressao(
+    @CurrentTenant() context: TenantContext,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(impressaoSchema)) input: ImpressaoInput,
+  ) {
+    return this.service.marcarImpressao(context, id, input.impresso);
   }
 
   /** Entrada do pedido do vendedor: mesma rota para desktop e celular. */

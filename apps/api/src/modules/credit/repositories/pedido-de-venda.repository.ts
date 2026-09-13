@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import type { Firestore, QueryDocumentSnapshot } from '@synapse/firebase/admin';
 import type { PedidoDeVenda, SituacaoDoPedido } from '@synapse/types';
 import { FIREBASE_FIRESTORE } from '../../iam/firebase.tokens';
@@ -35,6 +35,28 @@ export class PedidoDeVendaRepository {
   async criar(pedido: PedidoDeVenda): Promise<PedidoDeVenda> {
     await this.colecao(pedido.tenantId).doc(pedido.id).create(pedido);
     return pedido;
+  }
+
+  /** Marca (ou desmarca) o pedido como impresso para um usuario. Em transacao:
+   *  dois usuarios imprimindo ao mesmo tempo nao apagam a marca um do outro. */
+  async marcarImpressao(
+    tenantId: string,
+    id: string,
+    userId: string,
+    impresso: boolean,
+  ): Promise<PedidoDeVenda> {
+    const referencia = this.colecao(tenantId).doc(id);
+    return this.db.runTransaction(async (transacao) => {
+      const documento = await transacao.get(referencia);
+      if (!documento.exists) throw new NotFoundException('Pedido não encontrado');
+      const pedido = documento.data() as PedidoDeVenda;
+      const marcas = new Set(pedido.impressoPor ?? []);
+      if (impresso) marcas.add(userId as PedidoDeVenda['impressoPor'][number]);
+      else marcas.delete(userId as PedidoDeVenda['impressoPor'][number]);
+      const impressoPor = [...marcas];
+      transacao.update(referencia, { impressoPor });
+      return { ...pedido, impressoPor };
+    });
   }
 
   async buscar(tenantId: string, id: string): Promise<PedidoDeVenda | null> {

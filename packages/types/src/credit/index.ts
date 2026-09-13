@@ -58,6 +58,9 @@ export interface PedidoDeVenda {
   readonly descontoCentavos: number;
   readonly itens: readonly ItemDoPedido[];
   readonly observacao: string | null;
+  /** Quem ja imprimiu este pedido. A marca e de cada usuario: o que um
+   *  imprimiu nao conta como impresso para o outro. */
+  readonly impressoPor: readonly UserId[];
   readonly nota: NotaDoPedido | null;
   readonly enviadoEm: string;
   readonly analisadoEm: string | null;
@@ -77,6 +80,8 @@ export interface ResumoFinanceiroDoCliente {
 export interface PedidoNaFila {
   readonly pedido: PedidoDeVenda;
   readonly cliente: ResumoFinanceiroDoCliente;
+  /** Se quem esta pedindo a fila ja imprimiu este pedido. */
+  readonly impresso: boolean;
 }
 
 export interface TituloEmAberto {

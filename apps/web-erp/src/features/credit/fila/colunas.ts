@@ -1,21 +1,22 @@
 import type { PedidoNaFila } from '@synapse/types';
-import { ROTULO_DA_ORIGEM, ROTULO_DO_TIPO } from '../analise';
+import { formatarDataHora, ROTULO_DA_ORIGEM, ROTULO_DO_TIPO } from '../analise';
+import { pagamentoDoPedido } from './filtros';
 
 /** As colunas da fila: o que cada uma mostra, como se ordena e quanto ocupa.
  *  Fica fora do componente porque e regra — a ordem que o usuario escolheu, o
- *  criterio de cada coluna — e regra se testa. */
+ *  criterio de cada coluna, a largura que ele arrastou — e regra se testa. */
 
 export type IdDaColuna =
   | 'pedido'
+  | 'impressao'
   | 'cliente'
   | 'tipo'
   | 'documento'
   | 'cidade'
   | 'bairro'
-  | 'formaDePagamento'
-  | 'condicao'
-  | 'prazo'
   | 'representante'
+  | 'pagamento'
+  | 'prazo'
   | 'origem'
   | 'itens'
   | 'enviadoEm'
@@ -34,10 +35,15 @@ export interface Coluna {
   readonly rotulo: string;
   /** O que dois cliques fazem nesta coluna, dito em palavras. */
   readonly criterio: string;
-  readonly alinhamento: 'esquerda' | 'direita';
-  readonly larguraMinima: number;
+  readonly alinhamento: 'esquerda' | 'direita' | 'centro';
+  /** Largura de fabrica: o duplo clique na divisao volta para ela. */
+  readonly largura: number;
   readonly valor: (linha: PedidoNaFila) => string | number;
 }
+
+/** Ninguem le nada com menos que isto, e nada precisa de mais que aquilo. */
+export const LARGURA_MINIMA = 64;
+export const LARGURA_MAXIMA = 640;
 
 const texto = (valor: string | null): string => valor ?? '';
 
@@ -45,17 +51,25 @@ export const COLUNAS: Record<IdDaColuna, Coluna> = {
   pedido: {
     id: 'pedido',
     rotulo: 'Pedido',
-    criterio: 'do mais antigo ao mais novo',
+    criterio: 'do menor número ao maior',
     alinhamento: 'esquerda',
-    larguraMinima: 88,
+    largura: 86,
     valor: (linha) => linha.pedido.numero,
+  },
+  impressao: {
+    id: 'impressao',
+    rotulo: 'Impressão',
+    criterio: 'separando o que você já imprimiu',
+    alinhamento: 'centro',
+    largura: 122,
+    valor: (linha) => (linha.impresso ? 'Sim' : 'Não'),
   },
   cliente: {
     id: 'cliente',
     rotulo: 'Cliente',
     criterio: 'de A a Z',
     alinhamento: 'esquerda',
-    larguraMinima: 200,
+    largura: 220,
     valor: (linha) => linha.pedido.clienteNome,
   },
   tipo: {
@@ -63,7 +77,7 @@ export const COLUNAS: Record<IdDaColuna, Coluna> = {
     rotulo: 'Tipo',
     criterio: 'de A a Z',
     alinhamento: 'esquerda',
-    larguraMinima: 130,
+    largura: 124,
     valor: (linha) => ROTULO_DO_TIPO[linha.pedido.tipo],
   },
   documento: {
@@ -71,7 +85,7 @@ export const COLUNAS: Record<IdDaColuna, Coluna> = {
     rotulo: 'CNPJ / CPF',
     criterio: 'em ordem numérica',
     alinhamento: 'esquerda',
-    larguraMinima: 150,
+    largura: 156,
     valor: (linha) => texto(linha.pedido.clienteDocumento),
   },
   cidade: {
@@ -79,7 +93,7 @@ export const COLUNAS: Record<IdDaColuna, Coluna> = {
     rotulo: 'Cidade',
     criterio: 'de A a Z',
     alinhamento: 'esquerda',
-    larguraMinima: 150,
+    largura: 150,
     valor: (linha) => texto(linha.pedido.clienteCidade),
   },
   bairro: {
@@ -87,47 +101,39 @@ export const COLUNAS: Record<IdDaColuna, Coluna> = {
     rotulo: 'Bairro',
     criterio: 'de A a Z',
     alinhamento: 'esquerda',
-    larguraMinima: 150,
+    largura: 140,
     valor: (linha) => texto(linha.pedido.clienteBairro),
-  },
-  formaDePagamento: {
-    id: 'formaDePagamento',
-    rotulo: 'Forma de pagamento',
-    criterio: 'de A a Z',
-    alinhamento: 'esquerda',
-    larguraMinima: 150,
-    valor: (linha) => linha.pedido.formaDePagamento,
-  },
-  condicao: {
-    id: 'condicao',
-    rotulo: 'Condição',
-    criterio: 'de A a Z',
-    alinhamento: 'esquerda',
-    larguraMinima: 150,
-    valor: (linha) => linha.pedido.condicaoDePagamento,
-  },
-  prazo: {
-    id: 'prazo',
-    rotulo: 'Prazo',
-    criterio: 'do menor prazo ao maior',
-    alinhamento: 'direita',
-    larguraMinima: 90,
-    valor: (linha) => linha.pedido.prazoMedioEmDias,
   },
   representante: {
     id: 'representante',
     rotulo: 'Representante',
     criterio: 'de A a Z',
     alinhamento: 'esquerda',
-    larguraMinima: 150,
+    largura: 160,
     valor: (linha) => linha.pedido.vendedorNome,
+  },
+  pagamento: {
+    id: 'pagamento',
+    rotulo: 'Pagamento',
+    criterio: 'de A a Z',
+    alinhamento: 'esquerda',
+    largura: 180,
+    valor: (linha) => pagamentoDoPedido(linha.pedido),
+  },
+  prazo: {
+    id: 'prazo',
+    rotulo: 'Prazo médio',
+    criterio: 'do menor prazo ao maior',
+    alinhamento: 'direita',
+    largura: 110,
+    valor: (linha) => linha.pedido.prazoMedioEmDias,
   },
   origem: {
     id: 'origem',
     rotulo: 'Origem',
     criterio: 'de A a Z',
     alinhamento: 'esquerda',
-    larguraMinima: 110,
+    largura: 110,
     valor: (linha) => ROTULO_DA_ORIGEM[linha.pedido.origem],
   },
   itens: {
@@ -135,15 +141,15 @@ export const COLUNAS: Record<IdDaColuna, Coluna> = {
     rotulo: 'Itens',
     criterio: 'do menor para o maior',
     alinhamento: 'direita',
-    larguraMinima: 80,
+    largura: 76,
     valor: (linha) => linha.pedido.itens.length,
   },
   enviadoEm: {
     id: 'enviadoEm',
-    rotulo: 'Enviado em',
+    rotulo: 'Data e hora',
     criterio: 'do mais antigo ao mais recente',
     alinhamento: 'esquerda',
-    larguraMinima: 150,
+    largura: 150,
     valor: (linha) => linha.pedido.enviadoEm,
   },
   situacao: {
@@ -151,7 +157,7 @@ export const COLUNAS: Record<IdDaColuna, Coluna> = {
     rotulo: 'Situação do cliente',
     criterio: 'do menor atraso ao maior',
     alinhamento: 'direita',
-    larguraMinima: 160,
+    largura: 176,
     valor: (linha) => linha.cliente.diasDeAtrasoMaximo,
   },
   valor: {
@@ -159,22 +165,22 @@ export const COLUNAS: Record<IdDaColuna, Coluna> = {
     rotulo: 'Valor',
     criterio: 'do menor para o maior',
     alinhamento: 'direita',
-    larguraMinima: 130,
+    largura: 130,
     valor: (linha) => linha.pedido.totalCentavos,
   },
 };
 
 export const TODAS_AS_COLUNAS: readonly IdDaColuna[] = [
   'pedido',
+  'impressao',
   'cliente',
   'tipo',
   'documento',
   'cidade',
   'bairro',
-  'formaDePagamento',
-  'condicao',
-  'prazo',
   'representante',
+  'pagamento',
+  'prazo',
   'origem',
   'itens',
   'enviadoEm',
@@ -182,23 +188,28 @@ export const TODAS_AS_COLUNAS: readonly IdDaColuna[] = [
   'valor',
 ];
 
-/** O que aparece antes de o usuario mexer: o essencial da analise, sem sufocar
- *  a janela. O resto fica no seletor de colunas. */
+/** O que aparece antes de o usuario mexer. A forma de pagamento fica fora da
+ *  tabela de proposito: tem lugar fixo no rodape, com o prazo inteiro. */
 export const ORDEM_PADRAO: readonly IdDaColuna[] = [
   'pedido',
+  'impressao',
   'cliente',
   'tipo',
   'documento',
   'cidade',
   'bairro',
-  'formaDePagamento',
   'representante',
-  'prazo',
+  'enviadoEm',
   'situacao',
   'valor',
 ];
 
 export const ORDENACAO_PADRAO: Ordenacao = { coluna: 'enviadoEm', direcao: 'desc' };
+
+export const larguraPadrao = (coluna: IdDaColuna): number => COLUNAS[coluna].largura;
+
+export const limitarLargura = (largura: number): number =>
+  Math.round(Math.min(Math.max(largura, LARGURA_MINIMA), LARGURA_MAXIMA));
 
 const comparar = (coluna: Coluna, a: PedidoNaFila, b: PedidoNaFila): number => {
   const valorA = coluna.valor(a);
@@ -267,14 +278,14 @@ export const filtrarFila = (
   );
 };
 
-export type Atalho = 'todos' | 'com-atraso' | 'sem-titulo' | 'nao-venda' | 'hoje';
+export type Atalho = 'todos' | 'nao-impressos' | 'com-atraso' | 'sem-titulo' | 'nao-venda';
 
 export const ATALHOS: ReadonlyArray<{ readonly id: Atalho; readonly rotulo: string }> = [
   { id: 'todos', rotulo: 'Todos' },
+  { id: 'nao-impressos', rotulo: 'Não impressos' },
   { id: 'com-atraso', rotulo: 'Com atraso' },
   { id: 'sem-titulo', rotulo: 'Sem dívida' },
   { id: 'nao-venda', rotulo: 'Bonificação e troca' },
-  { id: 'hoje', rotulo: 'Enviados hoje' },
 ];
 
 /** Dia local de um instante ISO: `startsWith` no ISO cru erraria o dia depois
@@ -290,7 +301,6 @@ export const dataLocal = (iso: string): string => {
 export const aplicarAtalho = (
   linhas: readonly PedidoNaFila[],
   atalho: Atalho,
-  hoje: string,
 ): readonly PedidoNaFila[] => {
   if (atalho === 'com-atraso') return linhas.filter((linha) => linha.cliente.titulosVencidos > 0);
   if (atalho === 'sem-titulo')
@@ -298,8 +308,7 @@ export const aplicarAtalho = (
       (linha) => linha.cliente.vencidoCentavos + linha.cliente.aVencerCentavos === 0,
     );
   if (atalho === 'nao-venda') return linhas.filter((linha) => linha.pedido.tipo !== 'VENDA');
-  if (atalho === 'hoje')
-    return linhas.filter((linha) => dataLocal(linha.pedido.enviadoEm) === hoje);
+  if (atalho === 'nao-impressos') return linhas.filter((linha) => !linha.impresso);
   return linhas;
 };
 
@@ -319,3 +328,9 @@ export const totaisDaFila = (linhas: readonly PedidoNaFila[]): TotaisDaFila => (
   ].reduce((soma, cliente) => soma + cliente.vencidoCentavos, 0),
   clientes: new Set(linhas.map((linha) => linha.pedido.customerId)).size,
 });
+
+/** Texto da celula para as colunas que nao tem desenho proprio. */
+export const textoDaCelula = (coluna: IdDaColuna, linha: PedidoNaFila): string =>
+  coluna === 'enviadoEm'
+    ? formatarDataHora(linha.pedido.enviadoEm)
+    : String(COLUNAS[coluna].valor(linha));

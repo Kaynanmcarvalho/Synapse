@@ -34,6 +34,10 @@ export type RegistrarPedidoInput = z.infer<typeof registrarPedidoSchema>;
 
 /** Quantos registros cada parte da tela carrega. O padrao e o que a operacao
  *  pediu: os ultimos 150 de cada lista. */
+export const impressaoSchema = z.object({ impresso: z.boolean() });
+
+export type ImpressaoInput = z.infer<typeof impressaoSchema>;
+
 export const limiteQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(500).default(150),
 });

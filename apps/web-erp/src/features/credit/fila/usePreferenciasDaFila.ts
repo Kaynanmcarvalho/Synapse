@@ -2,6 +2,8 @@ import { useCallback, useMemo } from 'react';
 import { usePreferencia } from '../../../lib/preferencias';
 import {
   alternarColuna,
+  larguraPadrao,
+  limitarLargura,
   moverColuna,
   ORDEM_PADRAO,
   ORDENACAO_PADRAO,
@@ -14,13 +16,19 @@ import {
 interface PreferenciasDaFila {
   readonly ordem: readonly IdDaColuna[];
   readonly ordenacao: Ordenacao;
+  /** So as colunas que o usuario arrastou; o resto usa a largura de fabrica. */
+  readonly larguras: Partial<Record<IdDaColuna, number>>;
 }
 
-const PADRAO: PreferenciasDaFila = { ordem: ORDEM_PADRAO, ordenacao: ORDENACAO_PADRAO };
+const PADRAO: PreferenciasDaFila = {
+  ordem: ORDEM_PADRAO,
+  ordenacao: ORDENACAO_PADRAO,
+  larguras: {},
+};
 
-/** Ordem das colunas e criterio de ordenacao, guardados por usuario. Se uma
- *  coluna deixar de existir numa versao nova, a preferencia antiga e limpa em
- *  vez de quebrar a tabela. */
+/** Ordem, largura das colunas e criterio de ordenacao, guardados por usuario.
+ *  Se uma coluna deixar de existir numa versao nova, a preferencia antiga e
+ *  ignorada em vez de quebrar a tabela. */
 export const usePreferenciasDaFila = () => {
   const [guardadas, gravar] = usePreferencia<PreferenciasDaFila>('fila-de-pedidos', PADRAO);
 
@@ -32,6 +40,11 @@ export const usePreferenciasDaFila = () => {
   const ordenacao = TODAS_AS_COLUNAS.includes(guardadas.ordenacao.coluna)
     ? guardadas.ordenacao
     : ORDENACAO_PADRAO;
+
+  const largura = useCallback(
+    (coluna: IdDaColuna) => guardadas.larguras?.[coluna] ?? larguraPadrao(coluna),
+    [guardadas.larguras],
+  );
 
   const ordenarPor = useCallback(
     (coluna: IdDaColuna) =>
@@ -51,7 +64,37 @@ export const usePreferenciasDaFila = () => {
     [gravar],
   );
 
+  const redimensionar = useCallback(
+    (coluna: IdDaColuna, nova: number) =>
+      gravar((atual) => ({
+        ...atual,
+        larguras: { ...atual.larguras, [coluna]: limitarLargura(nova) },
+      })),
+    [gravar],
+  );
+
+  /** Dois cliques na divisao: a coluna volta ao tamanho de fabrica. */
+  const restaurarLargura = useCallback(
+    (coluna: IdDaColuna) =>
+      gravar((atual) => {
+        const larguras = { ...atual.larguras };
+        delete larguras[coluna];
+        return { ...atual, larguras };
+      }),
+    [gravar],
+  );
+
   const restaurar = useCallback(() => gravar(PADRAO), [gravar]);
 
-  return { ordem, ordenacao, ordenarPor, mover, alternar, restaurar };
+  return {
+    ordem,
+    ordenacao,
+    largura,
+    ordenarPor,
+    mover,
+    alternar,
+    redimensionar,
+    restaurarLargura,
+    restaurar,
+  };
 };

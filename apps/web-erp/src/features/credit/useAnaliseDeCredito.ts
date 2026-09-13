@@ -1,6 +1,6 @@
 import type { PainelDeAnaliseDeCredito, PedidoNaFila } from '@synapse/types';
 import { useCallback, useEffect, useState } from 'react';
-import { carregarPainelDoCliente, listarFilaDeAnalise } from './analise.api';
+import { carregarPainelDoCliente, listarFilaDeAnalise, marcarImpressao } from './analise.api';
 
 export type EstadoDaFila =
   | { readonly status: 'carregando' }
@@ -40,9 +40,38 @@ export const useAnaliseDeCredito = () => {
     }
   }, []);
 
+  /** A marca muda na tela na hora e so depois vai ao servidor: esperar a
+   *  resposta para riscar uma linha deixaria o clique com cara de travado. */
+  const alternarImpressao = useCallback(async (pedidoId: string, impresso: boolean) => {
+    setFila((atual) =>
+      atual.status === 'pronto'
+        ? {
+            ...atual,
+            pedidos: atual.pedidos.map((linha) =>
+              linha.pedido.id === pedidoId ? { ...linha, impresso } : linha,
+            ),
+          }
+        : atual,
+    );
+    try {
+      await marcarImpressao(pedidoId, impresso);
+    } catch {
+      setFila((atual) =>
+        atual.status === 'pronto'
+          ? {
+              ...atual,
+              pedidos: atual.pedidos.map((linha) =>
+                linha.pedido.id === pedidoId ? { ...linha, impresso: !impresso } : linha,
+              ),
+            }
+          : atual,
+      );
+    }
+  }, []);
+
   useEffect(() => {
     void carregarFila();
   }, [carregarFila]);
 
-  return { fila, painel, carregarFila, abrirCliente };
+  return { fila, painel, carregarFila, abrirCliente, alternarImpressao };
 };
