@@ -23,12 +23,17 @@ import { type EstadoDosAvisos, useAvisos } from './useAvisos';
 
 /** As rotinas mais usadas no balcao e na retaguarda. Vem do menu: se o tenant
  *  nao tem o modulo, o atalho some junto com a opcao. */
-const ACESSO_RAPIDO: ReadonlyArray<{ readonly rotulo: string; readonly icone: LucideIcon }> = [
+const ACESSO_RAPIDO: ReadonlyArray<{
+  readonly rotulo: string;
+  /** Nome curto no atalho, quando o do menu e comprido demais para o cartao. */
+  readonly nome?: string;
+  readonly icone: LucideIcon;
+}> = [
   { rotulo: 'Venda PDV NFC-e', icone: ScanLine },
   { rotulo: 'Lançamento de Nota Fiscal de Entrada', icone: FileInput },
   { rotulo: 'Balanço de Estoque', icone: PackageSearch },
-  { rotulo: 'Boletos', icone: Receipt },
-  { rotulo: 'Cadastro de Produtos', icone: Boxes },
+  { rotulo: 'Gerenciamento de Cobrança Bancária', nome: 'Boletos', icone: Receipt },
+  { rotulo: 'Produtos / Serviços', nome: 'Cadastro de Produtos', icone: Boxes },
   { rotulo: 'Controle de Notas Fiscais Emitidas para meu CNPJ', icone: FileText },
 ];
 
@@ -198,12 +203,12 @@ function AcessoRapido() {
   const { menus } = useShell();
   const disponiveis = todosOsItens(menus).filter((item) => item.situacao === 'disponivel');
   const atalhos = [
-    ...ACESSO_RAPIDO.flatMap(({ rotulo, icone }) => {
+    ...ACESSO_RAPIDO.flatMap(({ rotulo, nome, icone }) => {
       const item = disponiveis.find((candidato) => candidato.rotulo === rotulo);
       return item
         ? [
             {
-              rotulo,
+              rotulo: nome ?? rotulo,
               caminho: item.caminho,
               local: item.trilha.slice(0, -1).join(' › '),
               atalho: item.atalho?.rotulo,

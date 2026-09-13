@@ -20,6 +20,18 @@ const rotulosDoPrimeiroNivel = (rotulo: string) =>
     ?.itens.filter((e) => e.tipo !== 'separador')
     .map((e) => ('rotulo' in e ? e.rotulo : ''));
 
+/** Rotulos de um submenu, descendo pela trilha: ('Cadastros', 'Clientes'). */
+const rotulosDoSubmenu = (menu: string, ...trilha: readonly string[]) => {
+  let entradas = MENUS.find((m) => m.rotulo === menu)?.itens;
+  for (const rotulo of trilha) {
+    const alvo = entradas?.find((e) => e.tipo === 'submenu' && e.rotulo === rotulo);
+    entradas = alvo?.tipo === 'submenu' ? alvo.itens : undefined;
+  }
+  return entradas
+    ?.filter((e) => e.tipo !== 'separador')
+    .map((e) => ('rotulo' in e ? e.rotulo : ''));
+};
+
 const idsDe = (entradas: readonly EntradaDeMenu[]): string[] =>
   entradas.flatMap((e) => [e.id, ...(e.tipo === 'submenu' ? idsDe(e.itens) : [])]);
 
@@ -197,6 +209,187 @@ describe('fidelidade ao menu do Syndata', () => {
     ],
   ])('%s tem as mesmas opcoes do Syndata', (menu, esperados) => {
     expect(rotulosDoPrimeiroNivel(menu)).toEqual(esperados);
+  });
+
+  // Conferidos nos prints do Syndata, opcao por opcao e na mesma ordem.
+  it.each([
+    [
+      ['Cadastros', 'Financeiro'],
+      [
+        'Plano de Contas',
+        'Centro de Custos',
+        'Contas',
+        'Portadores',
+        'Bancos',
+        'Tipos de Documentos',
+        'Convênios',
+        'Condições de Pagamento',
+        'Grupo de Condições de Pagamento',
+        'Tipo de Lançamento em Títulos a Receber',
+        'Tipo de Lançamento em Títulos a Pagar',
+      ],
+    ],
+    [
+      ['Cadastros', 'Fiscais'],
+      ['Séries de Notas Fiscais', 'Contabilista', 'Intermediador da Transação (Marketplace)'],
+    ],
+    [
+      ['Cadastros', 'Clientes'],
+      [
+        'Clientes',
+        'Grupo de Clientes',
+        'Sub-Grupo de Clientes',
+        'Grupo Econômico',
+        'Prospecção',
+        'Segmento Empresarial',
+        'Lote de Cobrança',
+        'Configuração de Clientes em Lote',
+      ],
+    ],
+    [
+      ['Cadastros', 'Fornecedores'],
+      ['Fornecedores', 'Grupo de Fornecedores', 'Sub-Grupo de Fornecedores'],
+    ],
+    [
+      ['Cadastros', 'Funcionários'],
+      ['Funcionários', 'Cargos', 'Departamentos'],
+    ],
+    [
+      ['Cadastros', 'Produtos / Serviços'],
+      [
+        'Produtos / Serviços',
+        'Cotação da Moeda Estrangeira',
+        'Unidades de Medidas',
+        'Grupos de Produtos',
+        'Sub-Grupo de Produtos',
+        'Linha de Produtos',
+        'Marcas',
+        'Similares',
+        'Localização do Produto',
+        'Grupo de Promoção',
+        'Cores',
+        'Tamanhos',
+        'Departamentos do Produto',
+        'Configuração de Produtos para Autoatendimento',
+        'Ajuste de Preço dos Produtos',
+        'Aplicar Tabela de ICMS/ICMS ST',
+        'Atualização de Tabelas da SEFAZ',
+        'Produtos Favoritos',
+        'Configuração de Produtos em Lote',
+        'Importar Códigos de Benefícios Fiscais',
+      ],
+    ],
+    [
+      ['Cadastros', 'Relatórios'],
+      [
+        'Clientes',
+        'Fornecedores',
+        'Funcionários',
+        'Assessores de Venda',
+        'Etiqueta de Produtos',
+        'Etiqueta de Clientes',
+        'Etiqueta de Produto Pesado em Balança',
+      ],
+    ],
+    [
+      ['Vendas', 'Restaurante'],
+      [
+        'Consumo Mesa',
+        'Venda Restaurante',
+        'Venda Touch',
+        'Controle de Entrega de Comanda',
+        'Autoatendimento',
+      ],
+    ],
+    [
+      ['Vendas', 'Proposta de Venda'],
+      ['Controle de Proposta de Venda', 'Proposta de Venda', 'Cancelamento de Proposta'],
+    ],
+    [
+      ['Vendas', 'Remessa de Entrega'],
+      [
+        'Controle de Entrega',
+        'Controle Remessa Entrega de Mercadoria',
+        'Nova Remessa Entrega de Mercadoria',
+        'Controle de Remessa de Cargas',
+      ],
+    ],
+    [
+      ['Vendas', 'Relatórios'],
+      [
+        'Vendas',
+        'Vendas Restaurante',
+        'Curva ABC de Produtos e Serviços',
+        'Curva ABC de Clientes',
+        'Curva ABC de Marcas',
+        'Gerenciador de Comissão de Vendas',
+        'Comissão de Vendas',
+        'Comissão Assessor de Venda',
+        'Ordem de Serviços',
+        'Remessa de Entrega',
+        'Remessa Entrega de Mercadorias',
+        'Remessa de Carga',
+        'Notas Fiscais Emitidas',
+        'Docs. Fiscais Emitidos por CST de PIS/COFINS',
+        'Emissão de Recibo Avulso',
+      ],
+    ],
+    [
+      ['Estoque', 'Troca de Mercadorias'],
+      ['Controle de Troca de Mercadorias', 'Nova Troca de Mercadorias'],
+    ],
+    [
+      ['Estoque', 'Relatórios'],
+      [
+        'Posição de estoque',
+        'Posição de Venda / Estoque',
+        'Produtos com Estoque Mínimo',
+        'Curva ABC de Fornecedores',
+        'Relatório Produtos por NCM',
+        'Markup de Produtos',
+        'Lista de Preços',
+        'Transferência de Estoque',
+        'Balanço de Estoque',
+        'Registro de Inventário',
+        'Gestão de Projetos',
+        'Espelho Nota Fiscal de Entrada',
+        'Notas Fiscais de Entrada',
+        'Notas Fiscais Totalizadas por CFOP',
+      ],
+    ],
+    [
+      ['Financeiro', 'Contas a Pagar'],
+      ['Controle de Títulos', 'Lançamento de Títulos', 'Baixa de Títulos'],
+    ],
+    [
+      ['Financeiro', 'Contas a Receber'],
+      [
+        'Controle de Títulos',
+        'Lançamento de Títulos',
+        'Baixa de Títulos',
+        'Gerenciamento de Cobrança Bancária',
+        'Ajuste de Valor de Título',
+        'Faturamento',
+      ],
+    ],
+    [
+      ['Financeiro', 'Controle de Contas (Caixa e Bancos)'],
+      ['Controle de Contas (Caixa e Bancos)', 'Fechar Caixa'],
+    ],
+    [
+      ['Financeiro', 'Relatórios'],
+      [
+        'Resumo Financeiro Simplificado',
+        'Contas a Pagar',
+        'Contas a Receber',
+        'Crédito do Cliente',
+        'Fluxo de Caixa',
+        'Centro de Custo',
+        'Demonstração do Resultado do Exercício (DRE)',
+      ],
+    ],
+  ])('%s tem as mesmas opcoes do Syndata', (trilha, esperados) => {
+    expect(rotulosDoSubmenu(...(trilha as [string, ...string[]]))).toEqual(esperados);
   });
 
   it('mantem os atalhos do Syndata que o navegador deixa a pagina usar', () => {
