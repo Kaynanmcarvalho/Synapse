@@ -129,6 +129,51 @@ export class BoletoRepository {
       return { ...charge, status: 'CANCELLED' as const };
     });
   }
+  /** O boleto de um titulo, com os eventos de liquidacao gravados. Titulo que
+   *  teve boleto cancelado e reemitido fica com o mais recente ainda valido. */
+  async porTitulo(
+    tenantId: string,
+    tituloId: string,
+  ): Promise<{
+    readonly boleto: Charge;
+    readonly eventos: ReadonlyArray<{
+      eventId: string;
+      amount: number;
+      userId: string;
+      note: string;
+      occurredAt: string;
+    }>;
+  } | null> {
+    const result = await this.db
+      .collection(`tenants/${tenantId}/boletos`)
+      .where('tituloId', '==', tituloId)
+      .get();
+    const boletos = result.docs
+      .map((d) => d.data() as Charge)
+      .sort(
+        (a, b) =>
+          Number(a.status === 'CANCELLED') - Number(b.status === 'CANCELLED') ||
+          b.createdAt.localeCompare(a.createdAt),
+      );
+    const boleto = boletos[0];
+    if (!boleto) return null;
+    const eventos = await this.ref(tenantId, boleto.id).collection('events').get();
+    return {
+      boleto,
+      eventos: eventos.docs
+        .map(
+          (d) =>
+            d.data() as {
+              eventId: string;
+              amount: number;
+              userId: string;
+              note: string;
+              occurredAt: string;
+            },
+        )
+        .sort((a, b) => a.occurredAt.localeCompare(b.occurredAt)),
+    };
+  }
   async list(tenantId: string, branchId: string) {
     const result = await this.db
       .collection(`tenants/${tenantId}/boletos`)

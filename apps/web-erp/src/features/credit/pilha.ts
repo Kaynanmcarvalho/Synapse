@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'react';
 
-export type IdDaJanela = 'fila' | 'cliente' | 'pedido' | 'parcelas' | 'cadastro';
+/** As janelas da tela: a fila, a ficha do cliente, a analise do pedido, o
+ *  navegador de documentos (pedido, nota, titulo) e o cadastro completo. */
+export type IdDaJanela = 'fila' | 'cliente' | 'analise' | 'documentos' | 'cadastro';
 
 /** O que cada janela precisa saber da pilha: a profundidade, se esta na frente
  *  e como se fechar ou subir. */

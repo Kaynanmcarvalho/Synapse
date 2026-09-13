@@ -1,5 +1,5 @@
 import type { PedidoNaFila } from '@synapse/types';
-import { formatarDataHora, ROTULO_DA_ORIGEM, ROTULO_DO_TIPO } from '../analise';
+import { formatarDataHora, ROTULO_DA_ORIGEM, ROTULO_DO_TIPO, tempoAguardando } from '../analise';
 import { pagamentoDoPedido } from './filtros';
 
 /** As colunas da fila: o que cada uma mostra, como se ordena e quanto ocupa.
@@ -11,6 +11,7 @@ export type IdDaColuna =
   | 'impressao'
   | 'cliente'
   | 'tipo'
+  | 'motivo'
   | 'documento'
   | 'cidade'
   | 'bairro'
@@ -20,7 +21,9 @@ export type IdDaColuna =
   | 'origem'
   | 'itens'
   | 'enviadoEm'
-  | 'valor';
+  | 'aguardando'
+  | 'valor'
+  | 'exposicao';
 
 export type Direcao = 'asc' | 'desc';
 
@@ -86,6 +89,15 @@ export const COLUNAS: Record<IdDaColuna, Coluna> = {
     alinhamento: 'esquerda',
     largura: 124,
     valor: (linha) => ROTULO_DO_TIPO[linha.pedido.tipo],
+  },
+  motivo: {
+    id: 'motivo',
+    rotulo: 'Motivo',
+    criterio: 'separando o que fere a política',
+    alinhamento: 'esquerda',
+    largura: 220,
+    valor: (linha) =>
+      `${linha.avaliacao.violaPolitica ? '0' : '1'} ${linha.avaliacao.motivos.map((motivo) => motivo.rotulo).join(', ')}`,
   },
   documento: {
     id: 'documento',
@@ -159,13 +171,29 @@ export const COLUNAS: Record<IdDaColuna, Coluna> = {
     largura: 164,
     valor: (linha) => linha.pedido.enviadoEm,
   },
+  aguardando: {
+    id: 'aguardando',
+    rotulo: 'Aguardando',
+    criterio: 'de quem espera há menos tempo ao que espera há mais',
+    alinhamento: 'direita',
+    largura: 118,
+    valor: (linha) => -Date.parse(linha.pedido.enviadoEm),
+  },
   valor: {
     id: 'valor',
-    rotulo: 'Valor',
+    rotulo: 'Valor comercial',
     criterio: 'do menor para o maior',
     alinhamento: 'direita',
-    largura: 142,
+    largura: 150,
     valor: (linha) => linha.pedido.totalCentavos,
+  },
+  exposicao: {
+    id: 'exposicao',
+    rotulo: 'Exposição',
+    criterio: 'da menor para a maior exposição de crédito',
+    alinhamento: 'direita',
+    largura: 132,
+    valor: (linha) => linha.avaliacao.exposicao.exposicaoCentavos,
   },
 };
 
@@ -174,6 +202,7 @@ export const TODAS_AS_COLUNAS: readonly IdDaColuna[] = [
   'impressao',
   'cliente',
   'tipo',
+  'motivo',
   'documento',
   'cidade',
   'bairro',
@@ -183,7 +212,9 @@ export const TODAS_AS_COLUNAS: readonly IdDaColuna[] = [
   'origem',
   'itens',
   'enviadoEm',
+  'aguardando',
   'valor',
+  'exposicao',
 ];
 
 /** O que aparece antes de o usuario mexer. A forma de pagamento fica fora da
@@ -193,13 +224,30 @@ export const ORDEM_PADRAO: readonly IdDaColuna[] = [
   'impressao',
   'cliente',
   'tipo',
+  'motivo',
   'documento',
   'cidade',
-  'bairro',
   'representante',
   'enviadoEm',
+  'aguardando',
   'valor',
+  'exposicao',
 ];
+
+/** Colunas que chegaram depois da primeira versao da fila. Quem ja tinha a fila
+ *  do seu jeito recebe as novas uma vez, na posicao do padrao, sem perder a
+ *  ordem que escolheu; se tirar depois, elas nao voltam. */
+export const COLUNAS_NOVAS: readonly IdDaColuna[] = ['motivo', 'aguardando', 'exposicao'];
+
+export const incluirColunasNovas = (ordem: readonly IdDaColuna[]): readonly IdDaColuna[] =>
+  COLUNAS_NOVAS.reduce<readonly IdDaColuna[]>((atual, nova) => {
+    if (atual.includes(nova)) return atual;
+    const anterior = ORDEM_PADRAO[ORDEM_PADRAO.indexOf(nova) - 1];
+    const posicao = anterior ? atual.indexOf(anterior) : -1;
+    return posicao < 0
+      ? [...atual, nova]
+      : [...atual.slice(0, posicao + 1), nova, ...atual.slice(posicao + 1)];
+  }, ordem);
 
 export const ORDENACAO_PADRAO: Ordenacao = { coluna: 'enviadoEm', direcao: 'desc' };
 
@@ -275,16 +323,6 @@ export const filtrarFila = (
   );
 };
 
-export type Atalho = 'todos' | 'nao-impressos' | 'com-atraso' | 'sem-titulo' | 'nao-venda';
-
-export const ATALHOS: ReadonlyArray<{ readonly id: Atalho; readonly rotulo: string }> = [
-  { id: 'todos', rotulo: 'Todos' },
-  { id: 'nao-impressos', rotulo: 'Não impressos' },
-  { id: 'com-atraso', rotulo: 'Com atraso' },
-  { id: 'sem-titulo', rotulo: 'Sem dívida' },
-  { id: 'nao-venda', rotulo: 'Bonificação e troca' },
-];
-
 /** Dia local de um instante ISO: `startsWith` no ISO cru erraria o dia depois
  *  das 21h no Brasil, quando em Greenwich ja e amanha. */
 export const dataLocal = (iso: string): string => {
@@ -295,39 +333,12 @@ export const dataLocal = (iso: string): string => {
   return `${data.getFullYear()}-${mes}-${dia}`;
 };
 
-export const aplicarAtalho = (
-  linhas: readonly PedidoNaFila[],
-  atalho: Atalho,
-): readonly PedidoNaFila[] => {
-  if (atalho === 'com-atraso') return linhas.filter((linha) => linha.cliente.titulosVencidos > 0);
-  if (atalho === 'sem-titulo')
-    return linhas.filter(
-      (linha) => linha.cliente.vencidoCentavos + linha.cliente.aVencerCentavos === 0,
-    );
-  if (atalho === 'nao-venda') return linhas.filter((linha) => linha.pedido.tipo !== 'VENDA');
-  if (atalho === 'nao-impressos') return linhas.filter((linha) => !linha.impresso);
-  return linhas;
-};
-
-export interface TotaisDaFila {
-  readonly pedidos: number;
-  readonly valorCentavos: number;
-  readonly vencidoCentavos: number;
-  readonly clientes: number;
-}
-
-export const totaisDaFila = (linhas: readonly PedidoNaFila[]): TotaisDaFila => ({
-  pedidos: linhas.length,
-  valorCentavos: linhas.reduce((soma, linha) => soma + linha.pedido.totalCentavos, 0),
-  // Divida vencida conta uma vez por cliente, e nao uma vez por pedido.
-  vencidoCentavos: [
-    ...new Map(linhas.map((linha) => [linha.pedido.customerId, linha.cliente])).values(),
-  ].reduce((soma, cliente) => soma + cliente.vencidoCentavos, 0),
-  clientes: new Set(linhas.map((linha) => linha.pedido.customerId)).size,
-});
+export { ATALHOS, aplicarAtalho, totaisDaFila, type Atalho, type TotaisDaFila } from './atalhos';
 
 /** Texto da celula para as colunas que nao tem desenho proprio. */
-export const textoDaCelula = (coluna: IdDaColuna, linha: PedidoNaFila): string =>
-  coluna === 'enviadoEm'
-    ? formatarDataHora(linha.pedido.enviadoEm)
-    : String(COLUNAS[coluna].valor(linha));
+export const textoDaCelula = (coluna: IdDaColuna, linha: PedidoNaFila): string => {
+  if (coluna === 'enviadoEm') return formatarDataHora(linha.pedido.enviadoEm);
+  if (coluna === 'aguardando') return tempoAguardando(linha.pedido.enviadoEm);
+  if (coluna === 'motivo') return linha.avaliacao.motivos.map((motivo) => motivo.rotulo).join(', ');
+  return String(COLUNAS[coluna].valor(linha));
+};

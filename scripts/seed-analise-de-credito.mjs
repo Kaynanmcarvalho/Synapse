@@ -55,7 +55,7 @@ const historicoDe = (dados, vendedor) => {
   const lancado = ev(
     'LANCADO',
     'VENDEDOR',
-    vendedor,
+    dados.lancadoPor ?? vendedor,
     inicio,
     `Enviado pelo ${dados.origem ?? 'MOBILE'}`,
   );
@@ -147,6 +147,7 @@ const pedido = (tenantId, cliente, dados) => {
     origem: dados.origem ?? 'MOBILE',
     vendedorId: dados.vendedorId ?? 'vendedor-dev',
     vendedorNome: dados.vendedorNome ?? 'Marcos Vendas',
+    ...(dados.lancadoPor ? { lancadoPor: dados.lancadoPor } : {}),
     condicaoDePagamento: dados.condicao ?? '28/35/42 dias',
     vencimentosEmDias: diasDaCondicao(dados.condicao ?? '28/35/42 dias'),
     prazoMedioEmDias: dados.prazo ?? 35,
@@ -282,6 +283,22 @@ const pedidosDe = (tenantId) => {
       nota: { numero: 4310, serie: 1, chaveDeAcesso: null, emitidaEm: instante(-61) },
       itens: [item('produto-dev-2', 'Feijao carioca 1kg', 200, 749)],
     }),
+    pedido(tenantId, mercado, {
+      id: 'pedido-dev-070',
+      numero: 70,
+      situacao: 'FATURADO',
+      enviadoEm: instante(-75),
+      nota: { numero: 4251, serie: 1, chaveDeAcesso: null, emitidaEm: instante(-74) },
+      itens: [item('produto-dev-1', 'Arroz tipo 1 5kg (fardo)', 25, 12_990)],
+    }),
+    pedido(tenantId, mercado, {
+      id: 'pedido-dev-060',
+      numero: 60,
+      situacao: 'FATURADO',
+      enviadoEm: instante(-85),
+      nota: { numero: 4205, serie: 1, chaveDeAcesso: null, emitidaEm: instante(-84) },
+      itens: [item('produto-dev-2', 'Feijao carioca 1kg', 150, 749)],
+    }),
     pedido(tenantId, padaria, {
       id: 'pedido-dev-103',
       numero: 103,
@@ -309,7 +326,7 @@ const pedidosDe = (tenantId) => {
       condicao: 'À vista',
       prazo: 0,
       forma: 'PIX',
-      vendedorNome: 'Caixa 1',
+      lancadoPor: { uid: 'caixa-1', nome: 'Caixa 1' },
       enviadoEm: instante(-0.05),
       itens: [item('produto-dev-6', 'Cafe torrado 500g', 24, 1_890)],
     }),
@@ -391,6 +408,46 @@ const titulosDe = (tenantId) => {
       vencimento: dia(-30),
       liquidacoes: [{ data: dia(-33), forma: 'PIX' }],
     }),
+    titulo(tenantId, mercado, {
+      id: 'titulo-dev-10',
+      descricao: 'NF 4251 parcela 1/2',
+      orderId: 'pedido-dev-070',
+      parcela: 1,
+      totalDeParcelas: 2,
+      valorCentavos: 162_375,
+      vencimento: dia(-46),
+      liquidacoes: [{ data: dia(-44), forma: 'BOLETO' }],
+    }),
+    titulo(tenantId, mercado, {
+      id: 'titulo-dev-11',
+      descricao: 'NF 4251 parcela 2/2',
+      orderId: 'pedido-dev-070',
+      parcela: 2,
+      totalDeParcelas: 2,
+      valorCentavos: 162_375,
+      vencimento: dia(-39),
+      liquidacoes: [{ data: dia(-41), forma: 'PIX' }],
+    }),
+    titulo(tenantId, mercado, {
+      id: 'titulo-dev-12',
+      descricao: 'NF 4205 parcela 1/2',
+      orderId: 'pedido-dev-060',
+      parcela: 1,
+      totalDeParcelas: 2,
+      valorCentavos: 56_175,
+      vencimento: dia(-56),
+      liquidacoes: [{ data: dia(-56), forma: 'BOLETO' }],
+    }),
+    titulo(tenantId, mercado, {
+      id: 'titulo-dev-13',
+      descricao: 'NF 4205 parcela 2/2',
+      orderId: 'pedido-dev-060',
+      parcela: 2,
+      totalDeParcelas: 2,
+      valorCentavos: 56_175,
+      vencimento: dia(-49),
+      liquidacoes: [{ data: dia(-49), forma: 'BOLETO' }],
+    }),
     titulo(tenantId, padaria, {
       id: 'titulo-dev-6',
       descricao: 'NF 4388 parcela 1/1',
@@ -424,6 +481,7 @@ const titulosDe = (tenantId) => {
 
 const CADASTROS = {
   'cliente-dev-1': {
+    codigo: 'C-0042',
     legalName: 'Mercado do Bairro Comércio de Alimentos LTDA',
     stateRegistration: '10.123.456-7',
     phone: '(62) 3241-5566',
@@ -448,6 +506,7 @@ const CADASTROS = {
     creditLimit: 600_000,
   },
   'cliente-dev-3': {
+    codigo: 'C-0107',
     legalName: 'Atacado Sul Distribuidora EIRELI',
     stateRegistration: '10.456.789-0',
     phone: '(62) 3324-1122',
@@ -466,6 +525,7 @@ const cadastroDe = (tenantId, cliente) => {
   return {
     id: cliente.id,
     tenantId,
+    codigo: extra.codigo ?? null,
     type: 'PJ',
     name: cliente.nome,
     legalName: extra.legalName,
@@ -489,6 +549,97 @@ const cadastroDe = (tenantId, cliente) => {
   };
 };
 
+/** Conta bancaria e boletos de exemplo: um registrado e em aberto, outro ja
+ *  liquidado com o evento da baixa. Registro por API — o Synapse nao tem CNAB. */
+const CONTA = {
+  id: 'conta-dev-sicredi',
+  bankId: 'SICREDI',
+  environment: 'MOCK',
+  apelido: 'Sicredi Matriz',
+  ativo: true,
+  baseUrl: null,
+  sicredi: {
+    cooperativa: '0101',
+    posto: '02',
+    conta: '12345-6',
+    carteira: '1',
+    chavePix: '',
+    clientIdSecretRef: 'dev',
+    clientSecretSecretRef: 'dev',
+    certificadoSecretRef: 'dev',
+  },
+};
+
+const boleto = (tenantId, dados) => ({
+  id: dados.id,
+  tenantId,
+  branchId: 'filial-dev',
+  accountId: CONTA.id,
+  tituloId: dados.tituloId,
+  amountCentavos: dados.valorCentavos,
+  dueDate: dados.vencimento,
+  status: dados.status,
+  bank: {
+    referencia: dados.id,
+    nossoNumero: dados.nossoNumero,
+    status: dados.status === 'PAID' ? 'LIQUIDADO' : 'REGISTRADO',
+    valorCentavos: dados.valorCentavos,
+    valorPagoCentavos: dados.status === 'PAID' ? dados.valorCentavos : null,
+    vencimento: dados.vencimento,
+    linhaDigitavel: dados.linhaDigitavel,
+    codigoDeBarras: dados.linhaDigitavel.replaceAll(' ', '').replaceAll('.', ''),
+    pdfUrl: null,
+    pagoEm: dados.pagoEm ?? null,
+  },
+  input: {
+    accountId: CONTA.id,
+    branchId: 'filial-dev',
+    customerId: 'cliente-dev-1',
+    orderId: dados.orderId,
+    description: dados.descricao,
+    idempotencyKey: dados.id,
+    totalCentavos: dados.valorCentavos,
+    installments: 1,
+    firstDueDate: dados.vencimento,
+    interestPercent: 1,
+    finePercent: 2,
+    discountCentavos: 0,
+    payer: { nome: 'Mercado do Bairro', documento: '12345678000190' },
+  },
+  installment: dados.parcela,
+  createdAt: dados.criadoEm,
+});
+
+const boletosDe = (tenantId) => [
+  boleto(tenantId, {
+    id: 'boleto-dev-2',
+    tituloId: 'titulo-dev-2',
+    orderId: 'pedido-dev-090',
+    descricao: 'NF 4412 parcela 2/3',
+    parcela: 2,
+    valorCentavos: 129_900,
+    vencimento: dia(5),
+    status: 'REGISTERED',
+    nossoNumero: '24/000184-7',
+    linhaDigitavel: '74891.11409 00184.702012 34567.890126 1 99990000129900',
+    criadoEm: instante(-31),
+  }),
+  boleto(tenantId, {
+    id: 'boleto-dev-4',
+    tituloId: 'titulo-dev-4',
+    orderId: 'pedido-dev-080',
+    descricao: 'NF 4310 parcela 1/2',
+    parcela: 1,
+    valorCentavos: 74_900,
+    vencimento: dia(-45),
+    status: 'PAID',
+    nossoNumero: '24/000150-1',
+    linhaDigitavel: '74891.11409 00150.102012 34567.890126 4 99890000074900',
+    pagoEm: dia(-45),
+    criadoEm: instante(-61),
+  }),
+];
+
 /** Grava a carga. `db` e o Firestore ja apontado para o emulador. */
 export const semearAnaliseDeCredito = async (db, tenantId) => {
   const pedidos = pedidosDe(tenantId);
@@ -510,6 +661,17 @@ export const semearAnaliseDeCredito = async (db, tenantId) => {
   }
   // O contador nao pode ficar atras dos pedidos semeados: o proximo pedido de
   // verdade precisa continuar a numeracao, e nao repetir um numero existente.
+  lote.set(db.doc(`tenants/${tenantId}/bankAccounts/${CONTA.id}`), CONTA, { merge: true });
+  for (const registro of boletosDe(tenantId)) {
+    lote.set(db.doc(`tenants/${tenantId}/boletos/${registro.id}`), registro, { merge: true });
+  }
+  lote.set(db.doc(`tenants/${tenantId}/boletos/boleto-dev-4/events/retorno-dev-4`), {
+    eventId: 'retorno-dev-4',
+    amount: 74_900,
+    userId: 'seed-dev',
+    note: 'Liquidação confirmada pelo banco',
+    occurredAt: `${dia(-45)}T14:00:00.000Z`,
+  });
   lote.set(db.doc(`tenants/${tenantId}/contadores/pedidosDeVenda`), {
     ultimo: Math.max(...pedidos.map((registro) => registro.numero)),
   });

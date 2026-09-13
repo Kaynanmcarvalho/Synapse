@@ -1,5 +1,5 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import type { Firestore, QueryDocumentSnapshot } from '@synapse/firebase/admin';
+import type { Firestore, QueryDocumentSnapshot, Transaction } from '@synapse/firebase/admin';
 import type {
   ObservacaoDoPedido,
   PedidoDeVenda,
@@ -8,14 +8,26 @@ import type {
 } from '@synapse/types';
 import { FIREBASE_FIRESTORE } from '../../iam/firebase.tokens';
 import {
-  liberarPedido,
-  motivoParaNaoLiberar,
   observarPedido,
   registrarImpressao,
+  registrarVisualizacao,
   type Ator,
 } from '../entities/historico';
 
 const COLECAO = 'pedidosDeVenda';
+
+/** O que a regra de decisao devolve para cada pedido do lote: o pedido
+ *  alterado, ou o motivo de ter ficado de fora. */
+export type DecisaoDoLote =
+  { readonly pedido: PedidoDeVenda; readonly excepcional: boolean } | { readonly motivo: string };
+
+/** Regra que decide o lote dentro da transacao, com os pedidos e os aprovados
+ *  do cliente lidos na mesma transacao — assim dois analistas aprovando ao
+ *  mesmo tempo nao usam o mesmo limite duas vezes. */
+export type RegraDoLote = (
+  pedidos: ReadonlyMap<string, PedidoDeVenda | null>,
+  aprovados: readonly PedidoDeVenda[],
+) => ReadonlyMap<string, DecisaoDoLote>;
 
 /** Guarda os pedidos que chegam do vendedor. Precisa ser persistente: um pedido
  *  que some no restart e um pedido que o cliente cobra e ninguem acha. */
@@ -70,42 +82,109 @@ export class PedidoDeVendaRepository {
     return this.alterar(tenantId, id, (pedido) => observarPedido(pedido, observacao));
   }
 
-  /** Libera varios pedidos de uma vez, numa transacao so: ou o analista ve o que
-   *  passou e o que ficou, ou nada muda. Pedido que ja saiu da fila e recusado
-   *  com o motivo, e nao liberado de novo. */
+  /** "Fulano abriu a analise": grava so se a mesma pessoa nao abriu ha pouco. */
+  async registrarVisualizacao(tenantId: string, id: string, ator: Ator): Promise<boolean> {
+    const referencia = this.colecao(tenantId).doc(id);
+    return this.db.runTransaction(async (transacao) => {
+      const documento = await transacao.get(referencia);
+      if (!documento.exists) throw new NotFoundException('Pedido não encontrado');
+      const visto = registrarVisualizacao(
+        documento.data() as PedidoDeVenda,
+        ator,
+        new Date().toISOString(),
+      );
+      if (!visto) return false;
+      transacao.update(referencia, { historico: visto.historico });
+      return true;
+    });
+  }
+
+  private aprovadosNaTransacao(
+    transacao: Transaction,
+    tenantId: string,
+    clientes: readonly string[],
+  ): Promise<PedidoDeVenda[]> {
+    return Promise.all(
+      clientes.map((customerId) =>
+        transacao.get(
+          this.colecao(tenantId)
+            .where('customerId', '==', customerId)
+            .where('situacao', '==', 'APROVADO')
+            .orderBy('enviadoEm', 'desc')
+            .limit(500),
+        ),
+      ),
+    ).then((resultados) => resultados.flatMap((resultado) => this.dados(resultado)));
+  }
+
+  /** Decide varios pedidos numa transacao so: ou o analista ve o que passou e o
+   *  que ficou, ou nada muda. A regra recebe os pedidos e os aprovados do
+   *  cliente lidos agora, dentro da transacao. */
   async liberar(
     tenantId: string,
     ids: readonly string[],
-    ator: Ator,
+    regra: RegraDoLote,
   ): Promise<ResultadoDaLiberacao> {
     const referencias = [...new Set(ids)].map((id) => this.colecao(tenantId).doc(id));
     return this.db.runTransaction(async (transacao) => {
       // Firestore exige todas as leituras antes da primeira escrita.
       const documentos = await Promise.all(referencias.map((ref) => transacao.get(ref)));
-      const agora = new Date().toISOString();
+      const pedidos = new Map(
+        documentos.map((documento, indice) => [
+          referencias[indice]?.id ?? documento.id,
+          documento.exists ? (documento.data() as PedidoDeVenda) : null,
+        ]),
+      );
+      const clientes = [
+        ...new Set([...pedidos.values()].flatMap((pedido) => (pedido ? [pedido.customerId] : []))),
+      ];
+      const aprovados = await this.aprovadosNaTransacao(transacao, tenantId, clientes);
+      const decisoes = regra(pedidos, aprovados);
+
       const liberados: string[] = [];
+      const excepcionais: string[] = [];
       const recusados: { pedidoId: string; motivo: string }[] = [];
-
-      documentos.forEach((documento, indice) => {
-        const referencia = referencias[indice];
-        if (!referencia) return;
-        const pedido = documento.exists ? (documento.data() as PedidoDeVenda) : null;
-        const motivo = motivoParaNaoLiberar(pedido);
-        if (motivo || !pedido) {
-          recusados.push({ pedidoId: referencia.id, motivo: motivo ?? 'Pedido não encontrado' });
-          return;
+      for (const referencia of referencias) {
+        const decisao = decisoes.get(referencia.id) ?? { motivo: 'Pedido não avaliado' };
+        if ('motivo' in decisao) {
+          recusados.push({ pedidoId: referencia.id, motivo: decisao.motivo });
+          continue;
         }
-        const liberado = liberarPedido(pedido, ator, agora);
         transacao.update(referencia, {
-          situacao: liberado.situacao,
-          analisadoEm: liberado.analisadoEm,
-          analisadoPor: liberado.analisadoPor,
-          historico: liberado.historico,
+          situacao: decisao.pedido.situacao,
+          analisadoEm: decisao.pedido.analisadoEm,
+          analisadoPor: decisao.pedido.analisadoPor,
+          historico: decisao.pedido.historico,
         });
-        liberados.push(pedido.id);
-      });
+        liberados.push(referencia.id);
+        if (decisao.excepcional) excepcionais.push(referencia.id);
+      }
+      return { liberados, excepcionais, recusados };
+    });
+  }
 
-      return { liberados, recusados };
+  /** Uma decisao sobre um pedido (aprovar, aprovar excepcionalmente, reprovar),
+   *  em transacao e com os aprovados do cliente lidos na mesma transacao. A
+   *  regra lanca excecao quando a decisao nao pode ser tomada. */
+  async decidir(
+    tenantId: string,
+    id: string,
+    regra: (pedido: PedidoDeVenda, aprovados: readonly PedidoDeVenda[]) => PedidoDeVenda,
+  ): Promise<PedidoDeVenda> {
+    const referencia = this.colecao(tenantId).doc(id);
+    return this.db.runTransaction(async (transacao) => {
+      const documento = await transacao.get(referencia);
+      if (!documento.exists) throw new NotFoundException('Pedido não encontrado');
+      const pedido = documento.data() as PedidoDeVenda;
+      const aprovados = await this.aprovadosNaTransacao(transacao, tenantId, [pedido.customerId]);
+      const decidido = regra(pedido, aprovados);
+      transacao.update(referencia, {
+        situacao: decidido.situacao,
+        analisadoEm: decidido.analisadoEm,
+        analisadoPor: decidido.analisadoPor,
+        historico: decidido.historico,
+      });
+      return decidido;
     });
   }
 
@@ -142,10 +221,49 @@ export class PedidoDeVendaRepository {
     );
   }
 
+  /** Aprovados dos clientes da fila, em lotes de 30 (limite do `in`): a fila
+   *  soma o que ja esta comprometido sem uma consulta por cliente. */
+  async aprovadosDosClientes(
+    tenantId: string,
+    customerIds: readonly string[],
+  ): Promise<PedidoDeVenda[]> {
+    const unicos = [...new Set(customerIds)];
+    const lotes: string[][] = [];
+    for (let inicio = 0; inicio < unicos.length; inicio += 30) {
+      lotes.push(unicos.slice(inicio, inicio + 30));
+    }
+    const resultados = await Promise.all(
+      lotes.map((lote) =>
+        this.colecao(tenantId)
+          .where('customerId', 'in', lote)
+          .where('situacao', '==', 'APROVADO')
+          .get(),
+      ),
+    );
+    return resultados.flatMap((resultado) => this.dados(resultado));
+  }
+
   async doCliente(tenantId: string, customerId: string, limite: number): Promise<PedidoDeVenda[]> {
     return this.dados(
       await this.colecao(tenantId)
         .where('customerId', '==', customerId)
+        .orderBy('enviadoEm', 'desc')
+        .limit(limite)
+        .get(),
+    );
+  }
+
+  /** Pedidos do cliente desde uma data — a base do comportamento de compra. */
+  async doClienteDesde(
+    tenantId: string,
+    customerId: string,
+    desde: string,
+    limite = 2000,
+  ): Promise<PedidoDeVenda[]> {
+    return this.dados(
+      await this.colecao(tenantId)
+        .where('customerId', '==', customerId)
+        .where('enviadoEm', '>=', desde)
         .orderBy('enviadoEm', 'desc')
         .limit(limite)
         .get(),

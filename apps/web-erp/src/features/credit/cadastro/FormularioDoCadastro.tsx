@@ -16,6 +16,7 @@ const ENTRADA =
   'border-hairline-light text-body-sm text-ink placeholder:text-stone focus:border-hairline-strong h-10 w-full rounded-xl border bg-canvas-light px-3 outline-none transition';
 
 type Rascunho = Record<
+  | 'codigo'
   | 'name'
   | 'legalName'
   | 'taxId'
@@ -35,6 +36,7 @@ type Rascunho = Record<
 >;
 
 const rascunhoDe = (cadastro: CadastroDoCliente): Rascunho => ({
+  codigo: cadastro.codigo ?? '',
   name: cadastro.name,
   legalName: cadastro.legalName ?? '',
   taxId: mascararDocumento(cadastro.taxId),
@@ -55,6 +57,7 @@ const rascunhoDe = (cadastro: CadastroDoCliente): Rascunho => ({
 const ouNulo = (valor: string): string | null => (valor.trim() ? valor.trim() : null);
 
 const camposDe = (rascunho: Rascunho): CamposDoCadastro => ({
+  codigo: ouNulo(rascunho.codigo),
   type: rascunho.taxId.replace(/\D/g, '').length === 11 ? 'PF' : 'PJ',
   name: rascunho.name.trim(),
   legalName: ouNulo(rascunho.legalName),
@@ -120,81 +123,106 @@ function Entrada({
   );
 }
 
-function Campos({
-  rascunho,
-  mudar,
-}: {
+type Mudar = (
+  campo: keyof Rascunho,
+  mascara?: (valor: string) => string,
+) => (valor: string) => void;
+
+interface PropsDaSecao {
   readonly rascunho: Rascunho;
-  readonly mudar: (
-    campo: keyof Rascunho,
-    mascara?: (valor: string) => string,
-  ) => (valor: string) => void;
-}) {
+  readonly mudar: Mudar;
+}
+
+function Identificacao({ rascunho, mudar }: PropsDaSecao) {
+  return (
+    <Secao titulo="Identificação">
+      <Entrada
+        rotulo="Código interno"
+        valor={rascunho.codigo}
+        aoMudar={mudar('codigo')}
+        colunas={2}
+      />
+      <Entrada rotulo="Nome fantasia" valor={rascunho.name} aoMudar={mudar('name')} colunas={4} />
+      <Entrada
+        rotulo="Razão social"
+        valor={rascunho.legalName}
+        aoMudar={mudar('legalName')}
+        colunas={6}
+      />
+      <Entrada
+        rotulo="CNPJ / CPF"
+        valor={rascunho.taxId}
+        aoMudar={mudar('taxId', mascararDocumento)}
+        inputMode="numeric"
+      />
+      <Entrada
+        rotulo="Inscrição estadual"
+        valor={rascunho.stateRegistration}
+        aoMudar={mudar('stateRegistration')}
+      />
+    </Secao>
+  );
+}
+
+function Contato({ rascunho, mudar }: PropsDaSecao) {
+  return (
+    <Secao titulo="Contato">
+      <Entrada
+        rotulo="Telefone"
+        valor={rascunho.phone}
+        aoMudar={mudar('phone')}
+        colunas={2}
+        inputMode="tel"
+      />
+      <Entrada
+        rotulo="WhatsApp"
+        valor={rascunho.whatsapp}
+        aoMudar={mudar('whatsapp')}
+        colunas={2}
+        inputMode="tel"
+      />
+      <Entrada
+        rotulo="E-mail"
+        valor={rascunho.email}
+        aoMudar={mudar('email')}
+        colunas={2}
+        inputMode="email"
+      />
+    </Secao>
+  );
+}
+
+function Endereco({ rascunho, mudar }: PropsDaSecao) {
+  return (
+    <Secao titulo="Endereço">
+      <Entrada
+        rotulo="CEP"
+        valor={rascunho.postalCode}
+        aoMudar={mudar('postalCode', mascararCep)}
+        colunas={2}
+        inputMode="numeric"
+      />
+      <Entrada rotulo="Rua" valor={rascunho.street} aoMudar={mudar('street')} colunas={3} />
+      <Entrada rotulo="Número" valor={rascunho.number} aoMudar={mudar('number')} colunas={1} />
+      <Entrada
+        rotulo="Complemento"
+        valor={rascunho.complement}
+        aoMudar={mudar('complement')}
+        colunas={2}
+      />
+      <Entrada rotulo="Bairro" valor={rascunho.district} aoMudar={mudar('district')} colunas={2} />
+      <Entrada rotulo="Cidade" valor={rascunho.city} aoMudar={mudar('city')} colunas={1} />
+      <Entrada rotulo="UF" valor={rascunho.state} aoMudar={mudar('state')} colunas={1} />
+    </Secao>
+  );
+}
+
+function Campos({ rascunho, mudar }: PropsDaSecao) {
   return (
     <div className="grid gap-4">
-      <Secao titulo="Identificação">
-        <Entrada rotulo="Nome fantasia" valor={rascunho.name} aoMudar={mudar('name')} />
-        <Entrada rotulo="Razão social" valor={rascunho.legalName} aoMudar={mudar('legalName')} />
-        <Entrada
-          rotulo="CNPJ / CPF"
-          valor={rascunho.taxId}
-          aoMudar={mudar('taxId', mascararDocumento)}
-          inputMode="numeric"
-        />
-        <Entrada
-          rotulo="Inscrição estadual"
-          valor={rascunho.stateRegistration}
-          aoMudar={mudar('stateRegistration')}
-        />
-      </Secao>
-      <Secao titulo="Contato">
-        <Entrada
-          rotulo="Telefone"
-          valor={rascunho.phone}
-          aoMudar={mudar('phone')}
-          colunas={2}
-          inputMode="tel"
-        />
-        <Entrada
-          rotulo="WhatsApp"
-          valor={rascunho.whatsapp}
-          aoMudar={mudar('whatsapp')}
-          colunas={2}
-          inputMode="tel"
-        />
-        <Entrada
-          rotulo="E-mail"
-          valor={rascunho.email}
-          aoMudar={mudar('email')}
-          colunas={2}
-          inputMode="email"
-        />
-      </Secao>
-      <Secao titulo="Endereço">
-        <Entrada
-          rotulo="CEP"
-          valor={rascunho.postalCode}
-          aoMudar={mudar('postalCode', mascararCep)}
-          colunas={2}
-          inputMode="numeric"
-        />
-        <Entrada rotulo="Rua" valor={rascunho.street} aoMudar={mudar('street')} colunas={3} />
-        <Entrada rotulo="Número" valor={rascunho.number} aoMudar={mudar('number')} colunas={1} />
-        <Entrada
-          rotulo="Complemento"
-          valor={rascunho.complement}
-          aoMudar={mudar('complement')}
-          colunas={2}
-        />
-        <Entrada
-          rotulo="Bairro"
-          valor={rascunho.district}
-          aoMudar={mudar('district')}
-          colunas={2}
-        />
-        <Entrada rotulo="Cidade" valor={rascunho.city} aoMudar={mudar('city')} colunas={1} />
-        <Entrada rotulo="UF" valor={rascunho.state} aoMudar={mudar('state')} colunas={1} />
-      </Secao>
+      <Identificacao rascunho={rascunho} mudar={mudar} />
+      <Contato rascunho={rascunho} mudar={mudar} />
+      <Endereco rascunho={rascunho} mudar={mudar} />
       <Secao titulo="Crédito">
         <Entrada
           rotulo="Limite de crédito (R$)"

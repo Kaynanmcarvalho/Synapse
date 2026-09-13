@@ -1,6 +1,7 @@
 import type {
   CadastroDoCliente,
   CarteiraDoCliente,
+  ClienteDaAnalise,
   CustomerId,
   ResumoFinanceiroDoCliente,
   NotaDoCliente,
@@ -144,6 +145,8 @@ export const notasDosPedidos = (
         ? [
             {
               pedidoId: pedido.id,
+              pedidoNumero: pedido.numero,
+              pedidoSituacao: pedido.situacao,
               numero: pedido.nota.numero,
               serie: pedido.nota.serie,
               chaveDeAcesso: pedido.nota.chaveDeAcesso,
@@ -165,6 +168,7 @@ export const rascunhoDoCadastro = (
   const documento = (pedido?.clienteDocumento ?? '').replace(/\D/g, '');
   return {
     id: customerId as CustomerId,
+    codigo: null,
     type: documento.length === 11 ? 'PF' : 'PJ',
     name: pedido?.clienteNome ?? '',
     legalName: null,
@@ -185,6 +189,36 @@ export const rascunhoDoCadastro = (
     creditLimit: 0,
     updatedAt: null,
     updatedByName: null,
+  };
+};
+
+const clienteDoPedido = (
+  customerId: string,
+  referencia: PedidoDeVenda | null,
+): ClienteDaAnalise => ({
+  id: customerId as CustomerId,
+  nome: referencia?.clienteNome ?? customerId,
+  documento: referencia?.clienteDocumento ?? null,
+  codigo: null,
+  cidade: referencia?.clienteCidade ?? null,
+  bairro: referencia?.clienteBairro ?? null,
+});
+
+/** Quem e o cliente: o cadastro manda; sem ele, vale o que o pedido trouxe. */
+export const clienteDaAnalise = (
+  customerId: string,
+  cadastro: CadastroDoCliente | null,
+  referencia: PedidoDeVenda | null,
+): ClienteDaAnalise => {
+  const doPedido = clienteDoPedido(customerId, referencia);
+  if (!cadastro) return doPedido;
+  return {
+    id: doPedido.id,
+    nome: cadastro.name || doPedido.nome,
+    documento: cadastro.taxId || doPedido.documento,
+    codigo: cadastro.codigo ?? null,
+    cidade: cadastro.address.city || doPedido.cidade,
+    bairro: cadastro.address.district || doPedido.bairro,
   };
 };
 

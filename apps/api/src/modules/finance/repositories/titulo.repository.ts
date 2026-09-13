@@ -47,6 +47,28 @@ export class TituloRepository {
     return snapshot.docs.map((document: QueryDocumentSnapshot) => document.data() as Titulo);
   }
 
+  /** Titulos de varios clientes de uma vez: a fila de analise le todos os
+   *  clientes dela em lotes de 30 (limite do `in`), e nao um por um. */
+  async listByClientes(tenantId: string, customerIds: readonly string[]): Promise<Titulo[]> {
+    const unicos = [...new Set(customerIds)];
+    const lotes: string[][] = [];
+    for (let inicio = 0; inicio < unicos.length; inicio += 30) {
+      lotes.push(unicos.slice(inicio, inicio + 30));
+    }
+    const resultados = await Promise.all(
+      lotes.map((lote) => this.collection(tenantId).where('customerId', 'in', lote).get()),
+    );
+    return resultados.flatMap((snapshot) =>
+      snapshot.docs.map((document: QueryDocumentSnapshot) => document.data() as Titulo),
+    );
+  }
+
+  /** Os titulos que um pedido gerou. */
+  async listByPedido(tenantId: string, orderId: string): Promise<Titulo[]> {
+    const snapshot = await this.collection(tenantId).where('orderId', '==', orderId).get();
+    return snapshot.docs.map((document: QueryDocumentSnapshot) => document.data() as Titulo);
+  }
+
   async listAll(tenantId: string): Promise<Titulo[]> {
     const snapshot = await this.collection(tenantId).get();
     return snapshot.docs.map((document: QueryDocumentSnapshot) => document.data() as Titulo);

@@ -1,14 +1,16 @@
 import type { NotaDoCliente, PedidoDeVenda } from '@synapse/types';
 import { Cartao, Vazio } from './Cartao';
 import { BotaoLupa, Celula, LinhaDaTabela, Tabela, type ColunaDaTabela } from './Tabela';
-import { formatarData, formatarMoeda, ROTULO_DA_SITUACAO, ROTULO_DO_TIPO } from './analise';
+import { formatarData, formatarMoeda, ROTULO_DA_SITUACAO } from './analise';
+import { documentoDaNota, documentoDoPedido, type Documento } from './documentos/navegacao';
+import { pagamentoDoPedido } from './fila/filtros';
 
 export type AbaDoHistorico = 'pedidos' | 'notas';
 
 const COLUNAS_DE_PEDIDO: readonly ColunaDaTabela[] = [
   { rotulo: 'Pedido' },
   { rotulo: 'Data', alinhamento: 'centro' },
-  { rotulo: 'Tipo' },
+  { rotulo: 'Condição' },
   { rotulo: 'Situação' },
   { rotulo: 'Valor', alinhamento: 'direita' },
   { rotulo: '', alinhamento: 'centro', largura: '48px' },
@@ -16,8 +18,9 @@ const COLUNAS_DE_PEDIDO: readonly ColunaDaTabela[] = [
 
 const COLUNAS_DE_NOTA: readonly ColunaDaTabela[] = [
   { rotulo: 'NF' },
-  { rotulo: 'Série', alinhamento: 'centro', largura: '64px' },
   { rotulo: 'Emissão', alinhamento: 'centro' },
+  { rotulo: 'Pedido', alinhamento: 'centro' },
+  { rotulo: 'Situação' },
   { rotulo: 'Valor', alinhamento: 'direita' },
   { rotulo: '', alinhamento: 'centro', largura: '48px' },
 ];
@@ -25,9 +28,6 @@ const COLUNAS_DE_NOTA: readonly ColunaDaTabela[] = [
 const em = (colunas: readonly ColunaDaTabela[], indice: number): ColunaDaTabela =>
   colunas[indice] ?? { rotulo: '' };
 
-/** Canto superior direito: o historico do cliente. Pedidos e notas dividem o
- *  mesmo espaco — sao a mesma pergunta ("o que esse cliente vem comprando?")
- *  vista de dois lados, e a chave troca sem tirar nada do lugar. */
 function Chave({
   aba,
   onTrocar,
@@ -67,21 +67,21 @@ function Chave({
 
 function TabelaDePedidos({
   pedidos,
-  aoAbrirPedido,
+  aoAbrir,
 }: {
   readonly pedidos: readonly PedidoDeVenda[];
-  readonly aoAbrirPedido: (pedidoId: string) => void;
+  readonly aoAbrir: (documento: Documento) => void;
 }) {
   if (pedidos.length === 0) return <Vazio texto="Nenhum pedido registrado para este cliente." />;
   return (
-    <Tabela colunas={COLUNAS_DE_PEDIDO} larguraMinima={460}>
+    <Tabela colunas={COLUNAS_DE_PEDIDO} larguraMinima={500}>
       {pedidos.map((pedido) => (
         <LinhaDaTabela key={pedido.id}>
           <Celula coluna={em(COLUNAS_DE_PEDIDO, 0)} forte>
             {pedido.numero}
           </Celula>
           <Celula coluna={em(COLUNAS_DE_PEDIDO, 1)}>{formatarData(pedido.enviadoEm)}</Celula>
-          <Celula coluna={em(COLUNAS_DE_PEDIDO, 2)}>{ROTULO_DO_TIPO[pedido.tipo]}</Celula>
+          <Celula coluna={em(COLUNAS_DE_PEDIDO, 2)}>{pagamentoDoPedido(pedido)}</Celula>
           <Celula coluna={em(COLUNAS_DE_PEDIDO, 3)}>{ROTULO_DA_SITUACAO[pedido.situacao]}</Celula>
           <Celula coluna={em(COLUNAS_DE_PEDIDO, 4)} forte>
             {formatarMoeda(pedido.totalCentavos)}
@@ -89,7 +89,7 @@ function TabelaDePedidos({
           <Celula coluna={em(COLUNAS_DE_PEDIDO, 5)}>
             <BotaoLupa
               rotulo={`Abrir o pedido ${pedido.numero}`}
-              aoAbrir={() => aoAbrirPedido(pedido.id)}
+              aoAbrir={() => aoAbrir(documentoDoPedido(pedido))}
             />
           </Celula>
         </LinhaDaTabela>
@@ -100,28 +100,36 @@ function TabelaDePedidos({
 
 function TabelaDeNotas({
   notas,
-  aoAbrirPedido,
+  aoAbrir,
 }: {
   readonly notas: readonly NotaDoCliente[];
-  readonly aoAbrirPedido: (pedidoId: string) => void;
+  readonly aoAbrir: (documento: Documento) => void;
 }) {
   if (notas.length === 0) return <Vazio texto="Nenhuma nota emitida para este cliente." />;
   return (
-    <Tabela colunas={COLUNAS_DE_NOTA} larguraMinima={400}>
+    <Tabela colunas={COLUNAS_DE_NOTA} larguraMinima={500}>
       {notas.map((nota) => (
         <LinhaDaTabela key={`${nota.serie}-${nota.numero}`}>
           <Celula coluna={em(COLUNAS_DE_NOTA, 0)} forte>
             {nota.numero}
+            <span className="text-stone font-normal"> · s{nota.serie}</span>
           </Celula>
-          <Celula coluna={em(COLUNAS_DE_NOTA, 1)}>{nota.serie}</Celula>
-          <Celula coluna={em(COLUNAS_DE_NOTA, 2)}>{formatarData(nota.emitidaEm)}</Celula>
-          <Celula coluna={em(COLUNAS_DE_NOTA, 3)} forte>
+          <Celula coluna={em(COLUNAS_DE_NOTA, 1)}>{formatarData(nota.emitidaEm)}</Celula>
+          <Celula coluna={em(COLUNAS_DE_NOTA, 2)}>{nota.pedidoNumero ?? '—'}</Celula>
+          <Celula coluna={em(COLUNAS_DE_NOTA, 3)}>
+            {nota.pedidoSituacao === 'CANCELADO' ? (
+              <span className="font-semibold text-[#b3242f]">Pedido cancelado</span>
+            ) : (
+              'Emitida'
+            )}
+          </Celula>
+          <Celula coluna={em(COLUNAS_DE_NOTA, 4)} forte>
             {formatarMoeda(nota.totalCentavos)}
           </Celula>
-          <Celula coluna={em(COLUNAS_DE_NOTA, 4)}>
+          <Celula coluna={em(COLUNAS_DE_NOTA, 5)}>
             <BotaoLupa
-              rotulo={`Abrir o pedido da NF ${nota.numero}`}
-              aoAbrir={() => aoAbrirPedido(nota.pedidoId)}
+              rotulo={`Abrir a NF ${nota.numero}`}
+              aoAbrir={() => aoAbrir(documentoDaNota(nota))}
             />
           </Celula>
         </LinhaDaTabela>
@@ -130,18 +138,21 @@ function TabelaDeNotas({
   );
 }
 
+/** Canto superior direito: o que o cliente vem comprando, visto como pedido ou
+ *  como nota. Cada lupa abre o documento do seu tipo — pedido abre o pedido,
+ *  NF abre a nota —, e nunca a analise de credito. */
 export function HistoricoDoCliente({
   aba,
   onTrocarAba,
   pedidos,
   notas,
-  aoAbrirPedido,
+  aoAbrirDocumento,
 }: {
   readonly aba: AbaDoHistorico;
   readonly onTrocarAba: (aba: AbaDoHistorico) => void;
   readonly pedidos: readonly PedidoDeVenda[];
   readonly notas: readonly NotaDoCliente[];
-  readonly aoAbrirPedido: (pedidoId: string) => void;
+  readonly aoAbrirDocumento: (documento: Documento) => void;
 }) {
   return (
     <Cartao
@@ -150,9 +161,9 @@ export function HistoricoDoCliente({
     >
       <div role="tabpanel">
         {aba === 'pedidos' ? (
-          <TabelaDePedidos pedidos={pedidos} aoAbrirPedido={aoAbrirPedido} />
+          <TabelaDePedidos pedidos={pedidos} aoAbrir={aoAbrirDocumento} />
         ) : (
-          <TabelaDeNotas notas={notas} aoAbrirPedido={aoAbrirPedido} />
+          <TabelaDeNotas notas={notas} aoAbrir={aoAbrirDocumento} />
         )}
       </div>
     </Cartao>

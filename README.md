@@ -107,6 +107,7 @@ A API usa o prefixo versionado `/api/v1`. Com a API ativa, a interface OpenAPI f
 - [Banco de dados](docs/DATABASE.md)
 - [Fiscal](docs/FISCAL.md)
 - [Bancos](docs/BANKING.md)
+- [Análise de crédito](docs/ANALISE_DE_CREDITO.md)
 - [Segurança](docs/SECURITY.md) e [permissões](docs/PERMISSIONS.md)
 - [Deployment](docs/DEPLOYMENT.md) e [sincronização offline](docs/OFFLINE_SYNC.md)
 - [Dependências de documentação oficial](docs/OFFICIAL_DOCS_PENDING.md)

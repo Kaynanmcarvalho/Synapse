@@ -92,3 +92,37 @@ export const resumoDoPedido = (pedido: PedidoDeVenda): string =>
     pedido.condicaoDePagamento,
     plural(pedido.itens.length, 'item', 'itens'),
   ].join(' · ');
+
+/** Coluna "Pagamento" dos titulos pagos: o numero cru (-6) nao diz nada a quem
+ *  le; "6 dias antes" diz. O numero continua nos calculos. */
+export const pagamentoRelativo = (dias: number): string => {
+  if (dias === 0) return 'No vencimento';
+  return dias < 0 ? `${plural(-dias, 'dia', 'dias')} antes` : `${plural(dias, 'dia', 'dias')} após`;
+};
+
+/** A mesma leitura, por extenso, para o detalhe da liquidacao. */
+export const pagamentoPorExtenso = (dias: number): string => {
+  if (dias === 0) return 'Pago no vencimento';
+  return dias < 0
+    ? `${plural(-dias, 'dia', 'dias')} antecipado`
+    : `${plural(dias, 'dia', 'dias')} em atraso`;
+};
+
+/** Ha quanto tempo o pedido espera: "12 min", "2 h 15 min", "3 dias". */
+export const tempoAguardando = (desde: string, agora: Date = new Date()): string => {
+  const minutos = Math.max(0, Math.floor((agora.getTime() - Date.parse(desde)) / 60_000));
+  if (minutos < 60) return `${minutos} min`;
+  const horas = Math.floor(minutos / 60);
+  if (horas < 24) return minutos % 60 ? `${horas} h ${minutos % 60} min` : `${horas} h`;
+  return plural(Math.floor(horas / 24), 'dia', 'dias');
+};
+
+export const formatarPercentual = (valor: number): string =>
+  `${valor.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
+
+/** Hoje no calendario de quem esta olhando: a data-base da simulacao. */
+export const hojeLocal = (agora: Date = new Date()): string => {
+  const mes = `${agora.getMonth() + 1}`.padStart(2, '0');
+  const dia = `${agora.getDate()}`.padStart(2, '0');
+  return `${agora.getFullYear()}-${mes}-${dia}`;
+};

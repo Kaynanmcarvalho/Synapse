@@ -88,7 +88,7 @@ export function AnaliseDeCreditoScreen() {
         pedidoInicial: pedido.id,
         escolhidoEm: Date.now(),
       });
-      fechar('pedido', 'parcelas', 'cadastro');
+      fechar('analise', 'documentos', 'cadastro');
       void abrirCliente(pedido.customerId);
       // A ficha sempre sobe: ela e a resposta ao clique, e nao pode nascer atras.
       focar('cliente');

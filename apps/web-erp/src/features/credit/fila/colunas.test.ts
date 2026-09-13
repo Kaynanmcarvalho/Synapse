@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   alternarColuna,
   aplicarAtalho,
+  incluirColunasNovas,
   filtrarFila,
   moverColuna,
   larguraPadrao,
@@ -28,6 +29,8 @@ const linha = (
     readonly enviadoEm?: string;
     readonly customerId?: string;
     readonly impresso?: boolean;
+    readonly exposicaoCentavos?: number;
+    readonly foraDaPolitica?: boolean;
   } = {},
 ): PedidoNaFila =>
   ({
@@ -49,6 +52,13 @@ const linha = (
       totalCentavos,
     },
     impresso: extra.impresso ?? false,
+    avaliacao: {
+      exposicao: { exposicaoCentavos: extra.exposicaoCentavos ?? totalCentavos },
+      violaPolitica: extra.foraDaPolitica ?? false,
+      motivos: extra.foraDaPolitica
+        ? [{ codigo: 'LIMITE_INSUFICIENTE', rotulo: 'Limite insuficiente', violaPolitica: true }]
+        : [{ codigo: 'ANALISE_OBRIGATORIA', rotulo: 'Análise de rotina', violaPolitica: false }],
+    },
     cliente: {
       vencidoCentavos: extra.vencidoCentavos ?? 0,
       aVencerCentavos: extra.aVencerCentavos ?? 0,
@@ -113,7 +123,7 @@ describe('largura das colunas', () => {
   });
 
   it('a largura de fabrica e a que o duplo clique devolve', () => {
-    expect(larguraPadrao('valor')).toBe(142);
+    expect(larguraPadrao('valor')).toBe(150);
   });
 });
 
@@ -156,8 +166,60 @@ describe('busca e atalhos', () => {
     expect(totaisDaFila(doisPedidos)).toEqual({
       pedidos: 2,
       valorCentavos: 5_000,
+      exposicaoCentavos: 5_000,
       vencidoCentavos: 5_000,
       clientes: 1,
     });
+  });
+
+  it('valor comercial e exposicao somam separados: troca nao consome credito', () => {
+    const totais = totaisDaFila([
+      linha(1, 'Mercado', 1_000),
+      linha(2, 'Padaria', 2_000, { tipo: 'TROCA', exposicaoCentavos: 0 }),
+    ]);
+    expect(totais.valorCentavos).toBe(3_000);
+    expect(totais.exposicaoCentavos).toBe(1_000);
+  });
+
+  it('atalho "fora da política" mostra so o que exige aprovacao excepcional', () => {
+    const fila = [linha(1, 'A', 1), linha(2, 'B', 1, { foraDaPolitica: true })];
+    expect(numeros(aplicarAtalho(fila, 'fora-da-politica'))).toEqual([2]);
+  });
+});
+
+describe('colunas novas da analise', () => {
+  it('ordenar por motivo coloca primeiro o que fere a politica', () => {
+    const fila = [linha(1, 'A', 1), linha(2, 'B', 1, { foraDaPolitica: true })];
+    expect(numeros(ordenarFila(fila, { coluna: 'motivo', direcao: 'asc' }))).toEqual([2, 1]);
+  });
+
+  it('ordenar por exposicao usa a exposicao de credito, e nao o valor do pedido', () => {
+    const fila = [
+      linha(1, 'A', 9_000, { exposicaoCentavos: 0 }),
+      linha(2, 'B', 1_000, { exposicaoCentavos: 1_000 }),
+    ];
+    expect(numeros(ordenarFila(fila, { coluna: 'exposicao', direcao: 'desc' }))).toEqual([2, 1]);
+  });
+
+  it('ordenar por espera traz primeiro quem espera ha mais tempo no sentido decrescente', () => {
+    const fila = [
+      linha(1, 'A', 1, { enviadoEm: '2026-09-13T10:00:00.000Z' }),
+      linha(2, 'B', 1, { enviadoEm: '2026-09-10T10:00:00.000Z' }),
+    ];
+    expect(numeros(ordenarFila(fila, { coluna: 'aguardando', direcao: 'desc' }))).toEqual([2, 1]);
+  });
+
+  it('quem tinha a fila do seu jeito recebe as colunas novas uma vez, na posicao do padrao', () => {
+    const antiga: readonly IdDaColuna[] = ['cliente', 'tipo', 'enviadoEm', 'valor'];
+    expect(incluirColunasNovas(antiga)).toEqual([
+      'cliente',
+      'tipo',
+      'motivo',
+      'enviadoEm',
+      'aguardando',
+      'valor',
+      'exposicao',
+    ]);
+    expect(incluirColunasNovas(ORDEM_PADRAO)).toEqual(ORDEM_PADRAO);
   });
 });

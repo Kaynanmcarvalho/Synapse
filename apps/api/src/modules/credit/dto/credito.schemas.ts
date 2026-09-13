@@ -26,6 +26,11 @@ export const registrarPedidoSchema = z.object({
   /** Vencimentos combinados, em dias: [28, 35, 42]. Vazio e a vista. */
   vencimentosEmDias: z.array(z.number().int().min(0).max(365)).max(24).default([]),
   formaDePagamento: z.string().min(1).max(60),
+  /** Frete e acrescimo cobrados do cliente entram no total; entrada e o que ja
+   *  foi pago e nao compromete limite. Todos em centavos, opcionais. */
+  freteCentavos: z.number().int().min(0).default(0),
+  acrescimoCentavos: z.number().int().min(0).default(0),
+  entradaCentavos: z.number().int().min(0).default(0),
   observacao: z.string().max(500).nullable().default(null),
   itens: z.array(itemSchema).min(1).max(500),
 });
@@ -36,10 +41,23 @@ export type RegistrarPedidoInput = z.infer<typeof registrarPedidoSchema>;
  *  pediu: os ultimos 150 de cada lista. */
 export const impressaoSchema = z.object({ impresso: z.boolean() });
 
-/** Liberacao em lote: os pedidos que o analista marcou na ficha do cliente. */
+const justificativa = z.string().trim().max(1000).nullable().optional();
+
+/** Liberacao em lote: os pedidos que o analista marcou na ficha do cliente. A
+ *  justificativa vale para os que estiverem fora da politica. */
 export const liberacaoSchema = z.object({
   ids: z.array(z.string().min(1)).min(1).max(50),
+  justificativa,
 });
+
+/** Decisao sobre um pedido. Aprovacao excepcional e reprovacao exigem
+ *  justificativa — a regra fica no servico, com a mensagem certa. */
+export const decisaoSchema = z.object({
+  acao: z.enum(['APROVAR', 'APROVAR_EXCECAO', 'REPROVAR']),
+  justificativa,
+});
+
+export type DecisaoInput = z.infer<typeof decisaoSchema>;
 
 export const observacaoSchema = z.object({
   texto: z.string().trim().min(1).max(1000),
@@ -48,6 +66,10 @@ export const observacaoSchema = z.object({
 const texto = (maximo: number) => z.string().trim().max(maximo);
 
 export const cadastroSchema = z.object({
+  codigo: texto(30)
+    .nullable()
+    .default(null)
+    .transform((valor) => valor || null),
   type: z.enum(['PF', 'PJ', 'RURAL_PRODUCER']),
   name: texto(200).min(1),
   legalName: texto(200).nullable(),

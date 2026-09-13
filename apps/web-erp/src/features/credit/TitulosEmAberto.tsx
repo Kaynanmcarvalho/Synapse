@@ -2,6 +2,7 @@ import type { CarteiraDoCliente } from '@synapse/types';
 import { Cartao, Total, Vazio } from './Cartao';
 import { BotaoLupa, Celula, LinhaDaTabela, Tabela, type ColunaDaTabela } from './Tabela';
 import { descricaoDoAtraso, formatarData, formatarMoeda } from './analise';
+import { documentoDoTitulo, type Documento } from './documentos/navegacao';
 
 const COLUNAS: readonly ColunaDaTabela[] = [
   { rotulo: 'Título' },
@@ -15,14 +16,14 @@ const COLUNAS: readonly ColunaDaTabela[] = [
 
 const coluna = (indice: number): ColunaDaTabela => COLUNAS[indice] ?? { rotulo: '' };
 
-/** Canto inferior esquerdo: o que o cliente ainda deve. O que venceu aparece
- *  com o tamanho do atraso, porque e isso que trava ou libera o pedido. */
+/** Canto inferior esquerdo: o que o cliente ainda deve. A lupa abre o titulo a
+ *  receber — saldo, cobranca e boleto —, e nao o pedido. */
 export function TitulosEmAberto({
   carteira,
-  aoAbrirPedido,
+  aoAbrirDocumento,
 }: {
   readonly carteira: CarteiraDoCliente;
-  readonly aoAbrirPedido: (pedidoId: string) => void;
+  readonly aoAbrirDocumento: (documento: Documento) => void;
 }) {
   const { titulosEmAberto, totalVencidoCentavos, totalAVencerCentavos } = carteira;
 
@@ -51,7 +52,7 @@ export function TitulosEmAberto({
         <Tabela colunas={COLUNAS} larguraMinima={560}>
           {titulosEmAberto.map((titulo) => {
             const vencido = titulo.diasDeAtraso > 0;
-            const pedidoId = titulo.pedidoId;
+            const parcial = titulo.saldoCentavos < titulo.valorCentavos;
             return (
               <LinhaDaTabela key={titulo.id} destaque={vencido}>
                 <Celula coluna={coluna(0)} forte>
@@ -62,16 +63,21 @@ export function TitulosEmAberto({
                 <Celula coluna={coluna(3)}>{formatarData(titulo.vencimento)}</Celula>
                 <Celula coluna={coluna(4)} forte>
                   {formatarMoeda(titulo.saldoCentavos)}
+                  {parcial && (
+                    <span className="text-caption text-stone block font-normal">
+                      de {formatarMoeda(titulo.valorCentavos)}
+                    </span>
+                  )}
                 </Celula>
                 <Celula coluna={coluna(5)}>
-                  <span className={vencido ? 'text-accent-danger font-semibold' : 'text-stone'}>
+                  <span className={vencido ? 'font-semibold text-[#b3242f]' : 'text-stone'}>
                     {descricaoDoAtraso(titulo.diasDeAtraso)}
                   </span>
                 </Celula>
                 <Celula coluna={coluna(6)}>
                   <BotaoLupa
-                    rotulo={`Abrir o pedido do título ${titulo.numero}`}
-                    aoAbrir={pedidoId ? () => aoAbrirPedido(pedidoId) : null}
+                    rotulo={`Abrir o título ${titulo.numero} parcela ${titulo.parcela}`}
+                    aoAbrir={() => aoAbrirDocumento(documentoDoTitulo(titulo, 'aberto'))}
                   />
                 </Celula>
               </LinhaDaTabela>
