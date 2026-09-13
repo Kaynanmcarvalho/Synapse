@@ -14,7 +14,7 @@ export function Cartao({
   readonly children: ReactNode;
 }) {
   return (
-    <section className="border-hairline-light bg-canvas-light flex min-h-0 min-w-0 flex-col rounded-2xl border">
+    <section className="border-hairline-light bg-canvas-light flex h-full min-h-0 min-w-0 flex-col rounded-2xl border">
       <header className="flex min-h-[56px] flex-wrap items-center justify-between gap-2 px-5 py-3">
         <h2 className="font-display text-heading-sm text-ink">{titulo}</h2>
         {acao}

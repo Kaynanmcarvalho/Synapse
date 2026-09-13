@@ -1,153 +1,202 @@
-import type { PainelDeAnaliseDeCredito, PedidoDeVenda } from '@synapse/types';
-import { CircleAlert, ListChecks, RotateCw } from 'lucide-react';
+import type { PedidoDeVenda } from '@synapse/types';
+import { ListChecks, RotateCw, UserSearch } from 'lucide-react';
 import { useCallback, useState } from 'react';
-import { Total } from './Cartao';
-import { FilaDeAnalise } from './FilaDeAnalise';
-import { HistoricoDoCliente, type AbaDoHistorico } from './HistoricoDoCliente';
-import { PagamentosDoCliente } from './PagamentosDoCliente';
-import { PedidosEmAnalise } from './PedidosEmAnalise';
-import { TitulosEmAberto } from './TitulosEmAberto';
-import { formatarMoeda } from './analise';
-import { useAnaliseDeCredito } from './useAnaliseDeCredito';
+import { ConteudoDaFila } from './FilaDeAnalise';
+import { FichaDoCliente } from './FichaDoCliente';
+import type { AbaDoHistorico } from './HistoricoDoCliente';
+import { Janela } from './janela/Janela';
+import { aoAbrir, type Area } from './janela/geometria';
+import { useAreaDaTela } from './janela/useAreaDaTela';
+import { useAnaliseDeCredito, type EstadoDaFila, type EstadoDoPainel } from './useAnaliseDeCredito';
 
-function Cabecalho({
-  dados,
-  onTrocarPedido,
-  onAtualizar,
+type Id = 'fila' | 'cliente';
+
+/** A fila fica encostada a esquerda e a ficha ocupa o resto: as duas cabem
+ *  abertas ao mesmo tempo, que e o jeito de voltar para a lista sem fechar
+ *  nada. Dai em diante quem manda e o mouse — arrastar, esticar, maximizar. */
+const ABERTURA_DA_FILA = (area: Area) => aoAbrir(area, 0.3, 0.88, 'esquerda');
+const ABERTURA_DO_CLIENTE = (area: Area) => aoAbrir(area, 0.68, 0.94, 'direita');
+
+const BOTAO_CLARO =
+  'bg-surface-soft text-button-sm text-ink inline-flex h-9 items-center gap-2 rounded-full px-4 transition hover:bg-[#ececee]';
+const BOTAO_ESCURO =
+  'bg-canvas-dark text-button-sm hover:bg-charcoal inline-flex h-11 items-center gap-2 rounded-full px-6 text-white transition';
+
+function Fundo({
+  aoAbrirFila,
+  aoAbrirCliente,
 }: {
-  readonly dados: PainelDeAnaliseDeCredito;
-  readonly onTrocarPedido: () => void;
-  readonly onAtualizar: () => void;
+  readonly aoAbrirFila: () => void;
+  readonly aoAbrirCliente: (() => void) | null;
 }) {
-  const { cliente, carteira, totalEmAnaliseCentavos } = dados;
   return (
-    <header className="flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
-      <div className="min-w-0">
-        <p className="text-body-sm text-stone">Análise de crédito</p>
-        <h1 className="font-display text-heading-lg text-ink mt-1 truncate">{cliente.nome}</h1>
-        {cliente.documento && <p className="text-body-sm text-mute mt-1">{cliente.documento}</p>}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
-        <Total rotulo="Em análise" valor={formatarMoeda(totalEmAnaliseCentavos)} />
-        <Total
-          rotulo="Vencido"
-          valor={formatarMoeda(carteira.totalVencidoCentavos)}
-          tom={carteira.totalVencidoCentavos > 0 ? 'alerta' : 'neutro'}
-        />
-        <Total rotulo="A vencer" valor={formatarMoeda(carteira.totalAVencerCentavos)} />
-        <div className="flex items-center gap-2">
+    <main className="mx-auto w-full max-w-[900px] px-4 py-12 sm:px-6">
+      <h1 className="font-display text-heading-lg text-ink">Análise de crédito</h1>
+      <p className="text-body-md text-mute mt-3">
+        Todo pedido enviado pelos vendedores — do desktop ou do celular — espera aqui a liberação do
+        financeiro. A fila e a ficha do cliente abrem em janelas: arraste pela barra de título,
+        estique pelas laterais ou pelo pé, e dê dois cliques no título para ocupar a tela inteira.
+      </p>
+      <div className="mt-7 flex flex-wrap gap-3">
+        <button type="button" onClick={aoAbrirFila} className={BOTAO_ESCURO}>
+          <ListChecks size={17} aria-hidden="true" /> Fila de pedidos
+        </button>
+        {aoAbrirCliente && (
           <button
             type="button"
-            onClick={onAtualizar}
-            className="bg-surface-soft text-button-sm text-ink inline-flex h-10 items-center gap-2 rounded-full px-4 transition hover:bg-[#ececee]"
+            onClick={aoAbrirCliente}
+            className={`${BOTAO_CLARO} h-11 px-6 text-[15px]`}
           >
-            <RotateCw size={15} aria-hidden="true" /> Atualizar
+            <UserSearch size={17} aria-hidden="true" /> Ficha do cliente
           </button>
-          <button
-            type="button"
-            onClick={onTrocarPedido}
-            className="bg-canvas-dark text-button-sm hover:bg-charcoal inline-flex h-10 items-center gap-2 rounded-full px-5 text-white transition"
-          >
-            <ListChecks size={15} aria-hidden="true" /> Fila de pedidos
-          </button>
-        </div>
+        )}
       </div>
-    </header>
+    </main>
   );
 }
 
-function Esqueleto() {
-  return (
-    <div className="grid gap-4 lg:grid-cols-12">
-      {[0, 1, 2, 3].map((indice) => (
-        <div
-          key={indice}
-          className={`bg-surface-soft h-72 animate-pulse rounded-2xl ${indice % 2 === 0 ? 'lg:col-span-7' : 'lg:col-span-5'}`}
-        />
-      ))}
-    </div>
-  );
-}
-
-function Aviso({ texto }: { readonly texto: string }) {
+/** So escurece o que esta atras das janelas: o menu do sistema continua
+ *  clicavel, e por isso a cortina comeca abaixo do cabecalho. */
+function Cortina({ topo }: { readonly topo: number }) {
   return (
     <div
-      role="alert"
-      className="border-hairline-light mx-auto mt-24 flex max-w-xl flex-col items-start gap-3 rounded-2xl border p-6"
-    >
-      <span className="bg-surface-soft text-accent-danger flex h-11 w-11 items-center justify-center rounded-full">
-        <CircleAlert size={20} aria-hidden="true" />
-      </span>
-      <p className="text-body-md text-ink font-semibold">Não foi possível abrir a análise</p>
-      <p className="text-body-sm text-mute">{texto}</p>
-    </div>
+      aria-hidden="true"
+      className="bg-canvas-dark/10 pointer-events-none fixed inset-x-0 bottom-0 z-30"
+      style={{ top: topo }}
+    />
   );
 }
 
-/** As quatro partes da analise, na posicao combinada: pedidos no centro,
- *  historico em cima a direita, titulos em aberto embaixo a esquerda e
- *  pagamentos embaixo a direita. */
-function Grade({
-  dados,
+function JanelaDaFila({
+  fila,
+  clienteSelecionado,
+  zIndex,
+  ativa,
+  aoRecarregar,
+  aoEscolher,
+  aoFechar,
+  aoFocar,
+}: {
+  readonly fila: EstadoDaFila;
+  readonly clienteSelecionado: string | null;
+  readonly zIndex: number;
+  readonly ativa: boolean;
+  readonly aoRecarregar: () => void;
+  readonly aoEscolher: (pedido: PedidoDeVenda) => void;
+  readonly aoFechar: () => void;
+  readonly aoFocar: () => void;
+}) {
+  return (
+    <Janela
+      titulo="Fila de pedidos"
+      subtitulo="Aguardando análise"
+      abertura={ABERTURA_DA_FILA}
+      zIndex={zIndex}
+      ativa={ativa}
+      aoFechar={aoFechar}
+      aoFocar={aoFocar}
+      acoes={
+        <button type="button" onClick={aoRecarregar} className={BOTAO_CLARO}>
+          <RotateCw size={14} aria-hidden="true" /> Atualizar
+        </button>
+      }
+    >
+      <ConteudoDaFila
+        pedidos={fila.status === 'pronto' ? fila.pedidos : []}
+        carregando={fila.status === 'carregando'}
+        erro={fila.status === 'erro' ? fila.mensagem : null}
+        clienteSelecionado={clienteSelecionado}
+        onEscolher={aoEscolher}
+      />
+    </Janela>
+  );
+}
+
+function JanelaDoCliente({
+  nome,
+  painel,
   aba,
   onTrocarAba,
   abertos,
   onAlternar,
+  zIndex,
+  ativa,
+  aoAtualizar,
+  aoVerFila,
+  aoFechar,
+  aoFocar,
 }: {
-  readonly dados: PainelDeAnaliseDeCredito;
+  readonly nome: string;
+  readonly painel: EstadoDoPainel;
   readonly aba: AbaDoHistorico;
   readonly onTrocarAba: (aba: AbaDoHistorico) => void;
   readonly abertos: ReadonlySet<string>;
   readonly onAlternar: (id: string) => void;
+  readonly zIndex: number;
+  readonly ativa: boolean;
+  readonly aoAtualizar: () => void;
+  readonly aoVerFila: () => void;
+  readonly aoFechar: () => void;
+  readonly aoFocar: () => void;
 }) {
   return (
-    <div className="mt-6 grid gap-4 lg:grid-cols-12">
-      <div className="min-w-0 lg:col-span-7">
-        <PedidosEmAnalise
-          pedidos={dados.pedidosEmAnalise}
-          totalCentavos={dados.totalEmAnaliseCentavos}
-          abertos={abertos}
-          onAlternar={onAlternar}
-        />
-      </div>
-      <div className="min-w-0 lg:col-span-5">
-        <HistoricoDoCliente
-          aba={aba}
-          onTrocarAba={onTrocarAba}
-          pedidos={dados.ultimosPedidos}
-          notas={dados.ultimasNotas}
-        />
-      </div>
-      <div className="min-w-0 lg:col-span-7">
-        <TitulosEmAberto carteira={dados.carteira} />
-      </div>
-      <div className="min-w-0 lg:col-span-5">
-        <PagamentosDoCliente carteira={dados.carteira} />
-      </div>
-    </div>
+    <Janela
+      titulo={nome}
+      subtitulo="Análise de crédito do cliente"
+      abertura={ABERTURA_DO_CLIENTE}
+      zIndex={zIndex}
+      ativa={ativa}
+      aoFechar={aoFechar}
+      aoFocar={aoFocar}
+      acoes={
+        <>
+          <button type="button" onClick={aoAtualizar} className={BOTAO_CLARO}>
+            <RotateCw size={14} aria-hidden="true" /> Atualizar
+          </button>
+          <button type="button" onClick={aoVerFila} className={BOTAO_CLARO}>
+            <ListChecks size={14} aria-hidden="true" /> Fila
+          </button>
+        </>
+      }
+    >
+      <FichaDoCliente
+        painel={painel}
+        aba={aba}
+        onTrocarAba={onTrocarAba}
+        abertos={abertos}
+        onAlternar={onAlternar}
+      />
+    </Janela>
   );
 }
 
-/** Analise de credito: a fila de pedidos que os vendedores mandaram — do
- *  desktop ou do celular — e, atras dela, a ficha inteira do cliente. O pedido
- *  escolhido manda na tela: tudo que aparece e daquele cliente. */
 export function AnaliseDeCreditoScreen() {
   const { fila, painel, carregarFila, abrirCliente } = useAnaliseDeCredito();
-  const [modalAberto, setModalAberto] = useState(true);
+  const { area } = useAreaDaTela();
+  // A ordem e a profundidade: a ultima da lista fica na frente.
+  const [ordem, setOrdem] = useState<readonly Id[]>(['fila']);
+  const [cliente, setCliente] = useState<{ id: string; nome: string } | null>(null);
   const [aba, setAba] = useState<AbaDoHistorico>('pedidos');
   const [abertos, setAbertos] = useState<ReadonlySet<string>>(new Set());
-  const [clienteAtual, setClienteAtual] = useState<string | null>(null);
+
+  const focar = useCallback(
+    (id: Id) => setOrdem((atual) => [...atual.filter((outro) => outro !== id), id]),
+    [],
+  );
+  const fechar = useCallback(
+    (id: Id) => setOrdem((atual) => atual.filter((outro) => outro !== id)),
+    [],
+  );
 
   const escolher = useCallback(
     (pedido: PedidoDeVenda) => {
-      setModalAberto(false);
-      setClienteAtual(pedido.customerId);
+      setCliente({ id: pedido.customerId, nome: pedido.clienteNome });
       // O pedido escolhido ja abre detalhado: foi por ele que o analista entrou.
       setAbertos(new Set([pedido.id]));
       void abrirCliente(pedido.customerId);
+      focar('cliente');
     },
-    [abrirCliente],
+    [abrirCliente, focar],
   );
 
   const alternar = useCallback((id: string) => {
@@ -160,57 +209,49 @@ export function AnaliseDeCreditoScreen() {
 
   const atualizar = useCallback(() => {
     void carregarFila();
-    if (clienteAtual) void abrirCliente(clienteAtual);
-  }, [carregarFila, abrirCliente, clienteAtual]);
+    if (cliente) void abrirCliente(cliente.id);
+  }, [carregarFila, abrirCliente, cliente]);
 
-  const dados = painel.status === 'pronto' ? painel.dados : null;
+  const profundidade = (id: Id) => 40 + Math.max(0, ordem.indexOf(id));
 
   return (
-    <main className="mx-auto w-full max-w-[1600px] px-4 py-8 sm:px-6 lg:px-8">
-      {painel.status === 'vazio' && !modalAberto && (
-        <div className="mt-24 text-center">
-          <p className="text-body-md text-mute">Escolha um pedido para começar a análise.</p>
-          <button
-            type="button"
-            onClick={() => setModalAberto(true)}
-            className="bg-canvas-dark text-button-md hover:bg-charcoal mt-5 inline-flex h-12 items-center gap-2 rounded-full px-7 text-white transition"
-          >
-            <ListChecks size={17} aria-hidden="true" /> Ver a fila de pedidos
-          </button>
-        </div>
-      )}
+    <>
+      <Fundo
+        aoAbrirFila={() => focar('fila')}
+        aoAbrirCliente={cliente ? () => focar('cliente') : null}
+      />
 
-      {painel.status === 'carregando' && <Esqueleto />}
+      {ordem.length > 0 && <Cortina topo={area.topo} />}
 
-      {painel.status === 'erro' && <Aviso texto={painel.mensagem} />}
-
-      {dados && (
-        <>
-          <Cabecalho
-            dados={dados}
-            onTrocarPedido={() => setModalAberto(true)}
-            onAtualizar={atualizar}
-          />
-          <Grade
-            dados={dados}
-            aba={aba}
-            onTrocarAba={setAba}
-            abertos={abertos}
-            onAlternar={alternar}
-          />
-        </>
-      )}
-
-      {modalAberto && (
-        <FilaDeAnalise
-          pedidos={fila.status === 'pronto' ? fila.pedidos : []}
-          carregando={fila.status === 'carregando'}
-          erro={fila.status === 'erro' ? fila.mensagem : null}
-          podeFechar={painel.status !== 'vazio'}
-          onEscolher={escolher}
-          onFechar={() => setModalAberto(false)}
+      {ordem.includes('fila') && (
+        <JanelaDaFila
+          fila={fila}
+          clienteSelecionado={cliente?.id ?? null}
+          zIndex={profundidade('fila')}
+          ativa={ordem.at(-1) === 'fila'}
+          aoRecarregar={() => void carregarFila()}
+          aoEscolher={escolher}
+          aoFechar={() => fechar('fila')}
+          aoFocar={() => focar('fila')}
         />
       )}
-    </main>
+
+      {ordem.includes('cliente') && cliente && (
+        <JanelaDoCliente
+          nome={cliente.nome}
+          painel={painel}
+          aba={aba}
+          onTrocarAba={setAba}
+          abertos={abertos}
+          onAlternar={alternar}
+          zIndex={profundidade('cliente')}
+          ativa={ordem.at(-1) === 'cliente'}
+          aoAtualizar={atualizar}
+          aoVerFila={() => focar('fila')}
+          aoFechar={() => fechar('cliente')}
+          aoFocar={() => focar('cliente')}
+        />
+      )}
+    </>
   );
 }

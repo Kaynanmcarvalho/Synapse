@@ -1,6 +1,6 @@
 import type { PedidoDeVenda } from '@synapse/types';
-import { Search, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { Search } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import {
   formatarDataHora,
   formatarMoeda,
@@ -9,58 +9,13 @@ import {
   ROTULO_DO_TIPO,
 } from './analise';
 
-function Cabecalho({
-  resumo,
-  podeFechar,
-  onFechar,
-  busca,
-  onBuscar,
-}: {
-  readonly resumo: string;
-  readonly podeFechar: boolean;
-  readonly onFechar: () => void;
-  readonly busca: string;
-  readonly onBuscar: (valor: string) => void;
-}) {
-  return (
-    <>
-      <header className="border-hairline-light flex items-start justify-between gap-4 border-b px-6 py-5">
-        <div>
-          <h2 className="font-display text-heading-md text-ink">Pedidos aguardando análise</h2>
-          <p className="text-body-sm text-mute mt-1">{resumo}</p>
-        </div>
-        {podeFechar && (
-          <button
-            type="button"
-            onClick={onFechar}
-            aria-label="Fechar lista de pedidos"
-            className="text-charcoal hover:bg-surface-soft flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition"
-          >
-            <X size={18} />
-          </button>
-        )}
-      </header>
-
-      <div className="px-6 pt-4">
-        <label className="bg-surface-soft flex h-12 items-center gap-3 rounded-full px-4">
-          <Search size={17} className="text-stone" aria-hidden="true" />
-          <input
-            value={busca}
-            onChange={(evento) => onBuscar(evento.target.value)}
-            placeholder="Buscar por cliente, número do pedido ou vendedor"
-            className="text-body-sm text-ink placeholder:text-stone h-full flex-1 bg-transparent outline-none"
-          />
-        </label>
-      </div>
-    </>
-  );
-}
-
 function LinhaDaFila({
   pedido,
+  selecionado,
   onEscolher,
 }: {
   readonly pedido: PedidoDeVenda;
+  readonly selecionado: boolean;
   readonly onEscolher: () => void;
 }) {
   return (
@@ -68,7 +23,12 @@ function LinhaDaFila({
       <button
         type="button"
         onClick={onEscolher}
-        className="border-hairline-light hover:bg-surface-soft flex w-full flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border p-4 text-left transition"
+        aria-current={selecionado}
+        className={`flex w-full flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border p-4 text-left transition ${
+          selecionado
+            ? 'border-hairline-strong bg-surface-soft'
+            : 'border-hairline-light hover:bg-surface-soft'
+        }`}
       >
         <span className="min-w-0 flex-1 basis-56">
           <span className="text-body-md text-ink block truncate font-semibold">
@@ -92,34 +52,23 @@ function LinhaDaFila({
   );
 }
 
-/** A fila que abre junto com a tela: tudo que os vendedores mandaram e ainda
- *  espera uma decisao. E o ponto de partida — so depois de escolher um pedido a
- *  ficha do cliente aparece atras. */
-export function FilaDeAnalise({
+/** Conteudo da janela da fila: tudo que os vendedores mandaram e ainda espera
+ *  decisao. A janela fica aberta enquanto o analista trabalha — voltar para a
+ *  lista e so clicar nela de novo. */
+export function ConteudoDaFila({
   pedidos,
   carregando,
   erro,
-  podeFechar,
+  clienteSelecionado,
   onEscolher,
-  onFechar,
 }: {
   readonly pedidos: readonly PedidoDeVenda[];
   readonly carregando: boolean;
   readonly erro: string | null;
-  readonly podeFechar: boolean;
+  readonly clienteSelecionado: string | null;
   readonly onEscolher: (pedido: PedidoDeVenda) => void;
-  readonly onFechar: () => void;
 }) {
   const [busca, setBusca] = useState('');
-
-  useEffect(() => {
-    if (!podeFechar) return;
-    const aoTeclar = (evento: KeyboardEvent) => {
-      if (evento.key === 'Escape') onFechar();
-    };
-    document.addEventListener('keydown', aoTeclar);
-    return () => document.removeEventListener('keydown', aoTeclar);
-  }, [podeFechar, onFechar]);
 
   const filtrados = useMemo(() => {
     const termo = busca.trim().toLowerCase();
@@ -132,38 +81,41 @@ export function FilaDeAnalise({
   }, [pedidos, busca]);
 
   return (
-    <div className="bg-canvas-dark/40 fixed inset-0 z-50 flex items-start justify-center overflow-y-auto p-4 backdrop-blur-sm sm:p-8">
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Pedidos aguardando análise"
-        className="border-hairline-light bg-canvas-light w-full max-w-4xl rounded-2xl border shadow-xl"
-      >
-        <Cabecalho
-          resumo={
-            carregando
-              ? 'Carregando a fila…'
-              : `${pedidos.length} pedido(s) na fila, do mais recente para o mais antigo.`
-          }
-          podeFechar={podeFechar}
-          onFechar={onFechar}
-          busca={busca}
-          onBuscar={setBusca}
-        />
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="bg-canvas-light sticky top-0 z-10 px-5 pb-3 pt-4">
+        <label className="bg-surface-soft flex h-11 items-center gap-3 rounded-full px-4">
+          <Search size={16} className="text-stone" aria-hidden="true" />
+          <input
+            value={busca}
+            onChange={(evento) => setBusca(evento.target.value)}
+            placeholder="Buscar por cliente, número ou vendedor"
+            className="text-body-sm text-ink placeholder:text-stone h-full flex-1 bg-transparent outline-none"
+          />
+        </label>
+        <p className="text-caption text-stone mt-2">
+          {carregando
+            ? 'Carregando a fila…'
+            : `${filtrados.length} de ${pedidos.length} pedido(s) aguardando análise`}
+        </p>
+      </div>
 
-        <div className="max-h-[60vh] overflow-y-auto px-6 py-4">
-          {erro && <p className="text-body-sm text-accent-danger py-6 text-center">{erro}</p>}
-          {!erro && !carregando && filtrados.length === 0 && (
-            <p className="text-body-sm text-stone py-10 text-center">
-              Nenhum pedido esperando análise.
-            </p>
-          )}
-          <ul className="space-y-2">
-            {filtrados.map((pedido) => (
-              <LinhaDaFila key={pedido.id} pedido={pedido} onEscolher={() => onEscolher(pedido)} />
-            ))}
-          </ul>
-        </div>
+      <div className="min-h-0 flex-1 px-5 pb-4">
+        {erro && <p className="text-body-sm text-accent-danger py-6 text-center">{erro}</p>}
+        {!erro && !carregando && filtrados.length === 0 && (
+          <p className="text-body-sm text-stone py-10 text-center">
+            Nenhum pedido esperando análise.
+          </p>
+        )}
+        <ul className="space-y-2">
+          {filtrados.map((pedido) => (
+            <LinhaDaFila
+              key={pedido.id}
+              pedido={pedido}
+              selecionado={pedido.customerId === clienteSelecionado}
+              onEscolher={() => onEscolher(pedido)}
+            />
+          ))}
+        </ul>
       </div>
     </div>
   );

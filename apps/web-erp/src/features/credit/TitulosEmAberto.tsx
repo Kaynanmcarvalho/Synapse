@@ -9,7 +9,7 @@ export function TitulosEmAberto({ carteira }: { readonly carteira: CarteiraDoCli
 
   return (
     <Cartao
-      titulo="Títulos em aberto"
+      titulo="Títulos a receber"
       acao={<span className="text-body-sm text-stone">{titulosEmAberto.length} título(s)</span>}
       rodape={
         <>
@@ -30,7 +30,7 @@ export function TitulosEmAberto({ carteira }: { readonly carteira: CarteiraDoCli
         <Vazio texto="Nenhum título em aberto." />
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-left">
+          <table className="w-full min-w-[520px] text-left">
             <thead>
               <tr className="text-caption text-stone">
                 <th className="py-2 font-medium">Título</th>

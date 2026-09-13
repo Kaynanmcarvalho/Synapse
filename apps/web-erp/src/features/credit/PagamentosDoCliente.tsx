@@ -9,7 +9,7 @@ export function PagamentosDoCliente({ carteira }: { readonly carteira: CarteiraD
 
   return (
     <Cartao
-      titulo="Pagamentos do cliente"
+      titulo="Títulos pagos"
       acao={<span className="text-body-sm text-stone">{pagamentos.length} pagamento(s)</span>}
       rodape={
         <Total
@@ -23,12 +23,12 @@ export function PagamentosDoCliente({ carteira }: { readonly carteira: CarteiraD
         <Vazio texto="Nenhum pagamento registrado." />
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[520px] text-left">
+          <table className="w-full min-w-[380px] text-left">
             <thead>
               <tr className="text-caption text-stone">
                 <th className="py-2 font-medium">Título</th>
                 <th className="py-2 font-medium">Série</th>
-                <th className="py-2 font-medium">Vencimento</th>
+                <th className="py-2 font-medium">Venc.</th>
                 <th className="py-2 text-right font-medium">Valor</th>
                 <th className="py-2 text-right font-medium">Dias</th>
               </tr>
