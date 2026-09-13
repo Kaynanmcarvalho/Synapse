@@ -1,3 +1,4 @@
+import { ClipboardList, Lock } from 'lucide-react';
 import { Area, Bloco, Campo } from '../campos';
 import { formatarData } from '../formato';
 import type { PropsDaAba } from './aba';
@@ -8,7 +9,7 @@ import type { PropsDaAba } from './aba';
 
 function Linha({ rotulo, valor }: { readonly rotulo: string; readonly valor: string }) {
   return (
-    <div className="flex items-baseline justify-between gap-3 py-1.5">
+    <div className="flex items-baseline justify-between gap-3 py-2.5">
       <dt className="text-caption text-stone">{rotulo}</dt>
       <dd className="text-body-sm text-ink text-right">{valor}</dd>
     </div>
@@ -27,13 +28,13 @@ const autoria = (ator: unknown, nomeAntigo?: unknown): string => {
 
 export function AbaOutrasInformacoes({ formulario, mudar, cliente }: PropsDaAba) {
   return (
-    <div className="grid gap-3">
-      <Bloco titulo="Anotação interna">
-        <Campo
-          rotulo="Só para a equipe"
-          largura="tudo"
-          dica="Não sai em documento nenhum para o cliente."
-        >
+    <div className="grid gap-4">
+      <Bloco
+        titulo="Anotação interna"
+        icone={Lock}
+        descricao="Só a equipe vê. Não sai em documento nenhum para o cliente."
+      >
+        <Campo rotulo="Anotação" largura="tudo">
           {({ id }) => (
             <Area
               id={id}
@@ -45,7 +46,11 @@ export function AbaOutrasInformacoes({ formulario, mudar, cliente }: PropsDaAba)
         </Campo>
       </Bloco>
 
-      <Bloco titulo="Registro da ficha">
+      <Bloco
+        titulo="Registro da ficha"
+        icone={ClipboardList}
+        descricao="Quem cadastrou, quem alterou por último e a versão"
+      >
         {cliente ? (
           <dl className="divide-hairline-light divide-y">
             <Linha rotulo="Código" valor={cliente.codigo ?? 'Não gerado'} />

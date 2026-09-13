@@ -1,3 +1,4 @@
+import { IdCard, MapPin, Phone } from 'lucide-react';
 import { Bloco, Campo, Grade, Selecao, Texto } from '../../campos';
 import { formatarData, mascararCep, mascararDocumento, mascararTelefone } from '../../formato';
 import { OPCOES_DE_TIPO, type PropsDaAba } from '../aba';
@@ -13,7 +14,11 @@ export function Identificacao(props: PropsDaAba) {
   const { formulario, mudar, cliente } = props;
   const pessoaFisica = formulario.tipo === 'PF';
   return (
-    <Bloco titulo="Identificação">
+    <Bloco
+      titulo="Identificação"
+      icone={IdCard}
+      descricao="Documento e nomes que o sistema usa para achar o cliente"
+    >
       <Grade colunas={4}>
         <Campo rotulo="Código" dica={cliente ? 'Gerado pelo sistema' : 'Gerado ao salvar'}>
           {({ id }) => (
@@ -79,7 +84,7 @@ export function Identificacao(props: PropsDaAba) {
 
 export function Endereco(props: PropsDaAba) {
   return (
-    <Bloco titulo="Endereço">
+    <Bloco titulo="Endereço" icone={MapPin} descricao="Onde o cliente recebe a mercadoria e a nota">
       <Grade colunas={6}>
         <CampoDeTexto
           aba={props}
@@ -118,7 +123,7 @@ export function Endereco(props: PropsDaAba) {
 export function Contato(props: PropsDaAba) {
   const telefone = { inputMode: 'tel' as const, mascara: mascararTelefone };
   return (
-    <Bloco titulo="Contato">
+    <Bloco titulo="Contato" icone={Phone} descricao="Telefones e e-mails do atendimento e da NF-e">
       <Grade colunas={3}>
         <CampoDeTexto aba={props} campo="telefone1" rotulo="Telefone 1" {...telefone} />
         <CampoDeTexto aba={props} campo="telefone2" rotulo="Telefone 2" {...telefone} />

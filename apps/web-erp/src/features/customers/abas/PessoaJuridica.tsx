@@ -1,4 +1,4 @@
-import { Plus, Trash2 } from 'lucide-react';
+import { Building2, Plus, ScrollText, StickyNote, Trash2, UserRound, Users } from 'lucide-react';
 import { Area, Bloco, Caixa, Campo, Grade, Texto } from '../campos';
 import { mascararDocumento, mascararTelefone } from '../formato';
 import type { PropsDaAba } from './aba';
@@ -9,7 +9,11 @@ import type { PropsDaAba } from './aba';
 
 function Contatos({ formulario, mudar, erros }: PropsDaAba) {
   return (
-    <Bloco titulo="Contato na empresa">
+    <Bloco
+      titulo="Contato na empresa"
+      icone={UserRound}
+      descricao="Quem atende, quem compra e quem cuida da contabilidade"
+    >
       <Grade colunas={4}>
         <Campo rotulo="Contato" largura={2}>
           {({ id }) => (
@@ -78,6 +82,8 @@ function Socios({ formulario, mudar, erros }: PropsDaAba) {
   return (
     <Bloco
       titulo="Sócios"
+      icone={Users}
+      descricao="Quem responde pela empresa"
       acao={
         <button
           type="button"
@@ -94,7 +100,7 @@ function Socios({ formulario, mudar, erros }: PropsDaAba) {
       ) : (
         <ul className="grid gap-2">
           {socios.map((socio, indice) => (
-            <li key={indice} className="flex items-end gap-2">
+            <li key={indice} className="bg-surface-soft/60 flex items-end gap-3 rounded-2xl p-3">
               <div className="min-w-0 flex-1">
                 <Campo rotulo={`Sócio ${indice + 1}`}>
                   {({ id }) => (
@@ -128,7 +134,7 @@ function Socios({ formulario, mudar, erros }: PropsDaAba) {
                     socios.filter((_, posicao) => posicao !== indice),
                   )
                 }
-                className="bg-surface-soft mb-0.5 inline-flex h-9 w-9 items-center justify-center rounded-full text-[#b3242f] transition hover:bg-[#fdeced]"
+                className="shadow-cartao inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-[#b3242f] transition hover:bg-[#fdeced]"
               >
                 <Trash2 size={15} aria-hidden="true" />
               </button>
@@ -143,7 +149,11 @@ function Socios({ formulario, mudar, erros }: PropsDaAba) {
 
 function Fiscal({ formulario, mudar, erros, sugestoes }: PropsDaAba) {
   return (
-    <Bloco titulo="Atividade e regime">
+    <Bloco
+      titulo="Atividade e regime"
+      icone={Building2}
+      descricao="Ramo, segmento e enquadramentos fiscais"
+    >
       <Grade colunas={4}>
         <Campo rotulo="Data de abertura" erro={erros.dataDeAbertura ?? null}>
           {({ id, invalido }) => (
@@ -190,7 +200,7 @@ function Fiscal({ formulario, mudar, erros, sugestoes }: PropsDaAba) {
           )}
         </Campo>
       </Grade>
-      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+      <div className="mt-5 grid gap-3 sm:grid-cols-3">
         <Caixa
           rotulo="Substituto tributário"
           marcado={formulario.substitutoTributario}
@@ -213,15 +223,18 @@ function Fiscal({ formulario, mudar, erros, sugestoes }: PropsDaAba) {
 
 function Tare({ formulario, mudar, erros }: PropsDaAba) {
   return (
-    <Bloco titulo="Regime especial (TARE)">
+    <Bloco
+      titulo="Regime especial (TARE)"
+      icone={ScrollText}
+      descricao="Termo de acordo de regime especial, de Goiás"
+    >
       <Caixa
         rotulo="Empresa com TARE"
         marcado={formulario.temTare}
-        dica="Termo de acordo de regime especial, de Goiás."
         aoAlternar={(marcado) => mudar('temTare', marcado)}
       />
       {formulario.temTare ? (
-        <div className="mt-3">
+        <div className="mt-4">
           <Grade colunas={3}>
             <Campo rotulo="Número do TARE" erro={erros.numeroTare ?? null}>
               {({ id, invalido }) => (
@@ -234,7 +247,7 @@ function Tare({ formulario, mudar, erros }: PropsDaAba) {
                 />
               )}
             </Campo>
-            <div className="col-span-2 flex items-end pb-1">
+            <div className="col-span-2 flex items-end">
               <Caixa
                 rotulo="Participa do programa FOMENTAR / PRODUZIR"
                 marcado={formulario.fomentarOuProduzir}
@@ -251,7 +264,11 @@ function Tare({ formulario, mudar, erros }: PropsDaAba) {
 export function AbaPessoaJuridica(props: PropsDaAba) {
   if (props.formulario.tipo !== 'PJ') {
     return (
-      <Bloco titulo="Pessoa jurídica">
+      <Bloco
+        titulo="Pessoa jurídica"
+        icone={Building2}
+        descricao="Contato, sócios e dados fiscais da empresa"
+      >
         <p className="text-body-sm text-stone">
           Esta aba vale para cliente pessoa jurídica. Mude o tipo de pessoa na aba Principal para
           preencher contato, sócios e dados fiscais da empresa.
@@ -260,12 +277,16 @@ export function AbaPessoaJuridica(props: PropsDaAba) {
     );
   }
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-4">
       <Contatos {...props} />
       <Socios {...props} />
       <Fiscal {...props} />
       <Tare {...props} />
-      <Bloco titulo="Observações da empresa">
+      <Bloco
+        titulo="Observações da empresa"
+        icone={StickyNote}
+        descricao="Só para a equipe; não sai em documento para o cliente"
+      >
         <Campo rotulo="Anotação interna sobre a empresa" largura="tudo">
           {({ id }) => (
             <Area

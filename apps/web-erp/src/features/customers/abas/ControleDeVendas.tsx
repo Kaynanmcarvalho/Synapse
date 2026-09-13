@@ -1,3 +1,4 @@
+import { CreditCard, Wallet } from 'lucide-react';
 import { Bloco, Campo, Grade, Texto } from '../campos';
 import type { PropsDaAba } from './aba';
 
@@ -15,8 +16,12 @@ const AINDA_NAO_APLICADO = 'Registrado. O lançamento de pedido ainda não usa e
 
 export function AbaControleDeVendas({ formulario, mudar, erros }: PropsDaAba) {
   return (
-    <div className="grid gap-3">
-      <Bloco titulo="Condição habitual">
+    <div className="grid gap-4">
+      <Bloco
+        titulo="Condição habitual"
+        icone={CreditCard}
+        descricao="Como este cliente costuma comprar"
+      >
         <Grade colunas={3}>
           <Campo rotulo="Condição de pagamento padrão" dica={AINDA_NAO_APLICADO}>
             {({ id }) => (
@@ -59,7 +64,11 @@ export function AbaControleDeVendas({ formulario, mudar, erros }: PropsDaAba) {
         </Grade>
       </Bloco>
 
-      <Bloco titulo="Crédito">
+      <Bloco
+        titulo="Crédito"
+        icone={Wallet}
+        descricao="Limite, bloqueio e autorização ficam na aba Principal"
+      >
         <p className="text-body-sm text-stone">
           Limite a prazo, dias para bloqueio, situação e autorização de pagamento ficam na aba
           Principal. Os quatro são lidos pela análise de crédito.

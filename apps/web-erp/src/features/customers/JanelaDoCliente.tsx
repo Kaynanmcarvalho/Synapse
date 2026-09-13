@@ -1,5 +1,6 @@
 import type { Customer } from '@synapse/types';
 import { Modal } from '@synapse/ui';
+import { LoaderCircle } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { AbaControleDeVendas } from './abas/ControleDeVendas';
 import { AbaDocumentos } from './abas/Documentos';
@@ -19,7 +20,11 @@ import { useVisaoDeCredito, type VisaoDeCredito } from './useVisaoDeCredito';
  *
  *  F2 salva, F3 desfaz o que foi digitado, Esc sai. Sair com alteração pendente
  *  pergunta antes — perder meia hora de digitação por um Esc sem querer é o
- *  tipo de coisa que não se desfaz. */
+ *  tipo de coisa que não se desfaz.
+ *
+ *  Cabeçalho, abas e rodapé ficam brancos e fixos; o miolo rola sobre um fundo
+ *  cinza, e é esse contraste que faz os cartões das abas saltarem. A altura é
+ *  fixa para a janela não pular de tamanho a cada troca de aba. */
 
 function Corpo({
   carga,
@@ -35,10 +40,22 @@ function Corpo({
   readonly aoAbrirCredito: (id: string) => void;
 }) {
   if (carga.status === 'carregando') {
-    return <p className="text-body-sm text-stone py-10 text-center">Carregando cadastro…</p>;
+    return (
+      <p
+        role="status"
+        className="text-body-sm text-stone flex items-center justify-center gap-2 py-16"
+      >
+        <LoaderCircle
+          size={16}
+          aria-hidden="true"
+          className="animate-spin motion-reduce:animate-none"
+        />
+        Carregando cadastro…
+      </p>
+    );
   }
   if (carga.status === 'erro') {
-    return <p className="text-body-sm py-10 text-center text-[#b3242f]">{carga.mensagem}</p>;
+    return <p className="text-body-sm py-16 text-center text-[#b3242f]">{carga.mensagem}</p>;
   }
   if (aba === 'pessoa-juridica') return <AbaPessoaJuridica {...props} />;
   if (aba === 'referencias') return <AbaReferencias {...props} />;
@@ -95,19 +112,29 @@ export function JanelaDoCliente({
   };
 
   return (
-    <Modal onClose={sair} label="Cadastro de clientes" size="full" bare closeOnBackdrop={false}>
+    <Modal
+      onClose={sair}
+      label="Cadastro de clientes"
+      size="full"
+      bare
+      closeOnBackdrop={false}
+      className="sm:h-[88vh]"
+    >
       <Cabecalho cliente={cadastro.cliente} aoSair={sair} />
-      <div className="border-hairline-light bg-canvas-light border-b px-5 py-2.5">
+      <div className="border-hairline-light border-b bg-white px-6 py-3">
         <Abas aba={aba} aoTrocar={setAba} comErro={abasComErro(cadastro.erros)} />
       </div>
-      <div className="bg-canvas-light min-h-0 flex-1 overflow-y-auto px-5 py-4">
-        <Corpo
-          carga={cadastro.carga}
-          aba={aba}
-          props={props}
-          visao={visao}
-          aoAbrirCredito={aoAbrirCredito ?? nada}
-        />
+      <div className="bg-surface-soft min-h-0 flex-1 overflow-y-auto px-6 py-5">
+        {/* A chave refaz a entrada a cada aba: um esmaecer curto, e não um salto. */}
+        <div key={aba} className="animate-revelar motion-reduce:animate-none">
+          <Corpo
+            carga={cadastro.carga}
+            aba={aba}
+            props={props}
+            visao={visao}
+            aoAbrirCredito={aoAbrirCredito ?? nada}
+          />
+        </div>
       </div>
       <Rodape
         erro={cadastro.erroAoSalvar}

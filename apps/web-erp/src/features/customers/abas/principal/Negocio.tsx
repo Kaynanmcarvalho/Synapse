@@ -1,3 +1,4 @@
+import { ReceiptText, StickyNote, Tags, Wallet } from 'lucide-react';
 import { Area, Bloco, Campo, Grade, Selecao, Texto } from '../../campos';
 import { escreverMoeda } from '../../formato';
 import {
@@ -25,7 +26,11 @@ const CLASSIFICACOES = [
 export function Fiscal(props: PropsDaAba) {
   const { formulario, mudar } = props;
   return (
-    <Bloco titulo="Dados fiscais">
+    <Bloco
+      titulo="Dados fiscais"
+      icone={ReceiptText}
+      descricao="Como a nota fiscal trata este cliente"
+    >
       <Grade colunas={4}>
         <Campo rotulo="Indicador da IE">
           {({ id }) => (
@@ -112,7 +117,11 @@ export function Comercial(props: PropsDaAba) {
     ? vendedores.map((vendedor) => [vendedor.id, vendedor.name] as const)
     : null;
   return (
-    <Bloco titulo="Classificação comercial">
+    <Bloco
+      titulo="Classificação comercial"
+      icone={Tags}
+      descricao="Carteira dos vendedores e agrupamentos"
+    >
       <Grade colunas={3}>
         <CampoDeVendedor aba={props} campo="vendedor1" rotulo="Vendedor (1)" vendedores={lista} />
         <CampoDeVendedor aba={props} campo="vendedor2" rotulo="Vendedor (2)" vendedores={lista} />
@@ -142,10 +151,25 @@ export function Comercial(props: PropsDaAba) {
   );
 }
 
+/** Quem tira o cliente de inadimplente é o financeiro, e não o salvar do
+ *  cadastro — a tela diz isso antes de a pessoa tentar. */
+function AvisoDeInadimplencia() {
+  return (
+    <p className="text-caption mt-4 rounded-xl bg-[#fff3e0] px-3.5 py-2.5 text-[#8a4b00]">
+      O financeiro aponta este cliente como inadimplente. Salvar o cadastro não muda isso — quem
+      muda é o pagamento do título em aberto.
+    </p>
+  );
+}
+
 export function Credito(props: PropsDaAba) {
   const { formulario, mudar, cliente } = props;
   return (
-    <Bloco titulo="Crédito e situação">
+    <Bloco
+      titulo="Crédito e situação"
+      icone={Wallet}
+      descricao="O que a análise de crédito lê antes de liberar um pedido"
+    >
       <Grade colunas={3}>
         <CampoDeTexto
           aba={props}
@@ -211,19 +235,14 @@ export function Credito(props: PropsDaAba) {
           )}
         </Campo>
       </Grade>
-      {cliente?.financialStatus === 'OVERDUE' ? (
-        <p className="text-caption mt-3 text-[#8a4b00]">
-          O financeiro aponta este cliente como inadimplente. Salvar o cadastro não muda isso — quem
-          muda é o pagamento do título em aberto.
-        </p>
-      ) : null}
+      {cliente?.financialStatus === 'OVERDUE' ? <AvisoDeInadimplencia /> : null}
     </Bloco>
   );
 }
 
 export function Observacao({ formulario, mudar }: PropsDaAba) {
   return (
-    <Bloco titulo="Observação">
+    <Bloco titulo="Observação" icone={StickyNote} descricao="Aparece para quem atende este cliente">
       <Campo
         rotulo="Anotação que aparece no atendimento"
         dica="Inativo continua no histórico; a lista de clientes separa ativos e inativos."

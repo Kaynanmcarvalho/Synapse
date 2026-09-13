@@ -1,5 +1,5 @@
 import type { Customer } from '@synapse/types';
-import { Plus, Trash2 } from 'lucide-react';
+import { Handshake, Plus, Trash2 } from 'lucide-react';
 import { Area, Bloco, Campo, Grade, Texto } from '../campos';
 import { formatarData, mascararTelefone } from '../formato';
 import type { ReferenciaNoFormulario } from '../formulario';
@@ -32,7 +32,7 @@ function CartaoDaReferencia({
   readonly aoRemover: () => void;
 }) {
   return (
-    <li className="border-hairline-light rounded-xl border p-3">
+    <li className="border-hairline-light bg-surface-soft/50 rounded-2xl border p-4">
       <Grade colunas={4}>
         <Campo rotulo="Empresa" largura={2}>
           {({ id }) => (
@@ -76,7 +76,7 @@ function CartaoDaReferencia({
           )}
         </Campo>
       </Grade>
-      <div className="mt-2 flex items-center justify-between gap-3">
+      <div className="border-hairline-light mt-4 flex items-center justify-between gap-3 border-t pt-3">
         <span className="text-caption text-stone">{quemAnotou(cliente, referencia.id)}</span>
         <button
           type="button"
@@ -102,6 +102,8 @@ export function AbaReferencias({ formulario, mudar, erros, cliente }: PropsDaAba
   return (
     <Bloco
       titulo={`Referências comerciais (${referencias.length})`}
+      icone={Handshake}
+      descricao="Quem já vende para este cliente e o que respondeu"
       acao={
         <button
           type="button"

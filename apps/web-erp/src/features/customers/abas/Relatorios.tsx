@@ -1,5 +1,5 @@
 import type { PainelDeAnaliseDeCredito } from '@synapse/types';
-import { ArrowUpRight, Ban } from 'lucide-react';
+import { ArrowUpRight, Ban, ChartColumn, ExternalLink, Gauge } from 'lucide-react';
 import { Bloco } from '../campos';
 import { formatarMoeda } from '../formato';
 import type { PropsDaAba } from './aba';
@@ -22,11 +22,13 @@ function Botao({ atalho }: { readonly atalho: Atalho }) {
     <button
       type="button"
       onClick={atalho.abrir}
-      className="border-hairline-light hover:border-hairline-strong flex min-h-[5.5rem] w-full flex-col justify-between rounded-xl border bg-white p-3 text-left transition"
+      className="border-hairline-light shadow-cartao hover:shadow-cartao-alto group flex min-h-[6.5rem] w-full flex-col justify-between gap-3 rounded-2xl border bg-white p-4 text-left transition duration-300 hover:-translate-y-0.5 motion-reduce:hover:translate-y-0"
     >
-      <span className="text-body-sm text-ink flex items-center gap-1.5 font-semibold">
+      <span className="text-body-sm text-ink flex items-center justify-between gap-2 font-semibold">
         {atalho.titulo}
-        <ArrowUpRight size={14} aria-hidden="true" className="text-stone" />
+        <span className="bg-surface-soft text-charcoal group-hover:bg-primary flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition group-hover:text-white">
+          <ArrowUpRight size={14} aria-hidden="true" />
+        </span>
       </span>
       <span className="text-caption text-stone">{atalho.descricao}</span>
     </button>
@@ -35,9 +37,11 @@ function Botao({ atalho }: { readonly atalho: Atalho }) {
 
 function Numero({ rotulo, valor }: { readonly rotulo: string; readonly valor: string }) {
   return (
-    <div>
+    <div className="bg-surface-soft/70 rounded-xl px-3.5 py-3">
       <p className="text-caption text-stone">{rotulo}</p>
-      <p className="text-body-sm text-ink font-semibold tabular-nums">{valor}</p>
+      <p className="font-display text-body-md text-ink mt-0.5 font-semibold tabular-nums">
+        {valor}
+      </p>
     </div>
   );
 }
@@ -46,8 +50,12 @@ function Resumo({ painel }: { readonly painel: PainelDeAnaliseDeCredito }) {
   const { situacao, comportamento } = painel;
   const janela = comportamento.janelas['12M'];
   return (
-    <Bloco titulo="Situação de crédito hoje">
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+    <Bloco
+      titulo="Situação de crédito hoje"
+      icone={Gauge}
+      descricao="Calculada agora, com os títulos e pedidos do cliente"
+    >
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Numero
           rotulo="Limite"
           valor={
@@ -94,6 +102,25 @@ const NAO_EXISTEM = [
   ['Etiqueta do cliente', 'não existe impressão de etiqueta'],
 ] as const;
 
+/** Os três relatórios que existem abrem a ficha do cliente na análise de crédito. */
+const atalhosDe = (clienteId: string, aoAbrirCredito: (id: string) => void): Atalho[] => [
+  {
+    titulo: 'Análise de crédito do cliente',
+    descricao: 'Ficha completa: situação, comportamento, pedidos, notas e títulos.',
+    abrir: () => aoAbrirCredito(clienteId),
+  },
+  {
+    titulo: 'Histórico de vendas',
+    descricao: 'Pedidos e notas do cliente, na ficha da análise de crédito.',
+    abrir: () => aoAbrirCredito(clienteId),
+  },
+  {
+    titulo: 'Contas a receber',
+    descricao: 'Títulos em aberto e pagos, na ficha da análise de crédito.',
+    abrir: () => aoAbrirCredito(clienteId),
+  },
+];
+
 export function AbaRelatorios({
   cliente,
   visao,
@@ -104,7 +131,11 @@ export function AbaRelatorios({
 }) {
   if (!cliente) {
     return (
-      <Bloco titulo="Relatórios">
+      <Bloco
+        titulo="Relatórios"
+        icone={ChartColumn}
+        descricao="Disponíveis depois de salvar o cadastro"
+      >
         <p className="text-body-sm text-stone">
           Os relatórios deste cliente abrem depois de salvar o cadastro.
         </p>
@@ -112,44 +143,40 @@ export function AbaRelatorios({
     );
   }
 
-  const atalhos: Atalho[] = [
-    {
-      titulo: 'Análise de crédito do cliente',
-      descricao: 'Ficha completa: situação, comportamento, pedidos, notas e títulos.',
-      abrir: () => aoAbrirCredito(cliente.id),
-    },
-    {
-      titulo: 'Histórico de vendas',
-      descricao: 'Pedidos e notas do cliente, na ficha da análise de crédito.',
-      abrir: () => aoAbrirCredito(cliente.id),
-    },
-    {
-      titulo: 'Contas a receber',
-      descricao: 'Títulos em aberto e pagos, na ficha da análise de crédito.',
-      abrir: () => aoAbrirCredito(cliente.id),
-    },
-  ];
+  const atalhos = atalhosDe(cliente.id, aoAbrirCredito);
 
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-4">
       {visao.status === 'pronto' ? <Resumo painel={visao.painel} /> : null}
       {visao.status === 'sem-permissao' ? (
-        <Bloco titulo="Situação de crédito hoje">
+        <Bloco
+          titulo="Situação de crédito hoje"
+          icone={Gauge}
+          descricao="Calculada agora, com os títulos e pedidos do cliente"
+        >
           <p className="text-body-sm text-stone">
             Exige permissão do financeiro (financeiro.visualizar).
           </p>
         </Bloco>
       ) : null}
 
-      <Bloco titulo="Abrir">
-        <div className="grid gap-2 sm:grid-cols-3">
+      <Bloco
+        titulo="Abrir"
+        icone={ExternalLink}
+        descricao="Telas do Synapse com os dados deste cliente"
+      >
+        <div className="grid gap-3 sm:grid-cols-3">
           {atalhos.map((atalho) => (
             <Botao key={atalho.titulo} atalho={atalho} />
           ))}
         </div>
       </Bloco>
 
-      <Bloco titulo="Ainda não existem no Synapse">
+      <Bloco
+        titulo="Ainda não existem no Synapse"
+        icone={Ban}
+        descricao="Relatórios do Syndata que ainda não têm tela aqui"
+      >
         <ul className="grid gap-1.5">
           {NAO_EXISTEM.map(([titulo, motivo]) => (
             <li key={titulo} className="text-body-sm text-stone flex items-start gap-2">
