@@ -40,6 +40,13 @@ export default tseslint.config(
       complexity: ['warn', 15],
     },
   },
+  // Arquivo .cjs e CommonJS por definicao — `require` ali e a forma certa, nao
+  // um deslize. E o caso do tailwind.config.cjs, que precisa desse formato para
+  // o Tailwind recarregar o design system sem reiniciar o servidor.
+  {
+    files: ['**/*.cjs'],
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
   {
     files: ['**/*.spec.ts', '**/*.test.ts', '**/*.spec.tsx', '**/*.test.tsx'],
     rules: {

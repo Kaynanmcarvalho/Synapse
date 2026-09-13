@@ -1,4 +1,9 @@
-import preset from '@synapse/ui/tailwind.preset.js';
+/* CommonJS de proposito: o Tailwind recarrega uma config .cjs a cada alteracao.
+ * Em ESM o Node guarda o arquivo no cache de modulos, que o Tailwind nao
+ * consegue limpar, e a mudanca so aparece depois de reiniciar o servidor.
+ * O preset continua em ESM — `require` de ESM funciona e devolve o namespace. */
+const presetModule = require('@synapse/ui/tailwind.preset.js');
+const preset = presetModule.default ?? presetModule;
 
 /** Design system da retaguarda, em modo claro: canvas branco, neutros quentes,
  *  cobalto como unico carimbo da marca, Inter com corte Display nos titulos.
@@ -41,7 +46,7 @@ const cobalto = {
 const flutuante = '0 12px 32px -8px rgba(25, 28, 31, 0.14)';
 
 /** @type {import('tailwindcss').Config} */
-export default {
+module.exports = {
   presets: [preset],
   content: ['./index.html', './src/**/*.{ts,tsx}', '../../packages/ui/src/**/*.{ts,tsx}'],
   theme: {
