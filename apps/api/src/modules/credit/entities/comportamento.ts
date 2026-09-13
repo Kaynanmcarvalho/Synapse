@@ -9,7 +9,7 @@ import type {
   PontualidadeNaJanela,
   Titulo,
 } from '@synapse/types';
-import { exposicaoDoPedido } from '@synapse/validation';
+import { ehVendaEfetiva, exposicaoDoPedido } from '@synapse/validation';
 import { diasEntre } from '../../finance/entities/titulo';
 import { foiLiquidado, titulosAReceberDoCliente } from './situacao-de-credito';
 
@@ -82,18 +82,18 @@ export const pontualidade = (
   };
 };
 
-/** Compra e venda aprovada ou faturada: bonificacao e troca nao sao compra, e
- *  pedido reprovado ou cancelado nao aconteceu. */
+/** Compra e venda efetiva aprovada ou faturada. Bonificacao, troca, amostra,
+ *  devolucao e consignacao nao sao compra (a classificacao e a compartilhada,
+ *  `ehVendaEfetiva`), e pedido reprovado ou cancelado nao aconteceu. E daqui
+ *  que saem ticket medio, volume e prazo medio de venda. */
 export const compraRealizada = (pedido: PedidoDeVenda): boolean =>
-  pedido.tipo === 'VENDA' && (pedido.situacao === 'APROVADO' || pedido.situacao === 'FATURADO');
+  ehVendaEfetiva(pedido.tipo) && (pedido.situacao === 'APROVADO' || pedido.situacao === 'FATURADO');
 
 export const dataDaCompra = (pedido: PedidoDeVenda): string =>
   (pedido.nota?.emitidaEm ?? pedido.enviadoEm).slice(0, 10);
 
-const aPrazo = (pedido: PedidoDeVenda): boolean => {
-  const { natureza } = exposicaoDoPedido(pedido);
-  return natureza === 'A_PRAZO' || natureza === 'CONSIGNACAO';
-};
+/** Venda a prazo: a unica que entra no prazo medio de venda. */
+const aPrazo = (pedido: PedidoDeVenda): boolean => exposicaoDoPedido(pedido).natureza === 'A_PRAZO';
 
 export const compras = (pedidos: readonly PedidoDeVenda[]): ComprasNaJanela => {
   const valorCentavos = somar(pedidos.map((pedido) => pedido.totalCentavos));
@@ -218,7 +218,10 @@ export const pontualidadeRecente = (
 };
 
 /** O pedido de hoje contra o habitual. So compara com amostra minima: dois
- *  pedidos nao fazem "ticket medio". */
+ *  pedidos nao fazem "ticket medio".
+ *
+ *  E informativo. Nada daqui vira motivo, bloqueio ou exigencia de aprovacao
+ *  excepcional: os motivos saem so da politica (motivosDaAnalise). */
 export const comparacaoComHistorico = (
   pedido: PedidoDeVenda,
   comportamento: ComportamentoFinanceiro,
@@ -227,7 +230,7 @@ export const comparacaoComHistorico = (
   const ticket = comportamento.janelas['90D'].compras;
   const prazo = comportamento.janelas['12M'].compras;
   // Bonificacao de R$ 165 nao e "0,1x o ticket": nao e compra, nao se compara.
-  const aplicavel = pedido.tipo === 'VENDA';
+  const aplicavel = ehVendaEfetiva(pedido.tipo);
   const temTicket = aplicavel && ticket.pedidos >= parametros.minimoDePedidosParaComparar;
   const temPrazo = aplicavel && prazo.pedidosAPrazo >= parametros.minimoDePedidosParaComparar;
   const ticketMedio = temTicket ? ticket.ticketMedioCentavos : null;

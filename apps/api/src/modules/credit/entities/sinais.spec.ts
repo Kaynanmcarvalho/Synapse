@@ -94,7 +94,9 @@ describe('sinaisDoPedido', () => {
       comportamento: comportamento({ titulosConsiderados: 0, historicoSuficiente: false }),
       recentes: { considerados: 0, noPrazo: 0 },
     });
-    expect(textos(lista).join(' ')).toContain('Primeira compra a prazo');
+    expect(textos(lista)).toContain(
+      'Sem títulos anteriores: não há histórico de pagamento a prazo',
+    );
     expect(textos(lista).join(' ')).not.toContain('pagos até o vencimento');
   });
 
@@ -102,9 +104,8 @@ describe('sinaisDoPedido', () => {
     const lista = sinais({
       comportamento: comportamento({ titulosConsiderados: 2, historicoSuficiente: false }),
     });
-    expect(textos(lista)).toContain(
-      'Cliente possui pouco histórico para análise: 2 títulos liquidados',
-    );
+    expect(textos(lista)).toContain('Histórico insuficiente: 2 títulos liquidados (o mínimo é 5)');
+    expect(textos(lista).join(' ')).not.toContain('pagos até o vencimento');
   });
 
   it('pedido muito acima do ticket e prazo acima do habitual', () => {
@@ -125,10 +126,66 @@ describe('sinaisDoPedido', () => {
     );
   });
 
-  it('operacao sem cobranca diz que nao gera exposicao', () => {
+  it('operacao sem cobranca diz que nao compromete limite', () => {
     const lista = sinais({ pedido: pedido({ tipo: 'TROCA' }) });
-    expect(textos(lista)).toContain('Pedido atual não gera exposição financeira');
+    expect(textos(lista)).toContain('Pedido não compromete limite de crédito');
+    expect(lista.find((sinal) => sinal.id === 'sem-exposicao')?.tom).toBe('neutro');
     expect(textos(lista).join(' ')).not.toContain('utilização do limite');
+  });
+
+  it('PIX a vista: nao compromete limite, e diz que o recebimento nao e registrado', () => {
+    const lista = sinais({
+      pedido: pedido({
+        formaDePagamento: 'PIX',
+        condicaoDePagamento: 'À vista',
+        vencimentosEmDias: [0],
+      }),
+    });
+    expect(textos(lista)).toEqual(
+      expect.arrayContaining([
+        'Pedido não compromete limite de crédito',
+        'O pedido não registra se o pagamento à vista já foi recebido',
+      ]),
+    );
+  });
+
+  it('cartao: exposicao zero pela premissa, e a autorizacao aparece como nao registrada', () => {
+    const lista = sinais({ pedido: pedido({ formaDePagamento: 'Cartão de crédito' }) });
+    expect(textos(lista)).toContain('O pedido não registra a autorização do cartão');
+  });
+
+  it('boleto a prazo nao ganha sinal de premissa', () => {
+    const ids = sinais().map((sinal) => sinal.id);
+    expect(ids).not.toContain('recebimento-nao-registrado');
+    expect(ids).not.toContain('autorizacao-nao-registrada');
+  });
+
+  /** Nenhum cenario pode afirmar pagamento, ausencia de risco ou qualidade. */
+  const PROIBIDO =
+    /pagamento (confirmado|recebido)|já (está|foi) pago|pedido pago|sem risco|bom histórico|bom pagador|ótimo/i;
+
+  it.each([
+    ['PIX', { formaDePagamento: 'PIX', condicaoDePagamento: 'À vista', vencimentosEmDias: [0] }],
+    [
+      'dinheiro',
+      { formaDePagamento: 'Dinheiro', condicaoDePagamento: 'À vista', vencimentosEmDias: [0] },
+    ],
+    ['cartao', { formaDePagamento: 'Cartão' }],
+    ['troca', { tipo: 'TROCA' as const }],
+    ['consignacao', { tipo: 'CONSIGNACAO' as const }],
+    ['boleto', {}],
+  ])('%s: nenhum texto afirma pagamento ou ausencia de risco', (_nome, dados) => {
+    for (const entrada of [
+      {},
+      { comportamento: comportamento({ titulosConsiderados: 2, historicoSuficiente: false }) },
+      { situacao: situacaoBase({ possuiTitulos: false, titulosLiquidados: 0 }) },
+    ]) {
+      const lista = sinais({ pedido: pedido(dados), ...entrada });
+      for (const sinal of lista) {
+        expect(sinal.texto).not.toMatch(PROIBIDO);
+        expect(sinal.fonte).not.toMatch(PROIBIDO);
+      }
+    }
   });
 
   it('e deterministico: mesma entrada, mesmos sinais', () => {

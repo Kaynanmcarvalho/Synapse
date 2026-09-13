@@ -1,4 +1,5 @@
 import type {
+  CodigoDoMotivo,
   EtapaDoPedido,
   EventoDoPedido,
   ImpactoDaAprovacao,
@@ -25,7 +26,9 @@ export const SYNAPSE: Ator = { uid: 'synapse', nome: 'Synapse' };
 interface Complemento {
   readonly justificativa?: string | null;
   readonly motivos?: readonly MotivoDaAnalise[];
+  readonly motivosForaDaPolitica?: readonly CodigoDoMotivo[];
   readonly valores?: readonly ValorRegistrado[];
+  readonly cliente?: { readonly id: string; readonly nome: string };
 }
 
 export const evento = (
@@ -46,7 +49,11 @@ export const evento = (
   ...(complemento.motivos?.length
     ? { motivos: complemento.motivos.map((motivo) => motivo.codigo) }
     : {}),
+  ...(complemento.motivosForaDaPolitica?.length
+    ? { motivosForaDaPolitica: complemento.motivosForaDaPolitica }
+    : {}),
   ...(complemento.valores?.length ? { valores: complemento.valores } : {}),
+  ...(complemento.cliente ? { cliente: complemento.cliente } : {}),
 });
 
 const SITUACAO_POR_EXTENSO: Record<SituacaoDoPedido, string> = {
@@ -67,9 +74,18 @@ export const motivoParaNaoLiberar = (pedido: PedidoDeVenda | null): string | nul
   return null;
 };
 
-/** Os numeros que a decisao mexeu, crus: limite, disponivel e utilizacao antes
- *  e depois. A auditoria refaz a conta com eles. */
+/** Os numeros que a decisao mexeu, crus e congelados na hora: limite,
+ *  comprometido, disponivel e utilizacao antes e depois. Ficam gravados no
+ *  evento — a auditoria le o que o analista viu, e nao uma conta refeita com os
+ *  titulos de hoje. */
 export const valoresDoImpacto = (impacto: ImpactoDaAprovacao): readonly ValorRegistrado[] => [
+  {
+    campo: 'valorComercial',
+    rotulo: 'Valor comercial do pedido',
+    unidade: 'centavos',
+    antes: null,
+    depois: impacto.valorComercialCentavos,
+  },
   {
     campo: 'exposicao',
     rotulo: 'Exposição do pedido',
@@ -83,6 +99,13 @@ export const valoresDoImpacto = (impacto: ImpactoDaAprovacao): readonly ValorReg
     unidade: 'centavos',
     antes: impacto.limiteCentavos,
     depois: impacto.limiteCentavos,
+  },
+  {
+    campo: 'comprometido',
+    rotulo: 'Comprometido',
+    unidade: 'centavos',
+    antes: impacto.comprometidoAntesCentavos,
+    depois: impacto.comprometidoDepoisCentavos,
   },
   {
     campo: 'disponivel',
@@ -111,6 +134,23 @@ export interface ContextoDaDecisao {
 const rotuloDosMotivos = (motivos: readonly MotivoDaAnalise[]): string =>
   motivos.map((motivo) => motivo.rotulo.toLowerCase()).join(', ');
 
+const clienteDo = (pedido: PedidoDeVenda) => ({ id: pedido.customerId, nome: pedido.clienteNome });
+
+/** O que toda decisao grava: a justificativa, os motivos da hora (e os que
+ *  feriam a politica), os numeros antes/depois e o cliente. */
+const registroDaDecisao = (pedido: PedidoDeVenda, contexto?: ContextoDaDecisao): Complemento => {
+  const motivos = contexto?.motivos ?? [];
+  return {
+    justificativa: contexto?.justificativa ?? null,
+    motivos,
+    motivosForaDaPolitica: motivos
+      .filter((motivo) => motivo.violaPolitica)
+      .map((motivo) => motivo.codigo),
+    valores: contexto?.impacto ? valoresDoImpacto(contexto.impacto) : [],
+    cliente: clienteDo(pedido),
+  };
+};
+
 /** Liberado no credito, o pedido segue para o faturamento. A aprovacao
  *  excepcional leva a justificativa e os motivos que ela passou por cima. */
 export const liberarPedido = (
@@ -131,11 +171,14 @@ export const liberarPedido = (
     analisadoPor: ator.uid as PedidoDeVenda['analisadoPor'],
     historico: [
       ...(pedido.historico ?? []),
-      evento(excepcional ? 'LIBERADO_EXCECAO' : 'LIBERADO', 'CREDITO', ator, em, detalhe, {
-        justificativa: contexto?.justificativa ?? null,
-        motivos: contexto?.motivos ?? [],
-        valores: contexto?.impacto ? valoresDoImpacto(contexto.impacto) : [],
-      }),
+      evento(
+        excepcional ? 'LIBERADO_EXCECAO' : 'LIBERADO',
+        'CREDITO',
+        ator,
+        em,
+        detalhe,
+        registroDaDecisao(pedido, contexto),
+      ),
     ],
   };
 };
@@ -154,11 +197,14 @@ export const reprovarPedido = (
   analisadoPor: ator.uid as PedidoDeVenda['analisadoPor'],
   historico: [
     ...(pedido.historico ?? []),
-    evento('REPROVADO', 'CREDITO', ator, em, 'Reprovado na análise de crédito', {
-      justificativa: contexto.justificativa,
-      motivos: contexto.motivos,
-      valores: contexto.impacto ? valoresDoImpacto(contexto.impacto) : [],
-    }),
+    evento(
+      'REPROVADO',
+      'CREDITO',
+      ator,
+      em,
+      'Reprovado na análise de crédito',
+      registroDaDecisao(pedido, contexto),
+    ),
   ],
 });
 

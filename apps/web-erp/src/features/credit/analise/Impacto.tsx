@@ -1,5 +1,5 @@
 import type { ExposicaoDoPedido, ImpactoDaAprovacao } from '@synapse/types';
-import { ShieldCheck } from 'lucide-react';
+import { Info } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { formatarMoeda, formatarPercentual } from '../analise';
 
@@ -96,9 +96,10 @@ export function Impacto({
 
   return (
     <div>
+      {/* Neutro, e nao verde: nao comprometer limite nao quer dizer que foi pago. */}
       {!impacto.consomeLimite && (
-        <p className="border-accent-teal/35 bg-accent-teal/[0.07] text-accent-green-text text-body-sm mb-3 flex items-start gap-2 rounded-xl border px-3 py-2">
-          <ShieldCheck size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+        <p className="border-hairline-light bg-surface-soft text-charcoal text-body-sm mb-3 flex items-start gap-2 rounded-xl border px-3 py-2">
+          <Info size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
           <span>
             <strong className="font-semibold">
               Esta operação não compromete limite de crédito.

@@ -98,10 +98,88 @@ describe('exposicaoDoPedido', () => {
     expect(exposicao.exposicaoCentavos).toBe(300_000);
   });
 
-  it('consignacao conta como exposicao integral', () => {
+  it('consignacao conta como exposicao integral, identificada separada do credito', () => {
     const exposicao = exposicaoDoPedido(pedido({ tipo: 'CONSIGNACAO' }));
-    expect(exposicao.natureza).toBe('CONSIGNACAO');
-    expect(exposicao.exposicaoCentavos).toBe(300_000);
+    expect(exposicao).toMatchObject({
+      natureza: 'CONSIGNACAO',
+      exposicaoCreditoCentavos: 0,
+      exposicaoConsignacaoCentavos: 300_000,
+      exposicaoCentavos: 300_000,
+      consomeLimite: true,
+    });
+    expect(exposicao.explicacao).toContain('conservadora e provisória');
+  });
+
+  it('consignacao com entrada: so o saldo fica exposto', () => {
+    const exposicao = exposicaoDoPedido(pedido({ tipo: 'CONSIGNACAO', entradaCentavos: 50_000 }));
+    expect(exposicao.exposicaoConsignacaoCentavos).toBe(250_000);
+    expect(exposicao.exposicaoCentavos).toBe(250_000);
+  });
+
+  it('venda a prazo e so credito: nada de consignacao', () => {
+    const exposicao = exposicaoDoPedido(pedido());
+    expect(exposicao.exposicaoCreditoCentavos).toBe(300_000);
+    expect(exposicao.exposicaoConsignacaoCentavos).toBe(0);
+  });
+
+  it('o total e sempre credito + consignacao', () => {
+    const casos: Partial<PedidoParaExposicao>[] = [
+      {},
+      { tipo: 'CONSIGNACAO' },
+      { tipo: 'TROCA' },
+      { formaDePagamento: 'PIX', condicaoDePagamento: 'À vista', vencimentosEmDias: [] },
+      { formaDePagamento: 'Cartão de crédito' },
+      { entradaCentavos: 120_000 },
+    ];
+    for (const caso of casos) {
+      const exposicao = exposicaoDoPedido(pedido(caso));
+      expect(exposicao.exposicaoCentavos).toBe(
+        exposicao.exposicaoCreditoCentavos + exposicao.exposicaoConsignacaoCentavos,
+      );
+    }
+  });
+});
+
+/** Exposicao zero nao e pagamento confirmado: o pedido nao guarda o recebimento
+ *  do PIX nem a autorizacao do cartao. Nenhum texto pode afirmar isso. */
+const AFIRMA_PAGAMENTO = /pagamento (confirmado|recebido)|já (está|foi) pago|pedido pago/i;
+
+describe('exposicao zero nao e pagamento confirmado', () => {
+  it.each(['PIX', 'Dinheiro'])(
+    '%s a vista: zero de exposicao, sem afirmar recebimento',
+    (forma) => {
+      const exposicao = exposicaoDoPedido(
+        pedido({ formaDePagamento: forma, condicaoDePagamento: 'À vista', vencimentosEmDias: [0] }),
+      );
+      expect(exposicao.natureza).toBe('IMEDIATA');
+      expect(exposicao.exposicaoCentavos).toBe(0);
+      expect(exposicao.explicacao).not.toMatch(AFIRMA_PAGAMENTO);
+      expect(exposicao.explicacao).toContain('não registra se o pagamento já foi recebido');
+    },
+  );
+
+  it('cartao: exposicao zero pela premissa da autorizacao, que o pedido nao registra', () => {
+    for (const forma of ['Cartão', 'Cartão de crédito', 'cartao debito']) {
+      const exposicao = exposicaoDoPedido(pedido({ formaDePagamento: forma }));
+      expect(exposicao.natureza).toBe('CARTAO');
+      expect(exposicao.exposicaoCentavos).toBe(0);
+      expect(exposicao.consomeLimite).toBe(false);
+      expect(exposicao.explicacao).toContain('não registra a autorização');
+      expect(exposicao.explicacao).not.toMatch(AFIRMA_PAGAMENTO);
+    }
+  });
+
+  it('nenhuma natureza afirma pagamento', () => {
+    const casos: Partial<PedidoParaExposicao>[] = [
+      { tipo: 'TROCA' },
+      { formaDePagamento: 'PIX', condicaoDePagamento: 'À vista', vencimentosEmDias: [] },
+      { formaDePagamento: 'Cartão' },
+      { entradaCentavos: 100_000 },
+      { tipo: 'CONSIGNACAO' },
+    ];
+    for (const caso of casos) {
+      expect(exposicaoDoPedido(pedido(caso)).explicacao).not.toMatch(AFIRMA_PAGAMENTO);
+    }
   });
 });
 

@@ -1,4 +1,4 @@
-import { SYSTEM_ROLE_KEYS } from '@synapse/types';
+import { PERMISSIONS, SYSTEM_ROLE_KEYS } from '@synapse/types';
 import { DEFAULT_ROLE_PERMISSIONS } from '../permission-catalog';
 import { RoleRepository } from '../repositories/role.repository';
 import { RoleService } from './role.service';
@@ -35,6 +35,27 @@ describe('RoleService — cargos padrao', () => {
     );
     const superAdmin = new Set(DEFAULT_ROLE_PERMISSIONS.SUPER_ADMIN_SAAS.map((g) => g.permission));
     expect(superAdmin).toEqual(allPermissions);
+  });
+
+  it.each(['SUPER_ADMIN_SAAS', 'ADMIN_EMPRESA'] as const)(
+    '%s tem cada permissao do catalogo, inclusive as novas',
+    (key) => {
+      const concedidas = new Set(DEFAULT_ROLE_PERMISSIONS[key].map((g) => g.permission));
+      expect(PERMISSIONS.filter((permission) => !concedidas.has(permission))).toEqual([]);
+    },
+  );
+
+  it('aprovar excecao de credito e separado de financeiro.editar', () => {
+    const quemTem = SYSTEM_ROLE_KEYS.filter((key) =>
+      DEFAULT_ROLE_PERMISSIONS[key].some(
+        (grant) => grant.permission === 'financeiro.credito.aprovarExcecao',
+      ),
+    );
+    expect(quemTem).toEqual(['SUPER_ADMIN_SAAS', 'ADMIN_EMPRESA']);
+
+    const financeiro = buildTenant({ roleIds: ['FINANCEIRO'] });
+    expect(service.hasPermission(financeiro, 'financeiro.editar')).toBe(true);
+    expect(service.hasPermission(financeiro, 'financeiro.credito.aprovarExcecao')).toBe(false);
   });
 
   it('VENDEDOR nao tem permissao de fiscal.emitir nem financeiro', () => {

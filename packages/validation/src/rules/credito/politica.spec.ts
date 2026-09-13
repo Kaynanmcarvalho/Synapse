@@ -33,6 +33,8 @@ const aPrazo = (exposicaoCentavos: number): ExposicaoDoPedido => ({
   valorComercialCentavos: exposicaoCentavos,
   entradaCentavos: 0,
   financiadoCentavos: exposicaoCentavos,
+  exposicaoCreditoCentavos: exposicaoCentavos,
+  exposicaoConsignacaoCentavos: 0,
   exposicaoCentavos,
   natureza: 'A_PRAZO',
   consomeLimite: exposicaoCentavos > 0,
@@ -43,6 +45,8 @@ const troca: ExposicaoDoPedido = {
   valorComercialCentavos: 50_000,
   entradaCentavos: 0,
   financiadoCentavos: 0,
+  exposicaoCreditoCentavos: 0,
+  exposicaoConsignacaoCentavos: 0,
   exposicaoCentavos: 0,
   natureza: 'SEM_COBRANCA',
   consomeLimite: false,
@@ -143,10 +147,40 @@ describe('motivosDaAnalise', () => {
     );
   });
 
-  it('cliente sem titulo nenhum e primeira compra a prazo, e nao "bom pagador"', () => {
-    const motivos = codigos(situacao({ possuiTitulos: false, titulosLiquidados: 0 }), aPrazo(100));
-    expect(motivos).toContain('SEM_HISTORICO_DE_CREDITO');
-    expect(motivos).not.toContain('ANALISE_OBRIGATORIA');
+  it('cliente sem titulo nenhum e "sem historico de credito", e nao "bom pagador"', () => {
+    const motivos = motivosDaAnalise(
+      situacao({ possuiTitulos: false, titulosLiquidados: 0 }),
+      aPrazo(100),
+    );
+    expect(motivos.find((m) => m.codigo === 'SEM_HISTORICO_DE_CREDITO')).toMatchObject({
+      rotulo: 'Sem histórico de crédito',
+      detalhe: 'Sem títulos anteriores: não há histórico de pagamento a prazo.',
+      violaPolitica: false,
+    });
+    expect(motivos.map((m) => m.codigo)).not.toContain('ANALISE_OBRIGATORIA');
+  });
+
+  it.each([0, 1, 2, 3, 4])('%i titulos liquidados: historico insuficiente', (liquidados) => {
+    const motivos = motivosDaAnalise(situacao({ titulosLiquidados: liquidados }), aPrazo(100));
+    const encontrado = motivos.find((m) => m.codigo === 'HISTORICO_INSUFICIENTE');
+    expect(encontrado?.violaPolitica).toBe(false);
+    expect(encontrado?.detalhe).toContain('histórico ainda insuficiente');
+    expect(encontrado?.detalhe).not.toMatch(/bom|ótimo|sem risco|confiável/i);
+  });
+
+  it('5 titulos liquidados: historico suficiente', () => {
+    expect(codigos(situacao({ titulosLiquidados: 5 }), aPrazo(100))).not.toContain(
+      'HISTORICO_INSUFICIENTE',
+    );
+  });
+
+  it('o texto do limiar cita a contagem e a regra', () => {
+    const encontrado = motivosDaAnalise(situacao({ titulosLiquidados: 2 }), aPrazo(100)).find(
+      (m) => m.codigo === 'HISTORICO_INSUFICIENTE',
+    );
+    expect(encontrado?.detalhe).toBe(
+      '2 títulos liquidados — histórico ainda insuficiente (o mínimo é 5).',
+    );
   });
 
   it('pouca amostra e historico insuficiente, com o limiar configuravel', () => {

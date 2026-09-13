@@ -143,7 +143,12 @@ function Conteudo({ painel, pedido, aoObservar, aoAbrirCadastro, aoDecidir }: Pr
           {conteudo}
         </div>
       )}
-      <AcoesDaDecisao pedido={pedido} avaliacao={avaliacao} aoEscolher={decisao.abrir} />
+      <AcoesDaDecisao
+        pedido={pedido}
+        avaliacao={avaliacao}
+        permissoes={painel.permissoes}
+        aoEscolher={decisao.abrir}
+      />
       {decisao.acao && avaliacao && (
         <DialogoDeDecisao
           acao={decisao.acao}

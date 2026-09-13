@@ -1,7 +1,13 @@
-import type { AcaoDeCredito, AvaliacaoDoPedido, PedidoDeVenda } from '@synapse/types';
-import { BadgeAlert, BadgeCheck, CircleCheck, TriangleAlert, XCircle } from 'lucide-react';
+import type {
+  AcaoDeCredito,
+  AvaliacaoDoPedido,
+  PedidoDeVenda,
+  PermissoesDaDecisao,
+} from '@synapse/types';
+import { BadgeAlert, BadgeCheck, CircleCheck, Lock, TriangleAlert, XCircle } from 'lucide-react';
 import { ROTULO_DA_SITUACAO } from '../analise';
 import { BOTAO_ALERTA, BOTAO_ESCURO, BOTAO_REPROVAR } from '../ui/Superficies';
+import { capacidadeDaDecisao } from './capacidade';
 
 function Estado({
   pedido,
@@ -34,51 +40,72 @@ function Estado({
   );
 }
 
+const ID_DO_AVISO = 'aviso-de-permissao-da-decisao';
+
+function Aviso({ avisos }: { readonly avisos: readonly string[] }) {
+  if (avisos.length === 0) return null;
+  return (
+    <p
+      id={ID_DO_AVISO}
+      role="note"
+      className="text-caption mt-1 flex items-start gap-1.5 text-[#8a4b00]"
+    >
+      <Lock size={13} aria-hidden="true" className="mt-0.5 shrink-0" />
+      <span>{avisos.join(' ')}</span>
+    </p>
+  );
+}
+
 /** Rodape fixo da analise: o estado frente a politica e as decisoes que
- *  funcionam de ponta a ponta — reprovar, aprovar e aprovar excepcionalmente. */
+ *  funcionam de ponta a ponta — reprovar, aprovar e aprovar excepcionalmente.
+ *  Sem a permissao da decisao, o botao ja chega desabilitado e o motivo fica
+ *  escrito ao lado: nada de descobrir pelo erro depois do clique. */
 export function AcoesDaDecisao({
   pedido,
   avaliacao,
+  permissoes,
   aoEscolher,
 }: {
   readonly pedido: PedidoDeVenda;
   readonly avaliacao: AvaliacaoDoPedido | null;
+  readonly permissoes: PermissoesDaDecisao;
   readonly aoEscolher: (acao: AcaoDeCredito) => void;
 }) {
-  const decidivel = pedido.situacao === 'AGUARDANDO_ANALISE' && avaliacao !== null;
-  const excecao = avaliacao?.violaPolitica ?? false;
+  const capacidade = capacidadeDaDecisao(pedido, avaliacao, permissoes);
+  const excecao = capacidade.aprovacao === 'APROVAR_EXCECAO';
+  const explicado = capacidade.avisos.length > 0 ? ID_DO_AVISO : undefined;
   return (
     <div className="border-hairline-light bg-canvas-light flex shrink-0 flex-wrap items-center gap-3 border-t px-4 py-3">
       <div className="min-w-0 flex-1">
         <Estado pedido={pedido} avaliacao={avaliacao} />
+        <Aviso avisos={capacidade.avisos} />
       </div>
       <button
         type="button"
         onClick={() => aoEscolher('REPROVAR')}
-        disabled={!decidivel}
+        disabled={!capacidade.podeReprovar}
+        aria-describedby={capacidade.podeReprovar ? undefined : explicado}
         className={BOTAO_REPROVAR}
       >
         <XCircle size={15} aria-hidden="true" /> Reprovar
       </button>
-      {excecao ? (
-        <button
-          type="button"
-          onClick={() => aoEscolher('APROVAR_EXCECAO')}
-          disabled={!decidivel}
-          className={BOTAO_ALERTA}
-        >
-          <BadgeAlert size={15} aria-hidden="true" /> Aprovar excepcionalmente
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={() => aoEscolher('APROVAR')}
-          disabled={!decidivel}
-          className={BOTAO_ESCURO}
-        >
-          <BadgeCheck size={15} aria-hidden="true" /> Aprovar pedido
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={() => aoEscolher(capacidade.aprovacao)}
+        disabled={!capacidade.podeAprovar}
+        aria-describedby={capacidade.podeAprovar ? undefined : explicado}
+        className={excecao ? BOTAO_ALERTA : BOTAO_ESCURO}
+      >
+        {excecao ? (
+          <>
+            <BadgeAlert size={15} aria-hidden="true" /> Aprovar excepcionalmente
+          </>
+        ) : (
+          <>
+            <BadgeCheck size={15} aria-hidden="true" /> Aprovar pedido
+          </>
+        )}
+      </button>
     </div>
   );
 }

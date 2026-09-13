@@ -123,3 +123,91 @@ describe('camposFaltando', () => {
     ).toEqual(['telefone', 'logradouro', 'UF', 'CEP']);
   });
 });
+
+describe('pedido aprovado, depois titulo: sem contagem dupla', () => {
+  const aprovado = pedido({ id: 'pedido-5000', situacao: 'APROVADO', totalCentavos: 500_000 });
+  const parcela = (id: string, valor: number, extra = {}) =>
+    titulo({
+      id,
+      orderId: 'pedido-5000' as never,
+      valorOriginalCentavos: valor,
+      vencimento: '2026-10-30',
+      ...extra,
+    });
+
+  it('em analise nao compromete; aprovado sem titulo compromete 5.000', () => {
+    const emAnalise = situacaoDeCredito(entrada({ aprovados: [], titulos: [] }));
+    expect(emAnalise.comprometidoCentavos).toBe(0);
+    const depois = situacaoDeCredito(entrada({ aprovados: [aprovado] }));
+    expect(depois.aprovadosNaoFaturadosCentavos).toBe(500_000);
+    expect(depois.comprometidoCentavos).toBe(500_000);
+  });
+
+  it('titulo gerado com o pedido ainda APROVADO: continua 5.000, nunca 10.000', () => {
+    const situacao = situacaoDeCredito(
+      entrada({
+        aprovados: [aprovado],
+        titulos: [parcela('p1', 250_000), parcela('p2', 250_000)],
+      }),
+    );
+    expect(situacao.emAbertoCentavos).toBe(500_000);
+    expect(situacao.aprovadosNaoFaturadosCentavos).toBe(0);
+    expect(situacao.comprometidoCentavos).toBe(500_000);
+  });
+
+  it('pedido faturado: conta so pelo saldo dos titulos', () => {
+    const faturado = { ...aprovado, situacao: 'FATURADO' as const };
+    const situacao = situacaoDeCredito(
+      entrada({
+        aprovados: [faturado],
+        titulos: [
+          parcela('p1', 250_000, {
+            status: 'QUITADO',
+            liquidacoes: [liquidacao({ valorCentavos: 250_000 })],
+          }),
+          parcela('p2', 250_000),
+        ],
+      }),
+    );
+    expect(situacao.comprometidoCentavos).toBe(250_000);
+  });
+
+  it('titulo do pedido cancelado nao tira o pedido aprovado da soma', () => {
+    const situacao = situacaoDeCredito(
+      entrada({
+        aprovados: [aprovado],
+        titulos: [parcela('p1', 500_000, { status: 'CANCELADO' })],
+      }),
+    );
+    expect(situacao.comprometidoCentavos).toBe(500_000);
+  });
+
+  it('titulo de outro pedido nao desconta este', () => {
+    const situacao = situacaoDeCredito(
+      entrada({
+        aprovados: [aprovado],
+        titulos: [
+          titulo({
+            id: 'outro',
+            orderId: 'pedido-9' as never,
+            valorOriginalCentavos: 100_000,
+            vencimento: '2026-10-30',
+          }),
+        ],
+      }),
+    );
+    expect(situacao.comprometidoCentavos).toBe(600_000);
+  });
+
+  it('consignacao aprovada compromete o valor integral', () => {
+    const consignado = pedido({
+      id: 'cons',
+      tipo: 'CONSIGNACAO',
+      situacao: 'APROVADO',
+      totalCentavos: 300_000,
+    });
+    expect(situacaoDeCredito(entrada({ aprovados: [consignado] })).comprometidoCentavos).toBe(
+      300_000,
+    );
+  });
+});

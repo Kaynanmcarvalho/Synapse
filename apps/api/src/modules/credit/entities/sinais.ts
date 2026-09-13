@@ -11,7 +11,11 @@ import type {
 
 /** Sinais para a decisao: evidencias organizadas em frases, cada uma com a
  *  fonte do dado. Regra fixa, testavel e sem adjetivo — o sinal diz o que os
- *  numeros mostram e para ai. A decisao continua com o analista. */
+ *  numeros mostram e para ai. A decisao continua com o analista.
+ *
+ *  O que um sinal nunca diz: "cliente sem risco", "bom histórico", "pedido já
+ *  está pago", "pagamento confirmado". O Synapse nao tem dado para isso — o
+ *  pedido nao guarda o recebimento do PIX nem a autorizacao do cartao. */
 
 const plural = (quantidade: number, singular: string, varios: string): string =>
   `${quantidade} ${quantidade === 1 ? singular : varios}`;
@@ -54,7 +58,7 @@ const sinalDeHistorico = (entrada: EntradaDosSinais): SinalDeDecisao | null => {
     return {
       id: 'sem-historico',
       tom: 'neutro',
-      texto: 'Primeira compra a prazo: não há títulos anteriores para avaliar como o cliente paga',
+      texto: 'Sem títulos anteriores: não há histórico de pagamento a prazo',
       fonte: 'Títulos a receber',
     };
   }
@@ -62,7 +66,7 @@ const sinalDeHistorico = (entrada: EntradaDosSinais): SinalDeDecisao | null => {
     return {
       id: 'historico-insuficiente',
       tom: 'neutro',
-      texto: `Cliente possui pouco histórico para análise: ${plural(comportamento.titulosConsiderados, 'título liquidado', 'títulos liquidados')}`,
+      texto: `Histórico insuficiente: ${plural(comportamento.titulosConsiderados, 'título liquidado', 'títulos liquidados')} (o mínimo é ${entrada.parametros.minimoDeTitulosLiquidados})`,
       fonte: 'Títulos liquidados',
     };
   }
@@ -106,10 +110,11 @@ const sinalDeLimite = ({
   parametros,
 }: EntradaDosSinais): SinalDeDecisao | null => {
   if (!exposicao.consomeLimite) {
+    // Neutro, e nao positivo: nao consumir limite nao quer dizer que foi pago.
     return {
       id: 'sem-exposicao',
-      tom: 'positivo',
-      texto: 'Pedido atual não gera exposição financeira',
+      tom: 'neutro',
+      texto: 'Pedido não compromete limite de crédito',
       fonte: exposicao.explicacao,
     };
   }
@@ -126,6 +131,28 @@ const sinalDeLimite = ({
     texto: `Após aprovação, utilização do limite ficará em ${formatarPercentual(depois)}`,
     fonte: 'Limite do cadastro e títulos em aberto',
   };
+};
+
+/** A premissa por tras da exposicao zero, dita com todas as letras: o pedido so
+ *  tem a forma de pagamento escolhida, nao o recebimento nem a autorizacao. */
+const sinalDePremissa = ({ exposicao }: EntradaDosSinais): SinalDeDecisao | null => {
+  if (exposicao.natureza === 'IMEDIATA') {
+    return {
+      id: 'recebimento-nao-registrado',
+      tom: 'neutro',
+      texto: 'O pedido não registra se o pagamento à vista já foi recebido',
+      fonte: 'Forma de pagamento do pedido',
+    };
+  }
+  if (exposicao.natureza === 'CARTAO') {
+    return {
+      id: 'autorizacao-nao-registrada',
+      tom: 'neutro',
+      texto: 'O pedido não registra a autorização do cartão',
+      fonte: 'Forma de pagamento do pedido',
+    };
+  }
+  return null;
 };
 
 const sinalDeBloqueio = ({ situacao }: EntradaDosSinais): SinalDeDecisao | null =>
@@ -157,6 +184,7 @@ export const sinaisDoPedido = (entrada: EntradaDosSinais): readonly SinalDeDecis
     sinalDeBloqueio(entrada),
     sinalDeVencidos(entrada),
     sinalDeLimite(entrada),
+    sinalDePremissa(entrada),
     sinalDeHistorico(entrada),
     sinalDeTicket(entrada),
     sinalDePrazo(entrada),

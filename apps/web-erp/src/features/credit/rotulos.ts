@@ -12,7 +12,7 @@ import type {
 
 export const ROTULO_DA_NATUREZA: Record<NaturezaDaCobranca, string> = {
   SEM_COBRANCA: 'Sem cobrança',
-  IMEDIATA: 'À vista imediato',
+  IMEDIATA: 'À vista (PIX/dinheiro)',
   CARTAO: 'Cartão',
   A_PRAZO: 'A prazo',
   CONSIGNACAO: 'Consignação',

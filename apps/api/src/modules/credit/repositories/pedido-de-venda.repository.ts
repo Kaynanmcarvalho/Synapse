@@ -16,6 +16,16 @@ import {
 
 const COLECAO = 'pedidosDeVenda';
 
+/** Trava de credito por cliente: `tenants/{t}/travasDeCredito/{customerId}`.
+ *
+ *  Toda decisao de credito le e grava o documento do cliente na mesma
+ *  transacao. Dois analistas aprovando pedidos diferentes do mesmo cliente
+ *  passam a disputar o mesmo documento: o Firestore confirma um e faz o outro
+ *  recomecar, e a segunda tentativa rele os aprovados ja com o primeiro gravado.
+ *  Assim a garantia nao depende de trava de intervalo em consulta — so de
+ *  documento, que e o que o Firestore garante em qualquer ambiente. */
+const TRAVAS = 'travasDeCredito';
+
 /** O que a regra de decisao devolve para cada pedido do lote: o pedido
  *  alterado, ou o motivo de ter ficado de fora. */
 export type DecisaoDoLote =
@@ -99,6 +109,43 @@ export class PedidoDeVendaRepository {
     });
   }
 
+  private trava(tenantId: string, customerId: string) {
+    return this.db.doc(`tenants/${tenantId}/${TRAVAS}/${customerId}`);
+  }
+
+  /** Le a trava de cada cliente — antes de qualquer escrita, como o Firestore exige. */
+  private async lerTravas(
+    transacao: Transaction,
+    tenantId: string,
+    clientes: readonly string[],
+  ): Promise<Map<string, number>> {
+    const lidas = await Promise.all(
+      clientes.map((customerId) => transacao.get(this.trava(tenantId, customerId))),
+    );
+    return new Map(
+      clientes.map((customerId, indice) => [
+        customerId,
+        (lidas[indice]?.data()?.['versao'] as number | undefined) ?? 0,
+      ]),
+    );
+  }
+
+  /** Grava a trava do cliente com a versao seguinte e o pedido que a moveu. */
+  private gravarTrava(
+    transacao: Transaction,
+    tenantId: string,
+    customerId: string,
+    versaoLida: number,
+    pedidoId: string,
+  ): void {
+    transacao.set(this.trava(tenantId, customerId), {
+      customerId,
+      versao: versaoLida + 1,
+      ultimoPedidoId: pedidoId,
+      atualizadoEm: new Date().toISOString(),
+    });
+  }
+
   private aprovadosNaTransacao(
     transacao: Transaction,
     tenantId: string,
@@ -138,8 +185,10 @@ export class PedidoDeVendaRepository {
       const clientes = [
         ...new Set([...pedidos.values()].flatMap((pedido) => (pedido ? [pedido.customerId] : []))),
       ];
+      const travas = await this.lerTravas(transacao, tenantId, clientes);
       const aprovados = await this.aprovadosNaTransacao(transacao, tenantId, clientes);
       const decisoes = regra(pedidos, aprovados);
+      const movidos = new Map<string, string>();
 
       const liberados: string[] = [];
       const excepcionais: string[] = [];
@@ -158,14 +207,22 @@ export class PedidoDeVendaRepository {
         });
         liberados.push(referencia.id);
         if (decisao.excepcional) excepcionais.push(referencia.id);
+        movidos.set(decisao.pedido.customerId, referencia.id);
+      }
+      for (const [customerId, pedidoId] of movidos) {
+        this.gravarTrava(transacao, tenantId, customerId, travas.get(customerId) ?? 0, pedidoId);
       }
       return { liberados, excepcionais, recusados };
     });
   }
 
   /** Uma decisao sobre um pedido (aprovar, aprovar excepcionalmente, reprovar),
-   *  em transacao e com os aprovados do cliente lidos na mesma transacao. A
-   *  regra lanca excecao quando a decisao nao pode ser tomada. */
+   *  em transacao, com a trava e os aprovados do cliente lidos na mesma
+   *  transacao. A regra lanca excecao quando a decisao nao pode ser tomada — e
+   *  nesse caso nada e gravado. Se outra decisao do mesmo cliente (ou do mesmo
+   *  pedido) confirmar antes, esta recomeca e a regra roda de novo com os dados
+   *  novos: a segunda aprovacao ve o limite ja usado, e a segunda decisao do
+   *  mesmo pedido ve que ele ja foi decidido. */
   async decidir(
     tenantId: string,
     id: string,
@@ -176,6 +233,7 @@ export class PedidoDeVendaRepository {
       const documento = await transacao.get(referencia);
       if (!documento.exists) throw new NotFoundException('Pedido não encontrado');
       const pedido = documento.data() as PedidoDeVenda;
+      const travas = await this.lerTravas(transacao, tenantId, [pedido.customerId]);
       const aprovados = await this.aprovadosNaTransacao(transacao, tenantId, [pedido.customerId]);
       const decidido = regra(pedido, aprovados);
       transacao.update(referencia, {
@@ -184,6 +242,13 @@ export class PedidoDeVendaRepository {
         analisadoPor: decidido.analisadoPor,
         historico: decidido.historico,
       });
+      this.gravarTrava(
+        transacao,
+        tenantId,
+        pedido.customerId,
+        travas.get(pedido.customerId) ?? 0,
+        id,
+      );
       return decidido;
     });
   }

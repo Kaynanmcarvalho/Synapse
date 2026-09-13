@@ -38,9 +38,20 @@ export const foiLiquidado = (titulo: Titulo): boolean =>
 
 /** Pedido aprovado que ainda nao foi faturado: o credito ja foi dado, mas o
  *  titulo ainda nao existe. Sem contar isso, dois pedidos aprovados na mesma
- *  manha pareceriam caber no mesmo limite. */
-export const aprovadoNaoFaturado = (pedido: PedidoDeVenda): boolean =>
-  pedido.situacao === 'APROVADO' && pedido.nota === null;
+ *  manha pareceriam caber no mesmo limite.
+ *
+ *  Pedido em analise nao entra: ele ainda nao compromete nada. E quando o
+ *  titulo do pedido nasce (titulo com `orderId` e nao cancelado), o valor passa
+ *  a contar pelo saldo do titulo e o pedido sai daqui — mesmo que a situacao do
+ *  pedido ainda nao tenha virado FATURADO. Sem isso, 5.000 aprovados virariam
+ *  10.000 comprometidos no intervalo entre gerar o titulo e fechar o pedido. */
+export const aprovadoNaoFaturado = (
+  pedido: PedidoDeVenda,
+  titulos: readonly Titulo[] = [],
+): boolean =>
+  pedido.situacao === 'APROVADO' &&
+  pedido.nota === null &&
+  !titulos.some((titulo) => titulo.orderId === pedido.id && titulo.status !== 'CANCELADO');
 
 /** O que falta no cadastro para faturar sem voltar ao cliente. */
 export const camposFaltando = (cadastro: CadastroDoCliente): readonly string[] => {
@@ -78,7 +89,9 @@ export const situacaoDeCredito = (entrada: EntradaDaSituacao): SituacaoDeCredito
   const vencidoCentavos = somar(vencidos.map(saldoCentavos));
   const aprovadosNaoFaturadosCentavos = somar(
     entrada.aprovados
-      .filter((pedido) => pedido.customerId === customerId && aprovadoNaoFaturado(pedido))
+      .filter(
+        (pedido) => pedido.customerId === customerId && aprovadoNaoFaturado(pedido, doCliente),
+      )
       .map((pedido) => exposicaoDoPedido(pedido).exposicaoCentavos),
   );
   const comprometidoCentavos = emAbertoCentavos + aprovadosNaoFaturadosCentavos;

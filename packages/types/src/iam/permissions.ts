@@ -39,6 +39,10 @@ export const PERMISSIONS = [
   'plataforma.integracoes.testar',
   'plataforma.producao.ativar',
   'vendedor.gerenciar',
+  /** Aprovar pedido fora da politica de credito, com justificativa. Separada de
+   *  financeiro.editar (aprovacao comum): quem aprova dentro da politica nao
+   *  aprova, so por isso, o que fere a politica. */
+  'financeiro.credito.aprovarExcecao',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];

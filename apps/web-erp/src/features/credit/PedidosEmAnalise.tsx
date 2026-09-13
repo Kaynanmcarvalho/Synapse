@@ -1,4 +1,4 @@
-import type { AvaliacaoDoPedido, PedidoDeVenda } from '@synapse/types';
+import type { AvaliacaoDoPedido, PedidoDeVenda, PermissoesDaDecisao } from '@synapse/types';
 import type { AvaliacaoDoLote } from '@synapse/validation';
 import { Check, Minus } from 'lucide-react';
 import type { KeyboardEvent as EventoDeTecla, ReactNode } from 'react';
@@ -185,6 +185,7 @@ export function PedidosEmAnalise({
   aoAbrir,
   aoLiberar,
   liberando,
+  permissoes,
 }: {
   readonly pedidos: readonly PedidoDeVenda[];
   readonly avaliacoes: readonly AvaliacaoDoPedido[];
@@ -195,6 +196,7 @@ export function PedidosEmAnalise({
   readonly aoAbrir: (pedido: PedidoDeVenda) => void;
   readonly aoLiberar: () => void;
   readonly liberando: boolean;
+  readonly permissoes: PermissoesDaDecisao;
 }) {
   const marcados = pedidos.filter((pedido) => selecionados.has(pedido.id)).length;
   const todos = marcados === pedidos.length && pedidos.length > 0;
@@ -223,6 +225,7 @@ export function PedidosEmAnalise({
             lote={lote}
             total={pedidos.length}
             liberando={liberando}
+            permissoes={permissoes}
             aoLiberar={aoLiberar}
           />
         ) : undefined

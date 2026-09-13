@@ -64,6 +64,11 @@ export interface EventoDoPedido {
   readonly justificativa?: string | null;
   /** Motivos que estavam valendo quando a acao aconteceu. */
   readonly motivos?: readonly CodigoDoMotivo[];
+  /** Os motivos que feriam a politica — o que a aprovacao excepcional passou por cima. */
+  readonly motivosForaDaPolitica?: readonly CodigoDoMotivo[];
+  /** O cliente da decisao, gravado no proprio evento: a auditoria le quem,
+   *  quando, qual pedido e qual cliente sem depender de outro documento. */
+  readonly cliente?: { readonly id: string; readonly nome: string };
   /** Situacao antes e depois da acao: limite, disponivel, utilizacao. */
   readonly valores?: readonly ValorRegistrado[];
 }

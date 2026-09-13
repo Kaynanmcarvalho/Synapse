@@ -96,6 +96,7 @@ function Quadros({
           aoAbrir={props.aoAbrirAnalise}
           aoLiberar={props.aoLiberar}
           liberando={props.liberando}
+          permissoes={dados.permissoes}
         />
       </div>
       <div {...parte(60, 'lg:col-span-5')}>

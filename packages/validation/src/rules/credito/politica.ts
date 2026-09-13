@@ -35,7 +35,7 @@ export const ROTULO_DO_MOTIVO: Record<CodigoDoMotivo, string> = {
   LIMITE_EXCEDIDO: 'Limite excedido',
   LIMITE_INSUFICIENTE: 'Limite insuficiente',
   CADASTRO_INCOMPLETO: 'Cadastro incompleto',
-  SEM_HISTORICO_DE_CREDITO: 'Primeira compra a prazo',
+  SEM_HISTORICO_DE_CREDITO: 'Sem histórico de crédito',
   HISTORICO_INSUFICIENTE: 'Histórico insuficiente',
   ANALISE_OBRIGATORIA: 'Análise de rotina',
 };
@@ -152,7 +152,7 @@ const motivosDeHistorico = (
     return [
       motivo(
         'SEM_HISTORICO_DE_CREDITO',
-        'O cliente nunca teve título a receber: não há como avaliar como paga.',
+        'Sem títulos anteriores: não há histórico de pagamento a prazo.',
         false,
       ),
     ];
@@ -161,7 +161,7 @@ const motivosDeHistorico = (
     return [
       motivo(
         'HISTORICO_INSUFICIENTE',
-        `${plural(situacao.titulosLiquidados, 'título liquidado', 'títulos liquidados')} — o mínimo para concluir é ${parametros.minimoDeTitulosLiquidados}.`,
+        `${plural(situacao.titulosLiquidados, 'título liquidado', 'títulos liquidados')} — histórico ainda insuficiente (o mínimo é ${parametros.minimoDeTitulosLiquidados}).`,
         false,
       ),
     ];
@@ -220,6 +220,13 @@ export const motivosDaAnalise = (
 
 export const violaPolitica = (motivos: readonly MotivoDaAnalise[]): boolean =>
   motivos.some((item) => item.violaPolitica);
+
+/** Os motivos que so uma aprovacao excepcional passa por cima — gravados no
+ *  evento de auditoria como estavam na hora da decisao. */
+export const motivosForaDaPolitica = (
+  motivos: readonly MotivoDaAnalise[],
+): readonly CodigoDoMotivo[] =>
+  motivos.filter((item) => item.violaPolitica).map((item) => item.codigo);
 
 export interface PedidoDoLote {
   readonly pedidoId: string;

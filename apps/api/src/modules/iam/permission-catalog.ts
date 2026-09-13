@@ -5,7 +5,12 @@ const grants = (...permissions: Permission[]): PermissionGrant[] =>
 
 /** Conjunto fixo de permissoes de cada role padrao (§3). Nao e customizavel pelo
  *  tenant — para isso existe o cargo PERSONALIZADO, que tem permissoes proprias
- *  guardadas em Firestore/memoria (ver RoleRepository). */
+ *  guardadas em Firestore/memoria (ver RoleRepository).
+ *
+ *  `financeiro.credito.aprovarExcecao` (aprovar pedido fora da politica de
+ *  credito) so vem nas duas roles administrativas, que tem o catalogo inteiro.
+ *  O FINANCEIRO aprova dentro da politica com `financeiro.editar`, mas nao
+ *  aprova excecao: quem precisar recebe um cargo personalizado com ela. */
 export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, PermissionGrant[]> = {
   SUPER_ADMIN_SAAS: grants(
     'produto.visualizar',
@@ -45,6 +50,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, PermissionGrant[]> 
     'plataforma.integracoes.testar',
     'plataforma.producao.ativar',
     'vendedor.gerenciar',
+    'financeiro.credito.aprovarExcecao',
   ),
   ADMIN_EMPRESA: grants(
     'produto.visualizar',
@@ -84,6 +90,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, PermissionGrant[]> 
     'plataforma.integracoes.testar',
     'plataforma.producao.ativar',
     'vendedor.gerenciar',
+    'financeiro.credito.aprovarExcecao',
   ),
   ADMIN_FILIAL: grants(
     'produto.visualizar',

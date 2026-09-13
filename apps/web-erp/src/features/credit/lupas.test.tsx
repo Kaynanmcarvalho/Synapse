@@ -203,6 +203,7 @@ describe('lupas da ficha do cliente', () => {
         aoAlternar={() => undefined}
         aoSelecionarTodos={() => undefined}
         aoAbrir={aoAbrirAnalise}
+        permissoes={{ decidir: true, aprovarExcecao: true }}
         aoLiberar={() => undefined}
         liberando={false}
       />,

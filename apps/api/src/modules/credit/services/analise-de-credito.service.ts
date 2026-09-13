@@ -15,6 +15,7 @@ import type {
 import { randomUUID } from 'node:crypto';
 import { TituloRepository } from '../../finance/repositories/titulo.repository';
 import type { TenantContext } from '../../iam/iam.types';
+import { RoleService } from '../../iam/services/role.service';
 import {
   carteiraDoCliente,
   clienteDaAnalise,
@@ -33,6 +34,7 @@ import { situacaoDeCredito } from '../entities/situacao-de-credito';
 import { ClienteRepository } from '../repositories/cliente.repository';
 import { PedidoDeVendaRepository } from '../repositories/pedido-de-venda.repository';
 import { hojeNaOperacao, LeitorDeCredito } from './leitor-de-credito';
+import { permissoesDaDecisao } from './permissoes-do-credito';
 
 /** Um ano antes de `hoje`, no formato que o `enviadoEm` compara. */
 const umAnoAntes = (hoje: string): string =>
@@ -54,6 +56,7 @@ export class AnaliseDeCreditoService {
     private readonly titulos: TituloRepository,
     private readonly clientes: ClienteRepository,
     private readonly leitor: LeitorDeCredito,
+    private readonly roles: RoleService,
   ) {}
 
   /** O pedido inteiro, para a janela de detalhe — tambem quando ele e aberto
@@ -204,6 +207,7 @@ export class AnaliseDeCreditoService {
       ),
       parametros,
       cadastro,
+      permissoes: permissoesDaDecisao(this.roles, context),
     };
   }
 

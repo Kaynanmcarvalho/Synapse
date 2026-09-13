@@ -1,5 +1,8 @@
+import type { TipoDePedido } from '@synapse/types';
 import { PARAMETROS_PADRAO } from '@synapse/validation';
-import { CLIENTE, HOJE, liquidacao, pago, pedido, titulo } from '../testing/fixtures';
+import { CLIENTE, HOJE, liquidacao, pago, pedido, situacao, titulo } from '../testing/fixtures';
+import { parametrosDaAnalise } from '../services/leitor-de-credito';
+import { avaliarPedido } from './avaliacao';
 import {
   comparacaoComHistorico,
   comportamentoFinanceiro,
@@ -230,5 +233,144 @@ describe('pontualidadeRecente', () => {
       pago('c', '2026-07-01', -1),
     ];
     expect(pontualidadeRecente(titulos, CLIENTE, 2)).toEqual({ considerados: 2, noPrazo: 1 });
+  });
+});
+
+describe('limiar do historico (5 titulos liquidados)', () => {
+  const liquidados = (quantos: number) =>
+    Array.from({ length: quantos }, (_, indice) => pago(`t${indice}`, '2026-08-01', 0));
+
+  it.each([0, 1, 2, 3, 4])('%i titulos liquidados: historico insuficiente', (quantos) => {
+    const resultado = comportamento(liquidados(quantos));
+    expect(resultado.titulosConsiderados).toBe(quantos);
+    expect(resultado.historicoSuficiente).toBe(false);
+  });
+
+  it('5 titulos liquidados: historico suficiente', () => {
+    expect(comportamento(liquidados(5)).historicoSuficiente).toBe(true);
+  });
+
+  it('o limiar continua configuravel por ambiente', () => {
+    expect(parametrosDaAnalise({}).minimoDeTitulosLiquidados).toBe(5);
+    expect(parametrosDaAnalise({ CREDITO_MINIMO_DE_TITULOS: '8' }).minimoDeTitulosLiquidados).toBe(
+      8,
+    );
+    expect(parametrosDaAnalise({ CREDITO_MINIMO_DE_TITULOS: 'x' }).minimoDeTitulosLiquidados).toBe(
+      5,
+    );
+    expect(parametrosDaAnalise({}).minimoDePedidosParaComparar).toBe(3);
+    expect(
+      parametrosDaAnalise({ CREDITO_MINIMO_DE_PEDIDOS: '4' }).minimoDePedidosParaComparar,
+    ).toBe(4);
+  });
+});
+
+describe('so venda efetiva entra nas metricas de compra', () => {
+  const faturado = (id: string, tipo: TipoDePedido, totalCentavos: number, prazo: number) =>
+    pedido({
+      id,
+      tipo,
+      situacao: 'FATURADO',
+      totalCentavos,
+      prazoMedioEmDias: prazo,
+      enviadoEm: '2026-09-01T10:00:00Z',
+    });
+
+  const pedidos = [
+    faturado('venda', 'VENDA', 100_000, 30),
+    faturado('bonificacao', 'BONIFICACAO', 900_000, 90),
+    faturado('troca', 'TROCA', 900_000, 90),
+    faturado('amostra', 'AMOSTRA', 900_000, 90),
+    faturado('devolucao', 'DEVOLUCAO', 900_000, 90),
+    faturado('consignacao', 'CONSIGNACAO', 900_000, 90),
+  ];
+
+  it('ticket, volume e prazo medio ignoram bonificacao, troca, amostra, devolucao e consignacao', () => {
+    const { compras } = comportamento([], pedidos).janelas['90D'];
+    expect(compras).toMatchObject({
+      pedidos: 1,
+      valorCentavos: 100_000,
+      ticketMedioCentavos: 100_000,
+      prazoMedioDias: 30,
+      pedidosAPrazo: 1,
+    });
+  });
+
+  it('a ultima compra e a ultima venda, e nao a ultima troca', () => {
+    const resultado = comportamento(
+      [],
+      [
+        faturado('venda', 'VENDA', 100_000, 30),
+        pedido({
+          id: 'troca',
+          tipo: 'TROCA',
+          situacao: 'FATURADO',
+          enviadoEm: '2026-09-10T10:00:00Z',
+        }),
+      ],
+    );
+    expect(resultado.ultimaCompraEm).toBe('2026-09-01');
+  });
+
+  it.each(['TROCA', 'AMOSTRA', 'DEVOLUCAO', 'CONSIGNACAO', 'BONIFICACAO'] as const)(
+    '%s nao se compara com o ticket',
+    (tipo) => {
+      const tres = [1, 2, 3].map((n) => faturado(`v${n}`, 'VENDA', 100_000, 30));
+      const comparacao = comparacaoComHistorico(
+        pedido({ tipo, totalCentavos: 500_000 }),
+        comportamento([], tres),
+        PARAMETROS_PADRAO,
+      );
+      expect(comparacao.aplicavel).toBe(false);
+      expect(comparacao.ticketMedioCentavos).toBeNull();
+    },
+  );
+});
+
+describe('comparacao com ticket e prazo', () => {
+  const vendas = (quantos: number) =>
+    Array.from({ length: quantos }, (_, indice) =>
+      pedido({
+        id: `v${indice}`,
+        situacao: 'FATURADO',
+        totalCentavos: 100_000,
+        prazoMedioEmDias: 30,
+        enviadoEm: '2026-09-01T10:00:00Z',
+      }),
+    );
+
+  it('com 2 pedidos nao compara; com 3 compara', () => {
+    const alvo = pedido({ totalCentavos: 1_000_000, prazoMedioEmDias: 90 });
+    const dois = comparacaoComHistorico(alvo, comportamento([], vendas(2)), PARAMETROS_PADRAO);
+    expect(dois).toMatchObject({ ticketMedioCentavos: null, prazoMedioHistoricoDias: null });
+    const tres = comparacaoComHistorico(alvo, comportamento([], vendas(3)), PARAMETROS_PADRAO);
+    expect(tres).toMatchObject({ ticketMedioCentavos: 100_000, razaoSobreTicket: 10 });
+    expect(tres.diferencaDePrazoDias).toBe(60);
+  });
+
+  it('e so informativa: pedido 10x o ticket e 60 dias acima do prazo nao vira motivo nem excecao', () => {
+    const historico = comportamento(
+      ['a', 'b', 'c', 'd', 'e'].map((id) => pago(id, '2026-08-01', 0)),
+      vendas(3),
+    );
+    const alvo = pedido({ totalCentavos: 1_000_000, prazoMedioEmDias: 90 });
+    const avaliacao = avaliarPedido(
+      alvo,
+      situacao({
+        limiteCentavos: 50_000_000,
+        comprometidoCentavos: 0,
+        disponivelCentavos: 50_000_000,
+      }),
+      historico,
+      { considerados: 5, noPrazo: 5 },
+      PARAMETROS_PADRAO,
+    );
+    expect(avaliacao.comparacao.razaoSobreTicket).toBe(10);
+    expect(avaliacao.violaPolitica).toBe(false);
+    expect(avaliacao.motivos.map((motivo) => motivo.codigo)).toEqual(['ANALISE_OBRIGATORIA']);
+    expect(avaliacao.sinais.map((sinal) => sinal.id)).toEqual(
+      expect.arrayContaining(['acima-do-ticket', 'prazo-acima-do-habitual']),
+    );
+    expect(avaliacao.sinais.every((sinal) => sinal.tom !== 'critico')).toBe(true);
   });
 });

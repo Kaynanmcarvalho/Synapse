@@ -1,4 +1,5 @@
 import type { PedidoNaFila } from '@synapse/types';
+import { ehVendaEfetiva } from '@synapse/validation';
 
 /** Atalhos da barra da fila e os totais do rodape: os dois leem o mesmo
  *  recorte, entao a contagem e os totais nunca discordam do que esta na tela. */
@@ -12,7 +13,7 @@ export const ATALHOS: ReadonlyArray<{ readonly id: Atalho; readonly rotulo: stri
   { id: 'nao-impressos', rotulo: 'Não impressos' },
   { id: 'com-atraso', rotulo: 'Com atraso' },
   { id: 'sem-titulo', rotulo: 'Sem dívida' },
-  { id: 'nao-venda', rotulo: 'Bonificação e troca' },
+  { id: 'nao-venda', rotulo: 'Não é venda' },
 ];
 
 export const aplicarAtalho = (
@@ -25,7 +26,9 @@ export const aplicarAtalho = (
     return linhas.filter(
       (linha) => linha.cliente.vencidoCentavos + linha.cliente.aVencerCentavos === 0,
     );
-  if (atalho === 'nao-venda') return linhas.filter((linha) => linha.pedido.tipo !== 'VENDA');
+  // A classificacao e a compartilhada: bonificacao, troca, amostra, devolucao e
+  // consignacao nao sao venda efetiva.
+  if (atalho === 'nao-venda') return linhas.filter((linha) => !ehVendaEfetiva(linha.pedido.tipo));
   if (atalho === 'nao-impressos') return linhas.filter((linha) => !linha.impresso);
   return linhas;
 };

@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
@@ -11,15 +12,18 @@ import type {
   PedidoDeVenda,
   ResultadoDaDecisao,
   ResultadoDaLiberacao,
+  SituacaoDeCredito,
 } from '@synapse/types';
 import {
   avaliarLote,
   exposicaoDoPedido,
   JUSTIFICATIVA_MINIMA,
   justificativaValida,
+  type ItemDoLote,
 } from '@synapse/validation';
 import { TituloRepository } from '../../finance/repositories/titulo.repository';
 import type { TenantContext } from '../../iam/iam.types';
+import { RoleService } from '../../iam/services/role.service';
 import { avaliarPedido } from '../entities/avaliacao';
 import { comportamentoFinanceiro, pontualidadeRecente } from '../entities/comportamento';
 import {
@@ -34,6 +38,7 @@ import {
   type DecisaoDoLote,
 } from '../repositories/pedido-de-venda.repository';
 import { hojeNaOperacao, LeitorDeCredito, type DadosDeCredito } from './leitor-de-credito';
+import { permissoesDaDecisao, SEM_PERMISSAO_DE_EXCECAO } from './permissoes-do-credito';
 
 const EXIGE_JUSTIFICATIVA = `Justificativa obrigatória, com pelo menos ${JUSTIFICATIVA_MINIMA} caracteres.`;
 
@@ -43,10 +48,33 @@ const rotulos = (avaliacao: Pick<AvaliacaoDoPedido, 'motivos'>): string =>
     .map((motivo) => motivo.rotulo.toLowerCase())
     .join(', ');
 
+/** Quem decide o lote e com que poder. */
+interface QuemDecide {
+  readonly ator: Ator;
+  readonly em: string;
+  readonly justificativa: string | null;
+  readonly podeAprovarExcecao: boolean;
+}
+
+/** Por que um pedido do lote fica de fora — ou nulo, se passa. Fora da
+ *  politica so passa quem pode aprovar excecao e escreveu a justificativa: a
+ *  justificativa sozinha nao abre a porta para quem nao tem a permissao. */
+const recusaNoLote = (pedido: PedidoDeVenda, item: ItemDoLote, quem: QuemDecide): string | null => {
+  if (!item.violaPolitica) return null;
+  const fora = `Pedido ${pedido.numero} fora da política (${rotulos(item)})`;
+  if (!quem.podeAprovarExcecao) {
+    return `${fora}: exige aprovação excepcional, e você não possui permissão para essa decisão.`;
+  }
+  if (!justificativaValida(quem.justificativa)) return `${fora}: aprove com justificativa.`;
+  return null;
+};
+
 /** Aprovar, aprovar excepcionalmente e reprovar. A API refaz a avaliacao no
  *  momento da decisao, com os dados lidos na mesma transacao que grava: a tela
- *  pode estar desatualizada, a regra nao. Fora da politica, so passa com
- *  justificativa — e a justificativa fica no rastro do pedido para sempre. */
+ *  pode estar desatualizada, a regra nao. Fora da politica, so passa por quem
+ *  tem `financeiro.credito.aprovarExcecao` e com justificativa — e a
+ *  justificativa fica no rastro do pedido para sempre. Esconder o botao na tela
+ *  e conveniencia; quem garante e esta classe. */
 @Injectable()
 export class DecisaoDeCreditoService {
   constructor(
@@ -54,6 +82,7 @@ export class DecisaoDeCreditoService {
     private readonly titulos: TituloRepository,
     private readonly clientes: ClienteRepository,
     private readonly leitor: LeitorDeCredito,
+    private readonly roles: RoleService,
   ) {}
 
   private avaliar(
@@ -88,6 +117,11 @@ export class DecisaoDeCreditoService {
     input: DecisaoDeCreditoInput,
   ): Promise<ResultadoDaDecisao> {
     const justificativa = input.justificativa?.trim() || null;
+    // A permissao vem antes da justificativa: sem ela, nenhum texto adianta.
+    const { aprovarExcecao } = permissoesDaDecisao(this.roles, context);
+    if (input.acao === 'APROVAR_EXCECAO' && !aprovarExcecao) {
+      throw new ForbiddenException(SEM_PERMISSAO_DE_EXCECAO);
+    }
     if (input.acao !== 'APROVAR' && !justificativaValida(justificativa)) {
       throw new BadRequestException(EXIGE_JUSTIFICATIVA);
     }
@@ -118,7 +152,9 @@ export class DecisaoDeCreditoService {
       if (input.acao === 'APROVAR' && feita.violaPolitica) {
         throw new UnprocessableEntityException(
           `Pedido ${lido.numero} está fora da política de crédito (${rotulos(feita)}). ` +
-            'Use a aprovação excepcional, com justificativa.',
+            (aprovarExcecao
+              ? 'Use a aprovação excepcional, com justificativa.'
+              : 'Esta operação exige aprovação excepcional, e você não possui permissão para essa decisão.'),
         );
       }
       return liberarPedido(lido, ator, agora.toISOString(), contexto);
@@ -130,8 +166,8 @@ export class DecisaoDeCreditoService {
 
   /** Liberacao em lote dos pedidos marcados. Consome o limite do mais antigo
    *  para o mais recente — a mesma regra que a tela usa para dizer quantos vao
-   *  precisar de aprovacao excepcional. Sem justificativa, esses ficam de fora
-   *  com o motivo; com ela, passam e cada um guarda a justificativa. */
+   *  precisar de aprovacao excepcional. Esses so passam com justificativa e com
+   *  a permissao de excecao; sem uma delas, ficam de fora com o motivo. */
   async liberar(
     context: TenantContext,
     ator: Ator,
@@ -140,6 +176,7 @@ export class DecisaoDeCreditoService {
   ): Promise<ResultadoDaLiberacao> {
     const { tenantId } = context;
     const justificativa = justificativaInformada?.trim() || null;
+    const { aprovarExcecao } = permissoesDaDecisao(this.roles, context);
     const lidos = await Promise.all(ids.map((id) => this.pedidos.buscar(tenantId, id)));
     const clientes = [...new Set(lidos.flatMap((pedido) => (pedido ? [pedido.customerId] : [])))];
     const [titulos, cadastros] = await Promise.all([
@@ -158,8 +195,13 @@ export class DecisaoDeCreditoService {
         else validos.push(pedido);
       }
 
+      const quem: QuemDecide = {
+        ator,
+        em: agora.toISOString(),
+        justificativa,
+        podeAprovarExcecao: aprovarExcecao,
+      };
       for (const customerId of new Set(validos.map((pedido) => pedido.customerId))) {
-        const doCliente = validos.filter((pedido) => pedido.customerId === customerId);
         const situacao = this.leitor.situacao(
           customerId,
           {
@@ -169,37 +211,47 @@ export class DecisaoDeCreditoService {
           },
           agora,
         );
-        const lote = avaliarLote(
-          situacao,
-          doCliente.map((pedido) => ({
-            pedidoId: pedido.id,
-            enviadoEm: pedido.enviadoEm,
-            exposicao: exposicaoDoPedido(pedido),
-          })),
-          this.leitor.parametros,
-        );
-        for (const item of lote.itens) {
-          const pedido = doCliente.find((candidato) => candidato.id === item.pedidoId);
-          if (!pedido) continue;
-          if (item.violaPolitica && !justificativaValida(justificativa)) {
-            decisoes.set(pedido.id, {
-              motivo: `Pedido ${pedido.numero} fora da política (${rotulos(item)}): aprove com justificativa.`,
-            });
-            continue;
-          }
-          decisoes.set(pedido.id, {
-            excepcional: item.violaPolitica,
-            pedido: liberarPedido(pedido, ator, agora.toISOString(), {
-              excepcional: item.violaPolitica,
-              justificativa: item.violaPolitica ? justificativa : null,
-              motivos: item.motivos,
-              impacto: item.impacto,
-            }),
-          });
-        }
+        const doCliente = validos.filter((pedido) => pedido.customerId === customerId);
+        this.decidirDoCliente(situacao, doCliente, quem, decisoes);
       }
       return decisoes;
     });
+  }
+
+  /** Os pedidos de um cliente no lote, do mais antigo para o mais recente. */
+  private decidirDoCliente(
+    situacao: SituacaoDeCredito,
+    doCliente: readonly PedidoDeVenda[],
+    quem: QuemDecide,
+    decisoes: Map<string, DecisaoDoLote>,
+  ): void {
+    const lote = avaliarLote(
+      situacao,
+      doCliente.map((pedido) => ({
+        pedidoId: pedido.id,
+        enviadoEm: pedido.enviadoEm,
+        exposicao: exposicaoDoPedido(pedido),
+      })),
+      this.leitor.parametros,
+    );
+    for (const item of lote.itens) {
+      const pedido = doCliente.find((candidato) => candidato.id === item.pedidoId);
+      if (!pedido) continue;
+      const recusa = recusaNoLote(pedido, item, quem);
+      if (recusa) {
+        decisoes.set(pedido.id, { motivo: recusa });
+        continue;
+      }
+      decisoes.set(pedido.id, {
+        excepcional: item.violaPolitica,
+        pedido: liberarPedido(pedido, quem.ator, quem.em, {
+          excepcional: item.violaPolitica,
+          justificativa: item.violaPolitica ? quem.justificativa : null,
+          motivos: item.motivos,
+          impacto: item.impacto,
+        }),
+      });
+    }
   }
 
   /** "Fulano abriu a analise" — no maximo um registro por pessoa a cada meia hora. */

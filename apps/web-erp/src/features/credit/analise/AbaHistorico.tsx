@@ -1,4 +1,4 @@
-import type { EventoDoPedido, TipoDeEvento, ValorRegistrado } from '@synapse/types';
+import type { CodigoDoMotivo, EventoDoPedido, TipoDeEvento, ValorRegistrado } from '@synapse/types';
 import { ROTULO_DO_MOTIVO } from '@synapse/validation';
 import {
   BadgeAlert,
@@ -58,6 +58,22 @@ function Valores({ valores }: { readonly valores: readonly ValorRegistrado[] }) 
   );
 }
 
+/** Os motivos gravados na hora da acao — e, na aprovacao excepcional, os que
+ *  feriam a politica e foram passados por cima com justificativa. */
+function MotivosDoEvento({ evento }: { readonly evento: EventoDoPedido }) {
+  if (evento.tipo === 'ANALISE_ACIONADA') return null;
+  const rotulos = (codigos: readonly CodigoDoMotivo[] | undefined) =>
+    (codigos ?? []).map((codigo) => ROTULO_DO_MOTIVO[codigo]).join(', ');
+  const fora = rotulos(evento.motivosForaDaPolitica);
+  const todos = rotulos(evento.motivos);
+  return (
+    <>
+      {fora && <p className="text-caption mt-1 text-[#b3242f]">Fora da política: {fora}</p>}
+      {todos && <p className="text-caption text-stone mt-1">Motivos na hora: {todos}</p>}
+    </>
+  );
+}
+
 function Evento({ evento }: { readonly evento: EventoDoPedido }) {
   const Icone = ICONE[evento.tipo];
   const excecao = evento.tipo === 'LIBERADO_EXCECAO' || evento.tipo === 'REPROVADO';
@@ -83,11 +99,7 @@ function Evento({ evento }: { readonly evento: EventoDoPedido }) {
           Justificativa: {evento.justificativa}
         </blockquote>
       )}
-      {evento.motivos && evento.motivos.length > 0 && evento.tipo !== 'ANALISE_ACIONADA' && (
-        <p className="text-caption text-stone mt-1">
-          Motivos na hora: {evento.motivos.map((codigo) => ROTULO_DO_MOTIVO[codigo]).join(', ')}
-        </p>
-      )}
+      <MotivosDoEvento evento={evento} />
       {evento.valores && evento.valores.length > 0 && <Valores valores={evento.valores} />}
     </li>
   );

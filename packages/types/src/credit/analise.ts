@@ -24,9 +24,16 @@ export interface ExposicaoDoPedido {
   readonly entradaCentavos: number;
   /** Valor comercial menos a entrada: o que fica para depois. */
   readonly financiadoCentavos: number;
-  /** Quanto do limite do cliente esta operacao compromete. */
+  /** Credito concedido ao cliente: o que ele vai pagar depois (a prazo). */
+  readonly exposicaoCreditoCentavos: number;
+  /** Mercadoria consignada: risco economico sem titulo a receber ainda. Nesta
+   *  versao compromete o limite por inteiro (regra conservadora e provisoria). */
+  readonly exposicaoConsignacaoCentavos: number;
+  /** Total consolidado (credito + consignacao): o que compromete o limite. */
   readonly exposicaoCentavos: number;
   readonly natureza: NaturezaDaCobranca;
+  /** Compromete limite. NAO significa que o pagamento foi confirmado quando e
+   *  falso: o pedido nao guarda recebimento de PIX nem autorizacao de cartao. */
   readonly consomeLimite: boolean;
   /** Por que a exposicao ficou nesse valor, em uma frase. */
   readonly explicacao: string;
@@ -315,6 +322,16 @@ export interface PainelDeAnaliseDeCredito {
   readonly avaliacoes: readonly AvaliacaoDoPedido[];
   readonly parametros: ParametrosDaAnalise;
   readonly cadastro: CadastroDoCliente | null;
+  /** O que quem pediu a ficha pode decidir, resolvido pela API com as
+   *  permissoes do usuario — a tela so reflete, a API confere de novo. */
+  readonly permissoes: PermissoesDaDecisao;
+}
+
+export interface PermissoesDaDecisao {
+  /** Aprovar dentro da politica e reprovar (financeiro.editar). */
+  readonly decidir: boolean;
+  /** Aprovar fora da politica, com justificativa (financeiro.credito.aprovarExcecao). */
+  readonly aprovarExcecao: boolean;
 }
 
 /** Resultado da liberacao em lote: o que passou e o que ficou, com o motivo. */
