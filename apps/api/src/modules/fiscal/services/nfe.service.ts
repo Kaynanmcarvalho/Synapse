@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import type { FiscalDocument, FiscalProvider, FiscalProviderResult } from '@synapse/types';
 import { randomUUID } from 'node:crypto';
 import type { FiscalEventInput, InvalidateNfeInput, IssueNfeInput } from '../dto/fiscal.schemas';
@@ -8,6 +14,7 @@ import { FiscalProviderRegistry } from './fiscal-provider.registry';
 
 @Injectable()
 export class NfeService {
+  private readonly logger = new Logger(NfeService.name);
   constructor(
     private readonly repository: FiscalRepository,
     private readonly providers: FiscalProviderRegistry,
@@ -16,7 +23,13 @@ export class NfeService {
     const existing = this.repository.findByIdempotency(input.idempotencyKey);
     if (existing) return existing;
     const { config, provider } = this.context(input.companyId);
-    const number = this.repository.nextNumber(input.companyId, 'NFE', config.nfeSeries);
+    // Quem migra de outro sistema informa no assistente de onde a serie continua.
+    const number = this.repository.nextNumber(
+      input.companyId,
+      'NFE',
+      config.nfeSeries,
+      config.nfe?.nextNumber,
+    );
     const draft: FiscalDocument = {
       id: randomUUID(),
       tenantId,
@@ -52,11 +65,22 @@ export class NfeService {
         ),
       );
     } catch (error) {
+      const sefazMessage = this.readableError(error);
+      this.logger.warn(
+        JSON.stringify({
+          event: 'nfe_rejected',
+          documentId: draft.id,
+          companyId: input.companyId,
+          series: draft.series,
+          number: draft.number,
+          message: sefazMessage,
+        }),
+      );
       return this.repository.saveDocument({
         ...draft,
         status: 'REJECTED',
         attempts: 3,
-        sefazMessage: this.readableError(error),
+        sefazMessage,
       });
     }
   }
@@ -150,6 +174,8 @@ export class NfeService {
         return await operation();
       } catch (error) {
         last = error;
+        // Recusa do provedor (4xx: dado invalido, credencial) nao muda tentando de novo.
+        if (error instanceof HttpException && error.getStatus() < 500) break;
       }
     }
     throw last;

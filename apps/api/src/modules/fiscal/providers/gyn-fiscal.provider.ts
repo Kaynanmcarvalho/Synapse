@@ -1,4 +1,10 @@
-import { Injectable, NotImplementedException, ServiceUnavailableException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  Logger,
+  NotImplementedException,
+} from '@nestjs/common';
 import type {
   FiscalConsultResult,
   FiscalEventCommand,
@@ -8,25 +14,41 @@ import type {
 } from '@synapse/types';
 
 type Json = Record<string, unknown>;
+export interface JobPolling {
+  readonly attempts: number;
+  readonly intervalMs: number;
+}
+const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 @Injectable()
 export class GynFiscalProvider implements FiscalProvider {
+  private readonly logger = new Logger(GynFiscalProvider.name);
   private readonly baseUrl = 'https://gynfiscal.up.railway.app/api/v1';
   constructor(
     private readonly apiKey: string,
     private readonly tenantId: string,
+    /** Consulta do job assincrono; o teste automatizado usa valores curtos. */
+    private readonly job: JobPolling = { attempts: 15, intervalMs: 2000 },
   ) {}
-  issueNFe(command: FiscalIssueCommand) {
-    return this.post('/fiscal/nfe/emitir', command.payload);
+  async issueNFe(command: FiscalIssueCommand) {
+    return this.waitForNFeJob(await this.post('/fiscal/nfe/emitir', command.payload));
   }
   issueNFCe(command: FiscalIssueCommand) {
     return this.post('/fiscal/nfce/emitir', command.payload);
   }
-  cancelDocument(command: FiscalEventCommand) {
-    return this.post('/fiscal/nfe/cancelar', {
-      chave: command.accessKey,
-      protocolo: command.protocol,
-      justificativa: command.justification,
-    });
+  /** O ambiente vem da chave da API: o Gyn recusa quando o informado nao bate.
+   *  Trava antes de emitir a nota de teste com uma chave de producao. */
+  async assertHomologationEnvironment(): Promise<void> {
+    await this.request('/fiscal/nfe/listar?ambiente=homologacao&$top=1');
+  }
+  async cancelDocument(command: FiscalEventCommand) {
+    return this.waitForNFeJob(
+      await this.post('/fiscal/nfe/cancelar', {
+        chaveAcesso: command.accessKey,
+        protocolo: command.protocol,
+        justificativa: command.justification,
+      }),
+    );
   }
   cancelNFCe(command: FiscalEventCommand) {
     return this.post('/fiscal/nfce/cancelar', {
@@ -105,21 +127,69 @@ export class GynFiscalProvider implements FiscalProvider {
   private async post(path: string, payload: Json) {
     return this.map(await this.json(path, { method: 'POST', body: JSON.stringify(payload) }));
   }
-  private async json(path: string, init?: RequestInit): Promise<Json> {
-    return (await (await this.request(path, init)).json()) as Json;
+  /** Emissao e cancelamento sao assincronos: o POST devolve `jobId` e o resultado
+   *  da SEFAZ so aparece quando o job termina (`concluido` ou `erro`). */
+  private async waitForNFeJob(started: FiscalProviderResult): Promise<FiscalProviderResult> {
+    const jobId = started.jobId;
+    if (!jobId) return started;
+    for (let attempt = 0; attempt < this.job.attempts; attempt += 1) {
+      await delay(this.job.intervalMs);
+      const job = await this.json(`/fiscal/nfe/job/${jobId}`);
+      const state = String(job.status ?? '').toLowerCase();
+      if (state !== 'concluido' && state !== 'erro') continue;
+      const result =
+        job.resultado && typeof job.resultado === 'object' ? (job.resultado as Json) : {};
+      return this.map({ ...job, ...result, jobId });
+    }
+    throw new HttpException(
+      `O Gyn Fiscal não devolveu o resultado do job ${jobId} dentro de ${(this.job.attempts * this.job.intervalMs) / 1000}s.`,
+      HttpStatus.GATEWAY_TIMEOUT,
+    );
   }
+  /** O Gyn responde `{ sucesso, dados: {...} }`: os campos que interessam vem em `dados`. */
+  private async json(path: string, init?: RequestInit): Promise<Json> {
+    const body = (await (await this.request(path, init)).json()) as Json;
+    const data = body.dados;
+    return data && typeof data === 'object' && !Array.isArray(data)
+      ? { ...body, ...(data as Json) }
+      : body;
+  }
+  /** Falha do Gyn sai com o motivo que ele devolveu e fica no log da API. Nunca
+   *  registra cabecalhos (chave da API) nem o payload enviado. */
   private async request(path: string, init: RequestInit = {}) {
-    const response = await fetch(`${this.baseUrl}${path}`, {
-      ...init,
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': this.apiKey,
-        'x-tenant-id': this.tenantId,
-        ...init.headers,
-      },
-    });
-    if (!response.ok)
-      throw new ServiceUnavailableException(`Gyn Fiscal respondeu HTTP ${response.status}`);
+    const method = init.method ?? 'GET';
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}${path}`, {
+        ...init,
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': this.apiKey,
+          'x-tenant-id': this.tenantId,
+          ...init.headers,
+        },
+      });
+    } catch (error) {
+      const message = `Sem conexão com o Gyn Fiscal: ${error instanceof Error ? error.message : String(error)}`;
+      this.logger.error(JSON.stringify({ event: 'gyn_fiscal_unreachable', method, path, message }));
+      throw new HttpException(message, HttpStatus.BAD_GATEWAY);
+    }
+    if (!response.ok) {
+      const message = gynErrorMessage(response.status, await response.text().catch(() => ''));
+      this.logger.warn(
+        JSON.stringify({
+          event: 'gyn_fiscal_error',
+          method,
+          path,
+          status: response.status,
+          message,
+        }),
+      );
+      throw new HttpException(
+        message,
+        response.status >= 500 ? HttpStatus.BAD_GATEWAY : HttpStatus.UNPROCESSABLE_ENTITY,
+      );
+    }
     return response;
   }
   private map(raw: Json): FiscalProviderResult {
@@ -132,16 +202,65 @@ export class GynFiscalProvider implements FiscalProvider {
       accessKey: text('chave') ?? text('chaveAcesso'),
       protocol: text('protocolo'),
       xml: text('xml'),
-      code: String(raw.codigoStatus ?? raw.codigo ?? ''),
-      message: text('motivoStatus') ?? text('mensagem'),
+      code: String(raw.codigoStatus ?? raw.codigoRejeicao ?? raw.codigo ?? ''),
+      message:
+        text('motivoStatus') ?? text('motivo') ?? text('mensagemUsuario') ?? text('mensagem'),
     };
   }
   private mapStatus(status: string | undefined): FiscalProviderResult['status'] {
     if (status === 'AUTORIZADA' || status === 'CONCLUIDO' || status === 'COMPLETED')
       return 'AUTHORIZED';
-    if (status === 'CANCELADA') return 'CANCELLED';
+    if (status === 'CANCELADA' || status === 'CANCELADO') return 'CANCELLED';
     if (status === 'CONTINGENCIA_PENDENTE') return 'CONTINGENCY';
-    if (status === 'REJEITADA' || status === 'FAILED') return 'REJECTED';
+    if (status === 'DENEGADA') return 'DENIED';
+    if (
+      status === 'REJEITADA' ||
+      status === 'REJEITADO' ||
+      status === 'FAILED' ||
+      status === 'ERRO'
+    )
+      return 'REJECTED';
     return 'PROCESSING';
   }
 }
+
+const text = (value: unknown): string | null =>
+  typeof value === 'string' && value.trim() ? value.trim() : null;
+
+/** `campos` do ValidationError do Gyn: lista de textos, de `{ campo, mensagem }` ou objeto. */
+const describeFields = (fields: unknown): string | null => {
+  const entries = Array.isArray(fields)
+    ? fields.map((field) =>
+        field && typeof field === 'object'
+          ? [text((field as Json).campo), text((field as Json).mensagem)].filter(Boolean).join(': ')
+          : (text(field) ?? ''),
+      )
+    : fields && typeof fields === 'object'
+      ? Object.entries(fields as Json).map(
+          ([key, value]) => `${key}: ${text(value) ?? JSON.stringify(value)}`,
+        )
+      : [];
+  const filled = entries.filter(Boolean);
+  return filled.length > 0 ? filled.join('; ') : null;
+};
+
+/** Corpo de erro do Gyn: `{ sucesso: false, codigo, mensagemUsuario, mensagemTecnica, campos }`. */
+export const gynErrorMessage = (status: number, body: string): string => {
+  let parsed: Json = {};
+  try {
+    const value: unknown = JSON.parse(body);
+    if (value && typeof value === 'object') parsed = value as Json;
+  } catch {
+    parsed = {};
+  }
+  const messages = [
+    text(parsed.mensagemUsuario) ?? text(parsed.mensagem) ?? text(parsed.message),
+    text(parsed.mensagemTecnica),
+  ].filter(
+    (message, index, all): message is string => Boolean(message) && all.indexOf(message) === index,
+  );
+  const code = text(parsed.codigo);
+  const fields = describeFields(parsed.campos);
+  const detail = messages.join(' — ') || body.trim().slice(0, 300) || 'sem detalhes';
+  return `Gyn Fiscal respondeu HTTP ${status}${code ? ` (${code})` : ''}: ${detail}${fields ? `. Campos: ${fields}` : ''}`;
+};

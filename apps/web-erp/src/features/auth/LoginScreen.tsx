@@ -4,6 +4,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../app/auth/AuthContext';
 import { ROTAS } from '../../app/rotas';
 import { Marca } from '../../app/shell/Marca';
+import { usandoEmulador } from '../../lib/dev-auth';
 
 /** O usuario que o `pnpm dev` cria (scripts/seed-dev.mjs). So aparece em dev. */
 const USUARIO_DE_TESTE = { email: 'teste.rbac@synapse.dev', senha: 'Senha123!' };
@@ -135,7 +136,7 @@ function FormularioDeLogin({ destino }: { readonly destino: string }) {
           {enviando ? 'Entrando…' : 'Entrar'}
         </button>
       </form>
-      {import.meta.env.DEV && (
+      {import.meta.env.DEV && usandoEmulador && (
         <DicaDeDesenvolvimento
           onUsar={() => {
             setEmail(USUARIO_DE_TESTE.email);

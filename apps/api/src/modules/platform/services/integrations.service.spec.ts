@@ -65,12 +65,33 @@ function buildService(
   return { service, fiscalConfig, fiscalProvider, fiscalProviders, nfe, bankProvider, repository };
 }
 
-const fiscalConfigFixture = (): FiscalCompanyConfig =>
+const fiscalConfigFixture = (extra: Partial<FiscalCompanyConfig> = {}): FiscalCompanyConfig =>
   ({
     companyId: tenantId,
     environment: 'HOMOLOGACAO',
     provider: 'MOCK',
     certificateSecretRef: 'ref',
+    // O teste de homologação monta uma NF-e de verdade com estes dados.
+    crt: 3,
+    state: 'GO',
+    stateRegistration: '108052079',
+    issuer: {
+      personType: 'PJ',
+      document: '38242542000143',
+      legalName: 'RP DISTRIBUIDORA LTDA',
+      tradeName: 'REDE PET',
+      address: {
+        zipCode: '74946630',
+        street: 'RUA DAS MATAS',
+        number: 'S/N',
+        complement: '',
+        district: 'RESIDENCIAL NORTE SUL',
+        cityCode: '5201405',
+        cityName: 'APARECIDA DE GOIANIA',
+        countryCode: '1058',
+      },
+    },
+    ...extra,
   }) as FiscalCompanyConfig;
 
 describe('IntegrationsService.list', () => {
@@ -117,14 +138,53 @@ describe('IntegrationsService.testConnection', () => {
 describe('IntegrationsService.runHomologationTest', () => {
   it('SEFAZ_NFE emite e cancela via NfeService', async () => {
     const { service, nfe, repository } = buildService({ fiscalConfig: fiscalConfigFixture() });
-    nfe.issue.mockResolvedValue({ id: 'doc-1' });
+    nfe.issue.mockResolvedValue({ id: 'doc-1', status: 'AUTHORIZED' });
     nfe.cancel.mockResolvedValue({ id: 'doc-1', status: 'CANCELLED' });
 
     const result = await service.runHomologationTest(tenantId, 'SEFAZ_NFE');
     expect(result.success).toBe(true);
-    expect(nfe.issue).toHaveBeenCalled();
+    const payload = (nfe.issue.mock.calls[0]?.[1] as { payload: Record<string, unknown> }).payload;
+    expect((payload.emitente as { cnpj: string }).cnpj).toBe('38242542000143');
+    expect(payload.itens).toHaveLength(1);
     expect(nfe.cancel).toHaveBeenCalledWith('doc-1', expect.any(Object));
     expect(repository.recordHomologationTest).toHaveBeenCalledWith(tenantId, 'SEFAZ_NFE', result);
+  });
+
+  it('SEFAZ_NFE recusada mostra o motivo do provedor e não tenta cancelar', async () => {
+    const { service, nfe } = buildService({ fiscalConfig: fiscalConfigFixture() });
+    nfe.issue.mockResolvedValue({
+      id: 'doc-2',
+      status: 'REJECTED',
+      sefazMessage:
+        'Não foi possível autorizar a NF-e: Gyn Fiscal respondeu HTTP 400 (VALIDATION_ERROR): Dados inválidos.',
+    });
+
+    const result = await service.runHomologationTest(tenantId, 'SEFAZ_NFE');
+    expect(result.success).toBe(false);
+    expect(result.message).toContain('VALIDATION_ERROR');
+    expect(nfe.cancel).not.toHaveBeenCalled();
+  });
+
+  it('sem os Parâmetros da Empresa, avisa o que falta em vez de emitir', async () => {
+    const { service, nfe } = buildService({ fiscalConfig: fiscalConfigFixture({ issuer: null }) });
+
+    const result = await service.runHomologationTest(tenantId, 'SEFAZ_NFE');
+    expect(result.success).toBe(false);
+    expect(result.message).toContain('Assistente de Configuração de NF-e');
+    expect(nfe.issue).not.toHaveBeenCalled();
+  });
+
+  it('confirma no provedor que a chave da API é de homologação antes de emitir', async () => {
+    const assertHomologationEnvironment = jest.fn(() => Promise.resolve());
+    const { service, nfe } = buildService({
+      fiscalConfig: fiscalConfigFixture(),
+      fiscalProvider: { assertHomologationEnvironment } as unknown as Partial<FiscalProvider>,
+    });
+    nfe.issue.mockResolvedValue({ id: 'doc-3', status: 'AUTHORIZED' });
+    nfe.cancel.mockResolvedValue({ id: 'doc-3', status: 'CANCELLED' });
+
+    await service.runHomologationTest(tenantId, 'SEFAZ_NFE');
+    expect(assertHomologationEnvironment).toHaveBeenCalled();
   });
 
   it('SEFAZ_NFCE emite e cancela via o provider diretamente', async () => {

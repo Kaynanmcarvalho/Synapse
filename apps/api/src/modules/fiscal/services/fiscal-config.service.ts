@@ -4,6 +4,10 @@ import type { FiscalConfigInput } from '../dto/fiscal.schemas';
 import { FiscalRepository } from '../repositories/fiscal.repository';
 import { SecretVaultService } from './secret-vault.service';
 
+/** Bloco nao enviado mantem o salvo; `null` explicito apaga. */
+const keep = <T>(value: T | null | undefined, previous: T | null | undefined): T | null =>
+  value === undefined ? (previous ?? null) : value;
+
 @Injectable()
 export class FiscalConfigService {
   constructor(
@@ -14,31 +18,6 @@ export class FiscalConfigService {
     if (input.environment === 'PRODUCAO' && input.productionConfirmation !== 'ATIVAR PRODUCAO')
       throw new BadRequestException('Confirme explicitamente ATIVAR PRODUCAO');
     const previous = this.repository.findConfig(input.companyId);
-    const certificateSecretRef = this.storeWhenPresent(
-      `fiscal/${input.companyId}/a1`,
-      input.certificateBase64 ? Buffer.from(input.certificateBase64, 'base64') : null,
-      previous?.certificateSecretRef,
-    );
-    const certificatePasswordSecretRef = this.storeWhenPresent(
-      `fiscal/${input.companyId}/a1-password`,
-      input.certificatePassword,
-      previous?.certificatePasswordSecretRef,
-    );
-    const cscSecretRef = this.storeWhenPresent(
-      `fiscal/${input.companyId}/csc`,
-      input.csc,
-      previous?.cscSecretRef,
-    );
-    const providerApiKeySecretRef = this.storeWhenPresent(
-      `fiscal/${input.companyId}/provider-api-key`,
-      input.providerApiKey,
-      previous?.providerApiKeySecretRef,
-    );
-    const providerTenantIdSecretRef = this.storeWhenPresent(
-      `fiscal/${input.companyId}/provider-tenant-id`,
-      input.providerTenantId,
-      previous?.providerTenantIdSecretRef,
-    );
     return this.repository.saveConfig({
       companyId: input.companyId,
       environment: input.environment,
@@ -46,21 +25,62 @@ export class FiscalConfigService {
       crt: input.crt,
       stateRegistration: input.stateRegistration,
       cscId: input.cscId ?? null,
-      cscSecretRef,
       nfeSeries: input.nfeSeries,
       nfceSeries: input.nfceSeries,
       nfceContingencyEnabled: input.nfceContingencyEnabled,
       nfceCancellationWindowMinutes: input.nfceCancellationWindowMinutes,
       state: input.state.toUpperCase(),
       taxRegime: input.taxRegime,
-      certificateSecretRef,
-      certificatePasswordSecretRef,
-      providerApiKeySecretRef,
-      providerTenantIdSecretRef,
+      issuer: keep(input.issuer, previous?.issuer),
+      emission: keep(input.emission, previous?.emission),
+      email: keep(input.email, previous?.email),
+      pisCofins: keep(input.pisCofins, previous?.pisCofins),
+      nfe: keep(input.nfe, previous?.nfe),
+      nfce: keep(input.nfce, previous?.nfce),
+      ...this.secretRefs(input, previous),
+      updatedAt: new Date().toISOString(),
     });
   }
   get(companyId: string) {
     return this.repository.findConfig(companyId);
+  }
+
+  /** Segredo so vai para o cofre quando vem preenchido; a config guarda a referencia. */
+  private secretRefs(input: FiscalConfigInput, previous: FiscalCompanyConfig | undefined) {
+    const base = `fiscal/${input.companyId}`;
+    return {
+      certificateSecretRef: this.storeWhenPresent(
+        `${base}/a1`,
+        input.certificateBase64 ? Buffer.from(input.certificateBase64, 'base64') : null,
+        previous?.certificateSecretRef,
+      ),
+      certificatePasswordSecretRef: this.storeWhenPresent(
+        `${base}/a1-password`,
+        input.certificatePassword,
+        previous?.certificatePasswordSecretRef,
+      ),
+      cscSecretRef: this.storeWhenPresent(`${base}/csc`, input.csc, previous?.cscSecretRef),
+      providerApiKeySecretRef: this.storeWhenPresent(
+        `${base}/provider-api-key`,
+        input.providerApiKey,
+        previous?.providerApiKeySecretRef,
+      ),
+      providerTenantIdSecretRef: this.storeWhenPresent(
+        `${base}/provider-tenant-id`,
+        input.providerTenantId,
+        previous?.providerTenantIdSecretRef,
+      ),
+      smtpPasswordSecretRef: this.storeWhenPresent(
+        `${base}/smtp-password`,
+        input.smtpPassword,
+        previous?.smtpPasswordSecretRef,
+      ),
+      nfceOfflinePasswordSecretRef: this.storeWhenPresent(
+        `${base}/nfce-offline-password`,
+        input.nfceOfflinePassword,
+        previous?.nfceOfflinePasswordSecretRef,
+      ),
+    };
   }
 
   private storeWhenPresent(

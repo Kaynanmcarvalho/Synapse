@@ -10,8 +10,10 @@
     "pnpm": ">=10"
   },
   "scripts": {
-    "dev": "firebase emulators:exec --project demo-synapse --only auth,firestore --import=.firebase/emulators --export-on-exit=.firebase/emulators \"node scripts/seed-dev.mjs && turbo run dev\"",
+    "dev": "turbo run dev",
     "dev:cloud": "turbo run dev",
+    "dev:emulador": "firebase emulators:exec --project demo-synapse --only auth,firestore --import=.firebase/emulators --export-on-exit=.firebase/emulators \"node scripts/seed-dev.mjs && turbo run dev\"",
+    "seed:cloud-admin": "node scripts/seed-cloud-admin.mjs",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint -- --fix",

@@ -11,7 +11,7 @@ import { PlatformScreen } from '../features/platform/PlatformScreen';
 import { DfeScreen } from '../features/inbound/DfeScreen';
 import { BoletosScreen } from '../features/finance/BoletosScreen';
 import { BranchConfigScreen } from '../features/config/BranchConfigScreen';
-import { FiscalSettingsScreen } from '../features/fiscal/FiscalSettingsScreen';
+import { AssistenteNfeScreen } from '../features/fiscal/assistente/AssistenteNfeScreen';
 import { AuditScreen } from '../features/audit/AuditScreen';
 import { AnaliseDeCreditoScreen } from '../features/credit/AnaliseDeCreditoScreen';
 import { LoginScreen } from '../features/auth/LoginScreen';
@@ -45,7 +45,7 @@ export function App() {
               <Route path={ROTAS.cargos} element={<RolesScreen />} />
               <Route path={ROTAS.filiais} element={<BranchConfigScreen />} />
               <Route path={ROTAS.integracoes} element={<PlatformScreen />} />
-              <Route path={ROTAS.fiscal} element={<FiscalSettingsScreen />} />
+              <Route path={ROTAS.fiscal} element={<AssistenteNfeScreen />} />
               <Route path={ROTAS.historicoDeLogs} element={<AuditScreen />} />
               {/* Opcoes do menu que ainda nao tem tela: ver menu.data.ts. */}
               <Route path="/modulo/*" element={<ModuloEmBreveScreen />} />

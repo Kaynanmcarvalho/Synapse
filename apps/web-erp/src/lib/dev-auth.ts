@@ -9,19 +9,42 @@ import {
   type User,
 } from 'firebase/auth';
 import { mensagemDeErroDaSessao, mensagemDeErroDeLogin } from '../app/auth/erros';
+import { env } from './env';
 
-/** Autenticacao de dev compartilhada pelas telas que ainda nao dependem do
- *  AuthService de producao (MFA, App Check real) — fala direto com o emulador do
- *  Firebase Auth (127.0.0.1:9099). A API, rodando contra o mesmo emulador
- *  (`pnpm dev`), dispensa o App Check. O usuario de teste e criado por
+/** Autenticacao compartilhada pelas telas que ainda nao dependem do AuthService
+ *  de producao (MFA, App Check real).
+ *
+ *  Com `VITE_FIREBASE_PROJECT_ID` preenchido (apps/web-erp/.env.local) fala com o
+ *  projeto Firebase de verdade. Sem ele, cai no emulador do Firebase Auth
+ *  (127.0.0.1:9099) que o `pnpm dev:emulador` sobe, com o usuario de teste do
  *  scripts/seed-dev.mjs. */
-const app = initializeApp({ apiKey: 'demo-key', projectId: 'demo-synapse', appId: 'demo-app' });
+const projeto = env.firebase.VITE_FIREBASE_PROJECT_ID;
+
+/** Sem projeto configurado, a tela fala com o emulador. */
+export const usandoEmulador = !projeto;
+
+const app = initializeApp(
+  projeto
+    ? {
+        apiKey: env.firebase.VITE_FIREBASE_API_KEY ?? '',
+        authDomain: env.firebase.VITE_FIREBASE_AUTH_DOMAIN ?? '',
+        projectId: projeto,
+        appId: env.firebase.VITE_FIREBASE_APP_ID ?? '',
+        ...(env.firebase.VITE_FIREBASE_STORAGE_BUCKET
+          ? { storageBucket: env.firebase.VITE_FIREBASE_STORAGE_BUCKET }
+          : {}),
+        ...(env.firebase.VITE_FIREBASE_MESSAGING_SENDER_ID
+          ? { messagingSenderId: env.firebase.VITE_FIREBASE_MESSAGING_SENDER_ID }
+          : {}),
+      }
+    : { apiKey: 'demo-key', projectId: 'demo-synapse', appId: 'demo-app' },
+);
 let auth: Auth | null = null;
 let sessionId: string | null = null;
 let restauracao: Promise<UsuarioDaSessao | null> | null = null;
 let encerrando = false;
 
-export const API_URL = 'http://localhost:3333/api/v1';
+export const API_URL = env.apiUrl;
 
 export interface UsuarioDaSessao {
   readonly uid: string;
@@ -54,13 +77,13 @@ const armazenamento = {
 const getDevAuth = (): Auth => {
   if (auth) return auth;
   auth = getAuth(app);
-  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+  if (usandoEmulador) connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
   return auth;
 };
 
 /** Mesmo navegador, mesmo dispositivo: a lista de sessoes do usuario nao ganha
- *  uma entrada nova a cada login. */
-const identificadorDoDispositivo = (): string => {
+ *  uma entrada nova a cada login. Tambem identifica o terminal nas series da NFC-e. */
+export const identificadorDoDispositivo = (): string => {
   const existente = armazenamento.ler(CHAVE_DO_DISPOSITIVO);
   if (existente) return existente;
   const novo = `web-erp-${crypto.randomUUID()}`;

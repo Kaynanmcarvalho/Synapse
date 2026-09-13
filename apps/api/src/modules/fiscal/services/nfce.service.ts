@@ -38,7 +38,12 @@ export class NfceService {
     if (config.provider !== 'MOCK' && (!config.cscId || !config.cscSecretRef))
       throw new BadRequestException('CSC e identificador do CSC são obrigatórios para NFC-e');
 
-    const number = this.repository.nextNumber(companyId, 'NFCE', config.nfceSeries);
+    const number = this.repository.nextNumber(
+      companyId,
+      'NFCE',
+      config.nfceSeries,
+      config.nfce?.series.find((row) => row.series === config.nfceSeries)?.nextNumber,
+    );
     const payload = this.salePayload(sale, config.nfceSeries, number);
     const draft: FiscalDocument = {
       id: randomUUID(),

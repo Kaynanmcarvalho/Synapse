@@ -1,4 +1,12 @@
 import { z } from 'zod';
+import {
+  emailSchema,
+  emissionSchema,
+  issuerSchema,
+  nfceSettingsSchema,
+  nfeSettingsSchema,
+  pisCofinsSchema,
+} from './fiscal-settings.schemas';
 
 export const fiscalConfigSchema = z.object({
   companyId: z.string().min(1),
@@ -19,6 +27,15 @@ export const fiscalConfigSchema = z.object({
   providerApiKey: z.string().min(1).max(300).nullable().optional(),
   providerTenantId: z.string().min(1).max(120).nullable().optional(),
   productionConfirmation: z.literal('ATIVAR PRODUCAO').optional(),
+  // Assistente de Configuracao de NF-e: bloco ausente mantem o que ja estava salvo.
+  issuer: issuerSchema.nullable().optional(),
+  emission: emissionSchema.nullable().optional(),
+  email: emailSchema.nullable().optional(),
+  pisCofins: pisCofinsSchema.nullable().optional(),
+  nfe: nfeSettingsSchema.nullable().optional(),
+  nfce: nfceSettingsSchema.nullable().optional(),
+  smtpPassword: z.string().min(1).max(200).nullable().optional(),
+  nfceOfflinePassword: z.string().min(4).max(60).nullable().optional(),
 });
 
 export const issueNfeSchema = z.object({

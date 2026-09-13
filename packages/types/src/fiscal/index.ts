@@ -1,3 +1,14 @@
+import type {
+  FiscalEmailSettings,
+  FiscalEmissionSettings,
+  FiscalIssuer,
+  NfceSettings,
+  NfeSettings,
+  PisCofinsDefaults,
+} from './settings';
+
+export * from './settings';
+
 export type FiscalDocumentKind = 'NFE' | 'NFCE' | 'MDFE' | 'DFE';
 export type FiscalEnvironment = 'MOCK' | 'SANDBOX' | 'HOMOLOGACAO' | 'PRODUCAO';
 export type FiscalDocumentStatus =
@@ -41,6 +52,16 @@ export interface FiscalCompanyConfig {
   readonly certificatePasswordSecretRef: string | null;
   readonly providerApiKeySecretRef: string | null;
   readonly providerTenantIdSecretRef: string | null;
+  /** Etapas do Assistente de Configuracao de NF-e. Ausentes em configs antigas. */
+  readonly issuer?: FiscalIssuer | null;
+  readonly emission?: FiscalEmissionSettings | null;
+  readonly email?: FiscalEmailSettings | null;
+  readonly pisCofins?: PisCofinsDefaults | null;
+  readonly nfe?: NfeSettings | null;
+  readonly nfce?: NfceSettings | null;
+  readonly smtpPasswordSecretRef?: string | null;
+  readonly nfceOfflinePasswordSecretRef?: string | null;
+  readonly updatedAt?: string;
 }
 
 export interface FiscalIssueCommand {

@@ -1,6 +1,7 @@
 import { BoletoRepository } from '../../finance/repositories/boleto.repository';
-import { Injectable } from '@nestjs/common';
-import type { IntegrationServiceId, IntegrationStatus } from '@synapse/types';
+import { Injectable, Logger } from '@nestjs/common';
+import type { FiscalProvider, IntegrationServiceId, IntegrationStatus } from '@synapse/types';
+import { buildHomologationNfePayload } from '../../fiscal/services/homologation-nfe.payload';
 import { randomUUID } from 'node:crypto';
 import { BankProviderRegistry } from '../../finance/services/bank-provider.registry';
 import { FiscalConfigService } from '../../fiscal/services/fiscal-config.service';
@@ -21,6 +22,7 @@ const BANK_SERVICES: readonly IntegrationServiceId[] = ['SICREDI', 'ITAU'];
 
 @Injectable()
 export class IntegrationsService {
+  private readonly logger = new Logger(IntegrationsService.name);
   constructor(
     private readonly fiscalConfig: FiscalConfigService,
     private readonly fiscalProviders: FiscalProviderRegistry,
@@ -97,7 +99,18 @@ export class IntegrationsService {
         occurredAt: now(),
       };
     } catch (error) {
-      return { success: false, message: (error as Error).message, occurredAt: now() };
+      const message = (error as Error).message;
+      // O card mostra so a ultima mensagem; o terminal da API guarda o historico.
+      this.logger.warn(
+        JSON.stringify({
+          event: 'integration_test_failed',
+          tenantId,
+          service,
+          kind: thorough ? 'homologation' : 'connection',
+          message,
+        }),
+      );
+      return { success: false, message, occurredAt: now() };
     }
   }
 
@@ -117,12 +130,22 @@ export class IntegrationsService {
       return;
     }
     if (service === 'SEFAZ_NFE') {
+      await this.assertHomologationKey(provider);
       const document = await this.nfe.issue(tenantId, {
         companyId: tenantId,
         referenceId: `homologacao-${randomUUID()}`,
         idempotencyKey: `homolog-${randomUUID()}`,
-        payload: { homologacao: true },
+        // NF-e de verdade, montada com os dados do assistente: a de antes era um
+        // `{ homologacao: true }` que o provedor recusava na validação.
+        payload: buildHomologationNfePayload(config),
       });
+      // Sem isso a recusa virava "NF-e ainda não autorizada" no cancelamento.
+      if (document.status !== 'AUTHORIZED') {
+        throw new Error(
+          document.sefazMessage ??
+            `A NF-e de teste ficou ${document.status} no provedor e não foi autorizada.`,
+        );
+      }
       await this.nfe.cancel(document.id, {
         justification: 'Cancelamento automático do teste de homologação da Central de Integrações',
         idempotencyKey: `homolog-cancel-${randomUUID()}`,
@@ -150,6 +173,15 @@ export class IntegrationsService {
       justification: 'Cancelamento automático do teste de homologação da Central de Integrações',
       idempotencyKey: `homolog-cancel-${randomUUID()}`,
     });
+  }
+
+  /** A nota de teste nunca sai com chave de produção: o provedor confirma antes
+   *  que a chave da API é de homologação. */
+  private async assertHomologationKey(provider: FiscalProvider): Promise<void> {
+    const capable = provider as FiscalProvider & {
+      assertHomologationEnvironment?: () => Promise<void>;
+    };
+    await capable.assertHomologationEnvironment?.();
   }
 
   private async testBank(
