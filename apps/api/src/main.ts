@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { Logger } from '@nestjs/common';
+import { FirebaseConfigError, FirebaseCredentialFileError } from '@synapse/firebase/admin';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { type NestExpressApplication } from '@nestjs/platform-express';
@@ -24,6 +25,10 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
     rawBody: true,
+    // Sem isto o Nest encerra o processo dentro do create, e o erro de
+    // credencial some num stack trace de injecao de dependencia. Com o erro na
+    // mao, quem sobe a API le o que falta e como resolver.
+    abortOnError: false,
   });
 
   const config = app.get(ConfigService).getOrThrow<AppConfig>(APP_CONFIG_KEY);
@@ -74,4 +79,26 @@ async function bootstrap(): Promise<void> {
   );
 }
 
-void bootstrap();
+/** Sem credencial do Firebase a API nao tem banco, e morrer com um stack trace
+ *  de injecao de dependencia esconde a unica coisa que importa: qual arquivo
+ *  falta e como resolver. Quem le isso esta com a tela de login na frente
+ *  dizendo "verifique se a API esta no ar". */
+const ERRO_DE_CREDENCIAL = new Set([FirebaseConfigError.name, FirebaseCredentialFileError.name]);
+
+void bootstrap().catch((erro: unknown) => {
+  const falha = erro as { name?: string; message?: string };
+  if (ERRO_DE_CREDENCIAL.has(falha?.name ?? '')) {
+    process.stderr.write(
+      `\nSynapse API: não subiu — ${falha.message}\n\n` +
+        'Duas saídas:\n' +
+        '  1) Desenvolvimento no emulador, sem segredo:  pnpm dev:emulador\n' +
+        '  2) Projeto real: gere a chave no Console do Firebase (Configurações do\n' +
+        '     projeto > Contas de serviço > Gerar nova chave privada) e salve no\n' +
+        '     caminho de GOOGLE_APPLICATION_CREDENTIALS, fora do repositório.\n\n' +
+        'Detalhes no README, em "Projeto Firebase real".\n\n',
+    );
+  } else {
+    Logger.error(erro instanceof Error ? (erro.stack ?? erro.message) : String(erro), 'Bootstrap');
+  }
+  process.exit(1);
+});

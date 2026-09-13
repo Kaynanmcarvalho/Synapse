@@ -117,8 +117,10 @@ const abrirSessaoDeDispositivo = async (user: User): Promise<string> => {
       }),
     });
   } catch {
+    // O endereco no texto poupa a caca ao .env: quase sempre e a API parada.
     throw new Error(
-      'Não foi possível falar com o servidor do Synapse. Verifique se a API está no ar.',
+      `Não foi possível falar com o servidor do Synapse em ${API_URL}. ` +
+        'Verifique se a API está no ar.',
     );
   }
   const corpo = (await resposta.json().catch(() => ({}))) as { id?: string; message?: string };

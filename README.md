@@ -86,6 +86,25 @@ Para dar acesso de dono a um usuário criado no Authentication do projeto, rode
 `pnpm seed:cloud-admin --usuario email:uid`, confira o que ele mostra e repita com
 `--confirmar`.
 
+### Não consigo entrar: "Verifique se a API está no ar"
+
+A senha passou no Firebase e a tela parou no passo seguinte — abrir a sessão na API.
+Quase sempre a API não subiu por falta da chave da conta de serviço (o arquivo de
+`GOOGLE_APPLICATION_CREDENTIALS` foi movido, apagado ou nunca foi baixado nesta
+máquina). O `pnpm dev` confere isso antes de subir qualquer coisa e diz o que fazer;
+rodando a API sozinha, a mensagem aparece no lugar do stack trace.
+
+Duas saídas:
+
+- **Emulador, sem segredo nenhum**: `pnpm dev:emulador` e entre com
+  `teste.rbac@synapse.dev` / `Senha123!` (o botão "Usar usuário de teste" preenche).
+  O seed também cria `financeiro.teste@synapse.dev` e `vendedor.teste@synapse.dev`,
+  com a mesma senha, para conferir permissões.
+- **Projeto real**: gere uma chave nova (Console do Firebase → Configurações do
+  projeto → Contas de serviço → Gerar nova chave privada) e salve no caminho que
+  está em `GOOGLE_APPLICATION_CREDENTIALS`, fora do repositório. A chave não vai
+  para o git nem para pasta sincronizada com nuvem.
+
 | Script              | O que faz                                          |
 | ------------------- | -------------------------------------------------- |
 | `pnpm dev`          | tudo em modo watch contra o projeto Firebase real  |
