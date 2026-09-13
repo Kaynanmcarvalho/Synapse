@@ -37,14 +37,19 @@ function Indicador({
   valor,
   detalhe,
   tom = 'neutro',
+  atraso,
 }: {
   readonly rotulo: string;
   readonly valor: string;
   readonly detalhe: string;
   readonly tom?: 'neutro' | 'alerta';
+  readonly atraso: number;
 }) {
   return (
-    <div className="border-hairline-light rounded-2xl border px-5 py-4">
+    <div
+      style={{ animationDelay: `${atraso}ms` }}
+      className="border-hairline-light bg-canvas-light shadow-cartao hover:shadow-cartao-alto animate-subir rounded-2xl border px-5 py-4 transition duration-300 hover:-translate-y-0.5 motion-reduce:animate-none motion-reduce:hover:translate-y-0"
+    >
       <p className="text-caption text-stone uppercase tracking-[0.1em]">{rotulo}</p>
       <p
         className={`font-display mt-2 text-[28px] tabular-nums leading-none ${
@@ -73,7 +78,7 @@ export function Fundo({
   const totais = fila.status === 'pronto' ? totaisDaFila(fila.pedidos) : null;
 
   return (
-    <main className="mx-auto w-full max-w-[1080px] px-6 py-14 lg:py-20">
+    <main className="animate-revelar mx-auto w-full max-w-[1080px] px-6 py-14 motion-reduce:animate-none lg:py-20">
       <p className="text-caption text-stone uppercase tracking-[0.16em]">Financeiro</p>
       <h1 className="font-display text-ink mt-3 text-[40px] font-medium leading-[1.1] tracking-[-0.6px] sm:text-[48px]">
         Análise de crédito
@@ -107,16 +112,19 @@ export function Fundo({
       <section aria-label="Resumo da fila" className="mt-12 grid gap-4 sm:grid-cols-3">
         <Indicador
           rotulo="Na fila"
+          atraso={80}
           valor={totais ? String(totais.pedidos) : '—'}
           detalhe={totais ? `${totais.clientes} cliente(s) aguardando` : 'Carregando a fila…'}
         />
         <Indicador
           rotulo="Valor em análise"
+          atraso={140}
           valor={totais ? formatarMoeda(totais.valorCentavos) : '—'}
           detalhe="Soma dos pedidos que esperam liberação"
         />
         <Indicador
           rotulo="Vencido desses clientes"
+          atraso={200}
           valor={totais ? formatarMoeda(totais.vencidoCentavos) : '—'}
           detalhe="Dívida em aberto de quem está na fila"
           tom={totais && totais.vencidoCentavos > 0 ? 'alerta' : 'neutro'}

@@ -20,7 +20,6 @@ export type IdDaColuna =
   | 'origem'
   | 'itens'
   | 'enviadoEm'
-  | 'situacao'
   | 'valor';
 
 export type Direcao = 'asc' | 'desc';
@@ -40,6 +39,14 @@ export interface Coluna {
   readonly largura: number;
   readonly valor: (linha: PedidoNaFila) => string | number;
 }
+
+/** Classe de alinhamento de cada coluna: titulo e dado usam a mesma, e por isso
+ *  o valor nasce exatamente embaixo do titulo. */
+export const ALINHAMENTO: Record<Coluna['alinhamento'], string> = {
+  esquerda: 'text-left',
+  direita: 'text-right',
+  centro: 'text-center',
+};
 
 /** Ninguem le nada com menos que isto, e nada precisa de mais que aquilo. */
 export const LARGURA_MINIMA = 64;
@@ -69,7 +76,7 @@ export const COLUNAS: Record<IdDaColuna, Coluna> = {
     rotulo: 'Cliente',
     criterio: 'de A a Z',
     alinhamento: 'esquerda',
-    largura: 220,
+    largura: 248,
     valor: (linha) => linha.pedido.clienteNome,
   },
   tipo: {
@@ -85,7 +92,7 @@ export const COLUNAS: Record<IdDaColuna, Coluna> = {
     rotulo: 'CNPJ / CPF',
     criterio: 'em ordem numérica',
     alinhamento: 'esquerda',
-    largura: 156,
+    largura: 188,
     valor: (linha) => texto(linha.pedido.clienteDocumento),
   },
   cidade: {
@@ -93,7 +100,7 @@ export const COLUNAS: Record<IdDaColuna, Coluna> = {
     rotulo: 'Cidade',
     criterio: 'de A a Z',
     alinhamento: 'esquerda',
-    largura: 150,
+    largura: 172,
     valor: (linha) => texto(linha.pedido.clienteCidade),
   },
   bairro: {
@@ -101,7 +108,7 @@ export const COLUNAS: Record<IdDaColuna, Coluna> = {
     rotulo: 'Bairro',
     criterio: 'de A a Z',
     alinhamento: 'esquerda',
-    largura: 140,
+    largura: 160,
     valor: (linha) => texto(linha.pedido.clienteBairro),
   },
   representante: {
@@ -109,7 +116,7 @@ export const COLUNAS: Record<IdDaColuna, Coluna> = {
     rotulo: 'Representante',
     criterio: 'de A a Z',
     alinhamento: 'esquerda',
-    largura: 160,
+    largura: 182,
     valor: (linha) => linha.pedido.vendedorNome,
   },
   pagamento: {
@@ -149,23 +156,15 @@ export const COLUNAS: Record<IdDaColuna, Coluna> = {
     rotulo: 'Data e hora',
     criterio: 'do mais antigo ao mais recente',
     alinhamento: 'esquerda',
-    largura: 150,
+    largura: 164,
     valor: (linha) => linha.pedido.enviadoEm,
-  },
-  situacao: {
-    id: 'situacao',
-    rotulo: 'Situação do cliente',
-    criterio: 'do menor atraso ao maior',
-    alinhamento: 'direita',
-    largura: 176,
-    valor: (linha) => linha.cliente.diasDeAtrasoMaximo,
   },
   valor: {
     id: 'valor',
     rotulo: 'Valor',
     criterio: 'do menor para o maior',
     alinhamento: 'direita',
-    largura: 130,
+    largura: 142,
     valor: (linha) => linha.pedido.totalCentavos,
   },
 };
@@ -184,7 +183,6 @@ export const TODAS_AS_COLUNAS: readonly IdDaColuna[] = [
   'origem',
   'itens',
   'enviadoEm',
-  'situacao',
   'valor',
 ];
 
@@ -200,7 +198,6 @@ export const ORDEM_PADRAO: readonly IdDaColuna[] = [
   'bairro',
   'representante',
   'enviadoEm',
-  'situacao',
   'valor',
 ];
 

@@ -113,7 +113,7 @@ describe('largura das colunas', () => {
   });
 
   it('a largura de fabrica e a que o duplo clique devolve', () => {
-    expect(larguraPadrao('valor')).toBe(130);
+    expect(larguraPadrao('valor')).toBe(142);
   });
 });
 

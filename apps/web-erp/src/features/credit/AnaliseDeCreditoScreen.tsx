@@ -27,7 +27,7 @@ function Cortina({ topo }: { readonly topo: number }) {
   return (
     <div
       aria-hidden="true"
-      className="bg-canvas-dark/10 pointer-events-none fixed inset-x-0 bottom-0 z-30"
+      className="bg-canvas-dark/10 animate-revelar pointer-events-none fixed inset-x-0 bottom-0 z-30 motion-reduce:animate-none"
       style={{ top: topo }}
     />
   );

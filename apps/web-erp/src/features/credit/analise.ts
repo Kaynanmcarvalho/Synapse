@@ -8,9 +8,17 @@ const MOEDA = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL
 
 export const formatarMoeda = (centavos: number): string => MOEDA.format(centavos / 100);
 
-/** Data em ISO curta (2026-09-01) ou completa. Nunca passa pelo construtor do
- *  Date com string de dia: '2026-09-01' viraria 31/08 em qualquer fuso a oeste. */
+/** Data em ISO curta (2026-09-01) ou instante completo.
+ *
+ *  Data pura nunca passa pelo construtor do Date: '2026-09-01' viraria 31/08 em
+ *  qualquer fuso a oeste. Instante completo, ao contrario, precisa virar o dia
+ *  local — mostrar o dia de Greenwich com a hora daqui faz um pedido das 22h
+ *  parecer do dia seguinte, e nenhum filtro de periodo bate com isso. */
 export const formatarData = (iso: string): string => {
+  if (iso.length > 10) {
+    const instante = new Date(iso);
+    if (!Number.isNaN(instante.getTime())) return instante.toLocaleDateString('pt-BR');
+  }
   const [ano, mes, dia] = iso.slice(0, 10).split('-');
   return dia && mes && ano ? `${dia}/${mes}/${ano}` : iso;
 };
@@ -33,7 +41,7 @@ export const ROTULO_DO_TIPO: Record<TipoDePedido, string> = {
 
 export const ROTULO_DA_ORIGEM: Record<OrigemDoPedido, string> = {
   DESKTOP: 'Desktop',
-  MOBILE: 'Celular',
+  MOBILE: 'Mobile',
   BALCAO: 'Balcão',
   API: 'Integração',
 };

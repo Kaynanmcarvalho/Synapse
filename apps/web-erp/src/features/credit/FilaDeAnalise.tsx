@@ -8,6 +8,29 @@ import { aplicarAtalho, filtrarFila, ordenarFila, type Atalho } from './fila/col
 import { aplicarFiltros, FILTROS_VAZIOS, type Filtros } from './fila/filtros';
 import { usePreferenciasDaFila } from './fila/usePreferenciasDaFila';
 
+/** O que a area da tabela diz quando nao ha tabela para mostrar. */
+function AvisoDaFila({
+  erro,
+  carregando,
+  vazia,
+  semPedidos,
+}: {
+  readonly erro: string | null;
+  readonly carregando: boolean;
+  readonly vazia: boolean;
+  readonly semPedidos: boolean;
+}) {
+  if (erro) return <p className="text-body-sm text-accent-danger py-10 text-center">{erro}</p>;
+  if (carregando)
+    return <p className="text-body-sm text-stone py-10 text-center">Carregando a fila…</p>;
+  if (!vazia) return null;
+  return (
+    <p className="text-body-sm text-stone animate-revelar py-12 text-center motion-reduce:animate-none">
+      {semPedidos ? 'Nenhum pedido esperando análise.' : 'Nenhum pedido com esse filtro.'}
+    </p>
+  );
+}
+
 /** Conteudo da janela da fila: tudo que os vendedores mandaram e ainda espera
  *  decisao, em tabela. Cada usuario deixa as colunas na ordem e na largura que
  *  trabalha, e a tela abre assim na proxima vez. */
@@ -66,17 +89,12 @@ export function ConteudoDaFila({
       />
 
       <div className="min-h-0 flex-1 overflow-auto">
-        {erro && <p className="text-body-sm text-accent-danger py-10 text-center">{erro}</p>}
-        {!erro && carregando && (
-          <p className="text-body-sm text-stone py-10 text-center">Carregando a fila…</p>
-        )}
-        {!erro && !carregando && visiveis.length === 0 && (
-          <p className="text-body-sm text-stone py-12 text-center">
-            {linhas.length === 0
-              ? 'Nenhum pedido esperando análise.'
-              : 'Nenhum pedido com esse filtro.'}
-          </p>
-        )}
+        <AvisoDaFila
+          erro={erro}
+          carregando={carregando}
+          vazia={visiveis.length === 0}
+          semPedidos={linhas.length === 0}
+        />
         {!erro && visiveis.length > 0 && (
           <TabelaDaFila
             linhas={visiveis}

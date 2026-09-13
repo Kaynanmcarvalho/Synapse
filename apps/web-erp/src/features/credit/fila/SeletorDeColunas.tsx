@@ -40,7 +40,7 @@ export function SeletorDeColunas({
       {aberto && (
         <div
           role="menu"
-          className="border-hairline-light bg-canvas-light absolute right-0 z-20 mt-2 w-64 rounded-2xl border p-2 shadow-lg"
+          className="border-hairline-light bg-canvas-light shadow-janela animate-surgir absolute right-0 z-20 mt-2 w-64 rounded-2xl border p-2 motion-reduce:animate-none"
         >
           <ul className="max-h-72 overflow-y-auto">
             {TODAS_AS_COLUNAS.map((id) => {

@@ -114,6 +114,30 @@ module.exports = {
         lg: flutuante,
         xl: flutuante,
         '2xl': flutuante,
+        /** Profundidade dos cartoes: uma sombra curta que assenta a borda e uma
+         *  longa e bem diluida que afasta o cartao do fundo. */
+        cartao: '0 1px 2px rgba(25, 28, 31, 0.04), 0 12px 28px -16px rgba(25, 28, 31, 0.22)',
+        'cartao-alto': '0 2px 4px rgba(25, 28, 31, 0.05), 0 22px 44px -20px rgba(25, 28, 31, 0.28)',
+        /** Janela flutua acima de tudo: sombra mais aberta e mais funda. */
+        janela:
+          '0 10px 24px -14px rgba(25, 28, 31, 0.22), 0 40px 80px -32px rgba(25, 28, 31, 0.32)',
+      },
+      keyframes: {
+        surgir: {
+          from: { opacity: '0', transform: 'translateY(10px) scale(0.985)' },
+          to: { opacity: '1', transform: 'none' },
+        },
+        subir: {
+          from: { opacity: '0', transform: 'translateY(12px)' },
+          to: { opacity: '1', transform: 'none' },
+        },
+        revelar: { from: { opacity: '0' }, to: { opacity: '1' } },
+      },
+      animation: {
+        /** Curva do iOS: comeca rapido e assenta devagar, sem parecer elastico. */
+        surgir: 'surgir 0.28s cubic-bezier(0.32, 0.72, 0, 1) both',
+        subir: 'subir 0.36s cubic-bezier(0.32, 0.72, 0, 1) both',
+        revelar: 'revelar 0.24s ease-out both',
       },
     },
   },

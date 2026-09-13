@@ -86,7 +86,10 @@ export function FichaDoCliente({
     <div className="flex h-full min-h-0 flex-col">
       <Resumo dados={dados} />
       <div className="grid min-h-0 flex-1 gap-4 p-4 lg:grid-cols-12 lg:grid-rows-[1.15fr_1fr]">
-        <div className="min-h-0 min-w-0 lg:col-span-7">
+        <div
+          style={{ animationDelay: '0ms' }}
+          className="animate-subir min-h-0 min-w-0 motion-reduce:animate-none lg:col-span-7"
+        >
           <PedidosEmAnalise
             pedidos={dados.pedidosEmAnalise}
             totalCentavos={dados.totalEmAnaliseCentavos}
@@ -94,7 +97,10 @@ export function FichaDoCliente({
             onAlternar={onAlternar}
           />
         </div>
-        <div className="min-h-0 min-w-0 lg:col-span-5">
+        <div
+          style={{ animationDelay: '60ms' }}
+          className="animate-subir min-h-0 min-w-0 motion-reduce:animate-none lg:col-span-5"
+        >
           <HistoricoDoCliente
             aba={aba}
             onTrocarAba={onTrocarAba}
@@ -102,10 +108,16 @@ export function FichaDoCliente({
             notas={dados.ultimasNotas}
           />
         </div>
-        <div className="min-h-0 min-w-0 lg:col-span-7">
+        <div
+          style={{ animationDelay: '120ms' }}
+          className="animate-subir min-h-0 min-w-0 motion-reduce:animate-none lg:col-span-7"
+        >
           <TitulosEmAberto carteira={dados.carteira} />
         </div>
-        <div className="min-h-0 min-w-0 lg:col-span-5">
+        <div
+          style={{ animationDelay: '180ms' }}
+          className="animate-subir min-h-0 min-w-0 motion-reduce:animate-none lg:col-span-5"
+        >
           <PagamentosDoCliente carteira={dados.carteira} />
         </div>
       </div>

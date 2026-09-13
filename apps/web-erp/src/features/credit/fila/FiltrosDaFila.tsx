@@ -25,6 +25,99 @@ function Campo({
   );
 }
 
+/** Dois campos de data soltos, e nao dentro de um mesmo rotulo: um <label>
+ *  com dois campos manda o clique do texto sempre para o primeiro. */
+function Periodo({
+  de,
+  ate,
+  aoMudarDe,
+  aoMudarAte,
+}: {
+  readonly de: string;
+  readonly ate: string;
+  readonly aoMudarDe: (valor: string) => void;
+  readonly aoMudarAte: (valor: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-caption text-stone font-semibold uppercase tracking-[0.06em]">
+        Período
+      </span>
+      <span className="flex items-center gap-2">
+        <input
+          type="date"
+          value={de}
+          max={ate || undefined}
+          onChange={(evento) => aoMudarDe(evento.target.value)}
+          aria-label="Período: data inicial"
+          className={`${CAMPO} tabular-nums`}
+        />
+        <span className="text-body-sm text-stone">até</span>
+        <input
+          type="date"
+          value={ate}
+          min={de || undefined}
+          onChange={(evento) => aoMudarAte(evento.target.value)}
+          aria-label="Período: data final"
+          className={`${CAMPO} tabular-nums`}
+        />
+      </span>
+    </div>
+  );
+}
+
+function Atalhos({
+  atalho,
+  aoTrocar,
+  contagem,
+  podeLimpar,
+  aoLimpar,
+  acoes,
+}: {
+  readonly atalho: Atalho;
+  readonly aoTrocar: (atalho: Atalho) => void;
+  readonly contagem: (atalho: Atalho) => number;
+  readonly podeLimpar: boolean;
+  readonly aoLimpar: () => void;
+  readonly acoes: ReactNode;
+}) {
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-1.5">
+      {ATALHOS.map((opcao) => {
+        const ativo = atalho === opcao.id;
+        return (
+          <button
+            key={opcao.id}
+            type="button"
+            onClick={() => aoTrocar(opcao.id)}
+            aria-pressed={ativo}
+            className={`text-caption inline-flex items-center gap-1.5 rounded-full border px-3 py-1 transition duration-200 ${
+              ativo
+                ? 'border-canvas-dark bg-canvas-dark shadow-cartao text-white'
+                : 'border-hairline-light text-charcoal hover:bg-surface-soft'
+            }`}
+          >
+            {opcao.rotulo}
+            <span className={ativo ? 'text-white/70' : 'text-stone'}>{contagem(opcao.id)}</span>
+          </button>
+        );
+      })}
+
+      {podeLimpar && (
+        <button
+          type="button"
+          onClick={aoLimpar}
+          className="text-caption text-charcoal hover:bg-surface-soft animate-revelar inline-flex items-center gap-1.5 rounded-full px-3 py-1 transition motion-reduce:animate-none"
+        >
+          <Eraser size={13} aria-hidden="true" /> Limpar filtros
+        </button>
+      )}
+
+      <span className="ml-auto">{acoes}</span>
+    </div>
+  );
+}
+
 /** A barra de busca da fila, com os mesmos campos do sistema antigo: numero do
  *  pedido, cliente, vendedor e periodo — mais a busca livre e os atalhos. */
 export function FiltrosDaFila({
@@ -79,25 +172,12 @@ export function FiltrosDaFila({
             className={CAMPO}
           />
         </Campo>
-        <Campo rotulo="Período" largura="w-auto">
-          <span className="flex items-center gap-2">
-            <input
-              type="date"
-              value={filtros.de}
-              onChange={(evento) => mudar('de')(evento.target.value)}
-              aria-label="Período: data inicial"
-              className={`${CAMPO} tabular-nums`}
-            />
-            <span className="text-body-sm text-stone">até</span>
-            <input
-              type="date"
-              value={filtros.ate}
-              onChange={(evento) => mudar('ate')(evento.target.value)}
-              aria-label="Período: data final"
-              className={`${CAMPO} tabular-nums`}
-            />
-          </span>
-        </Campo>
+        <Periodo
+          de={filtros.de}
+          ate={filtros.ate}
+          aoMudarDe={mudar('de')}
+          aoMudarAte={mudar('ate')}
+        />
         <Campo rotulo="Buscar" largura="min-w-[200px] flex-[2]">
           <span className="bg-surface-soft flex h-9 items-center gap-2.5 rounded-xl px-3">
             <Search size={15} className="text-stone" aria-hidden="true" />
@@ -111,39 +191,14 @@ export function FiltrosDaFila({
         </Campo>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-1.5">
-        {ATALHOS.map((opcao) => {
-          const ativo = atalho === opcao.id;
-          return (
-            <button
-              key={opcao.id}
-              type="button"
-              onClick={() => aoTrocarAtalho(opcao.id)}
-              aria-pressed={ativo}
-              className={`text-caption inline-flex items-center gap-1.5 rounded-full border px-3 py-1 transition ${
-                ativo
-                  ? 'border-canvas-dark bg-canvas-dark text-white'
-                  : 'border-hairline-light text-charcoal hover:bg-surface-soft'
-              }`}
-            >
-              {opcao.rotulo}
-              <span className={ativo ? 'text-white/70' : 'text-stone'}>{contagem(opcao.id)}</span>
-            </button>
-          );
-        })}
-
-        {(temFiltro(filtros) || busca.trim() !== '') && (
-          <button
-            type="button"
-            onClick={aoLimpar}
-            className="text-caption text-charcoal hover:bg-surface-soft inline-flex items-center gap-1.5 rounded-full px-3 py-1 transition"
-          >
-            <Eraser size={13} aria-hidden="true" /> Limpar filtros
-          </button>
-        )}
-
-        <span className="ml-auto">{acoes}</span>
-      </div>
+      <Atalhos
+        atalho={atalho}
+        aoTrocar={aoTrocarAtalho}
+        contagem={contagem}
+        podeLimpar={temFiltro(filtros) || busca.trim() !== ''}
+        aoLimpar={aoLimpar}
+        acoes={acoes}
+      />
     </div>
   );
 }

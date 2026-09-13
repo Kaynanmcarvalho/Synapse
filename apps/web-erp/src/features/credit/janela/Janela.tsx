@@ -283,7 +283,7 @@ export function Janela({
       aria-label={titulo}
       onPointerDownCapture={aoFocar}
       style={{ position: 'fixed', ...estilo }}
-      className="border-hairline-light bg-canvas-light flex flex-col overflow-hidden rounded-2xl border shadow-xl"
+      className="border-hairline-light bg-canvas-light shadow-janela animate-surgir flex flex-col overflow-hidden rounded-2xl border motion-reduce:animate-none"
     >
       <CabecalhoDaJanela
         titulo={titulo}

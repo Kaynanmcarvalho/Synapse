@@ -26,9 +26,15 @@ describe('formatacoes da analise de credito', () => {
     expect(formatarMoeda(609_480).replace(/\s/g, ' ')).toBe('R$ 6.094,80');
   });
 
-  it('mostra a data sem deixar o fuso roubar um dia', () => {
+  it('data pura nao perde um dia para o fuso', () => {
     expect(formatarData('2026-09-01')).toBe('01/09/2026');
-    expect(formatarData('2026-09-01T23:30:00.000Z')).toBe('01/09/2026');
+  });
+
+  it('instante completo mostra o dia de quem olha a tela, o mesmo do filtro', () => {
+    // 22h40 locais podem ja ser o dia seguinte em Greenwich: o dia mostrado
+    // tem que ser o local, senao a data da coluna desmente o filtro de periodo.
+    const noiteDoDia12 = new Date(2026, 8, 12, 22, 40).toISOString();
+    expect(formatarData(noiteDoDia12)).toBe('12/09/2026');
   });
 
   it('converte quantidade em milesimos para unidades', () => {
@@ -70,6 +76,6 @@ describe('resumo do pedido', () => {
 
   it('traduz tipo e origem para a tela', () => {
     expect(ROTULO_DO_TIPO.TROCA).toBe('Troca');
-    expect(ROTULO_DA_ORIGEM.MOBILE).toBe('Celular');
+    expect(ROTULO_DA_ORIGEM.MOBILE).toBe('Mobile');
   });
 });
