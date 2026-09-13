@@ -31,6 +31,8 @@ const pedido = (tenantId, cliente, dados) => {
     customerId: cliente.id,
     clienteNome: cliente.nome,
     clienteDocumento: cliente.documento,
+    clienteCidade: cliente.cidade,
+    clienteBairro: cliente.bairro,
     tipo: dados.tipo ?? 'VENDA',
     situacao: dados.situacao ?? 'AGUARDANDO_ANALISE',
     origem: dados.origem ?? 'MOBILE',
@@ -83,9 +85,27 @@ const titulo = (tenantId, cliente, dados) => ({
 });
 
 const CLIENTES = [
-  { id: 'cliente-dev-1', nome: 'Mercado do Bairro', documento: '12345678000190' },
-  { id: 'cliente-dev-2', nome: 'Padaria Estrela', documento: '98765432000110' },
-  { id: 'cliente-dev-3', nome: 'Atacado Sul', documento: '45678912000133' },
+  {
+    id: 'cliente-dev-1',
+    nome: 'Mercado do Bairro',
+    documento: '12345678000190',
+    cidade: 'Goiânia',
+    bairro: 'Setor Bueno',
+  },
+  {
+    id: 'cliente-dev-2',
+    nome: 'Padaria Estrela',
+    documento: '98765432000110',
+    cidade: 'Aparecida de Goiânia',
+    bairro: 'Garavelo',
+  },
+  {
+    id: 'cliente-dev-3',
+    nome: 'Atacado Sul',
+    documento: '45678912000133',
+    cidade: 'Anápolis',
+    bairro: 'Jundiaí',
+  },
 ];
 
 const pedidosDe = (tenantId) => {

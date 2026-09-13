@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { usePreferencia } from '../../../lib/preferencias';
 import {
   limitar,
   maximizar,
@@ -167,7 +168,61 @@ const useArrasto = (
   return { iniciar };
 };
 
+interface Lembranca {
+  readonly geometria: Geometria | null;
+  readonly maximizada: boolean;
+}
+
+const SEM_LEMBRANCA: Lembranca = { geometria: null, maximizada: false };
+
+/** Espera o arrasto assentar antes de gravar: arrastar grava uma vez, e nao a
+ *  cada pixel. */
+const ATRASO_PARA_GRAVAR_MS = 400;
+
+/** Onde a janela esta e onde ela estava: a posicao e o tamanho voltam do jeito
+ *  que o usuario deixou, por usuario e por janela. */
+const useGeometriaDaJanela = (id: string, abertura: (area: Area) => Geometria) => {
+  const { area, estreito } = useAreaDaTela();
+  const [lembranca, lembrar] = usePreferencia<Lembranca>(`janela.${id}`, SEM_LEMBRANCA);
+  const [geometria, setGeometria] = useState<Geometria | null>(null);
+  const [maximizada, setMaximizada] = useState(lembranca.maximizada);
+  const guardada = useRef<Geometria | null>(lembranca.geometria);
+
+  useEffect(() => {
+    setGeometria((atual) => {
+      if (atual) return limitar(atual, area);
+      if (lembranca.maximizada) return maximizar(area);
+      return limitar(lembranca.geometria ?? abertura(area), area);
+    });
+  }, [area, abertura, lembranca.geometria, lembranca.maximizada]);
+
+  // Espera o arrasto assentar: grava uma vez, e nao a cada pixel.
+  useEffect(() => {
+    if (!geometria || estreito) return;
+    const temporizador = window.setTimeout(
+      () => lembrar({ geometria: maximizada ? guardada.current : geometria, maximizada }),
+      ATRASO_PARA_GRAVAR_MS,
+    );
+    return () => window.clearTimeout(temporizador);
+  }, [geometria, maximizada, estreito, lembrar]);
+
+  const alternarMaximizada = () => {
+    if (maximizada) {
+      setGeometria(guardada.current ?? abertura(area));
+      setMaximizada(false);
+      return;
+    }
+    guardada.current = geometria;
+    setGeometria(maximizar(area));
+    setMaximizada(true);
+  };
+
+  return { area, estreito, geometria, setGeometria, maximizada, alternarMaximizada };
+};
+
 export interface PropsDaJanela {
+  /** Identidade da janela na memoria do usuario: mesma janela, mesmo canto. */
+  readonly id: string;
   readonly titulo: string;
   readonly subtitulo?: string;
   /** Tamanho e canto de abertura, calculados a partir da area util da tela. */
@@ -185,6 +240,7 @@ export interface PropsDaJanela {
  *  maximiza com dois cliques no titulo. Em tela estreita vira tela cheia — nao
  *  ha espaco para arrastar nada num celular. */
 export function Janela({
+  id,
   titulo,
   subtitulo,
   abertura,
@@ -195,15 +251,9 @@ export function Janela({
   aoFocar,
   children,
 }: PropsDaJanela) {
-  const { area, estreito } = useAreaDaTela();
-  const [geometria, setGeometria] = useState<Geometria | null>(null);
-  const [maximizada, setMaximizada] = useState(false);
-  const guardada = useRef<Geometria | null>(null);
+  const { area, estreito, geometria, setGeometria, maximizada, alternarMaximizada } =
+    useGeometriaDaJanela(id, abertura);
   const { iniciar } = useArrasto(area, setGeometria);
-
-  useEffect(() => {
-    setGeometria((atual) => (atual ? limitar(atual, area) : abertura(area)));
-  }, [area, abertura]);
 
   useEffect(() => {
     if (!ativa) return;
@@ -213,17 +263,6 @@ export function Janela({
     document.addEventListener('keydown', aoTeclar);
     return () => document.removeEventListener('keydown', aoTeclar);
   }, [ativa, aoFechar]);
-
-  const alternarMaximizada = () => {
-    if (maximizada) {
-      setGeometria(guardada.current ?? abertura(area));
-      setMaximizada(false);
-      return;
-    }
-    guardada.current = geometria;
-    setGeometria(maximizar(area));
-    setMaximizada(true);
-  };
 
   const estilo =
     estreito || !geometria

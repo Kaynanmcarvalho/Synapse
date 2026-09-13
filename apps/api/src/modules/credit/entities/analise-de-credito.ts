@@ -1,5 +1,6 @@
 import type {
   CarteiraDoCliente,
+  ResumoFinanceiroDoCliente,
   NotaDoCliente,
   PagamentoDoCliente,
   PedidoDeVenda,
@@ -25,6 +26,9 @@ export const identificacaoDoTitulo = (
     parcela: `${titulo.numeroParcela}/${titulo.totalDeParcelas}`,
   };
 };
+
+const somar = (valores: readonly number[]): number =>
+  valores.reduce((total, valor) => total + valor, 0);
 
 const doCliente = (titulos: readonly Titulo[], customerId: string): Titulo[] =>
   titulos.filter((titulo) => titulo.tipo === 'RECEBER' && titulo.customerId === customerId);
@@ -85,7 +89,6 @@ export const carteiraDoCliente = (
 ): CarteiraDoCliente => {
   const emAberto = titulosEmAbertoDoCliente(titulos, customerId, pedidosPorId, hoje);
   const pagamentos = pagamentosDoCliente(titulos, customerId, pedidosPorId, limite);
-  const somar = (valores: readonly number[]) => valores.reduce((soma, valor) => soma + valor, 0);
 
   return {
     titulosEmAberto: emAberto.slice(0, limite),
@@ -98,6 +101,32 @@ export const carteiraDoCliente = (
     pagamentos,
     // Total do que esta na tela: os mesmos pagamentos que o analista consegue ver.
     totalPagoCentavos: somar(pagamentos.map((p) => p.valorCentavos)),
+  };
+};
+
+export const SEM_TITULOS: ResumoFinanceiroDoCliente = {
+  vencidoCentavos: 0,
+  aVencerCentavos: 0,
+  titulosVencidos: 0,
+  diasDeAtrasoMaximo: 0,
+};
+
+/** A situacao do cliente em uma linha, para a fila mostrar quem esta devendo
+ *  antes de o analista abrir a ficha. */
+export const resumoFinanceiro = (
+  titulos: readonly Titulo[],
+  customerId: string,
+  hoje: string,
+): ResumoFinanceiroDoCliente => {
+  const emAberto = titulosEmAbertoDoCliente(titulos, customerId, new Map(), hoje);
+  const vencidos = emAberto.filter((titulo) => titulo.diasDeAtraso > 0);
+  return {
+    vencidoCentavos: somar(vencidos.map((titulo) => titulo.saldoCentavos)),
+    aVencerCentavos: somar(
+      emAberto.filter((titulo) => titulo.diasDeAtraso === 0).map((titulo) => titulo.saldoCentavos),
+    ),
+    titulosVencidos: vencidos.length,
+    diasDeAtrasoMaximo: vencidos.reduce((maior, titulo) => Math.max(maior, titulo.diasDeAtraso), 0),
   };
 };
 

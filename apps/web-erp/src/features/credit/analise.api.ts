@@ -1,11 +1,11 @@
-import type { PainelDeAnaliseDeCredito, PedidoDeVenda } from '@synapse/types';
+import type { PainelDeAnaliseDeCredito, PedidoNaFila } from '@synapse/types';
 import { apiRequest } from '../../lib/dev-auth';
 
 /** Quantos registros cada lista da tela carrega — o combinado com a operacao e
  *  ver sempre os ultimos 150 de cada parte. */
 export const LIMITE_DE_REGISTROS = 150;
 
-export const listarFilaDeAnalise = (limite = 200): Promise<PedidoDeVenda[]> =>
+export const listarFilaDeAnalise = (limite = 200): Promise<PedidoNaFila[]> =>
   apiRequest(`/credit-analysis/queue?limit=${limite}`);
 
 export const carregarPainelDoCliente = (

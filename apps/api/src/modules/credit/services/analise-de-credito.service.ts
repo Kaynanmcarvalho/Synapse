@@ -5,6 +5,7 @@ import type {
   ItemDoPedido,
   PainelDeAnaliseDeCredito,
   PedidoDeVenda,
+  PedidoNaFila,
   ProductId,
   TenantId,
   UserId,
@@ -16,6 +17,8 @@ import {
   carteiraDoCliente,
   notasDosPedidos,
   prazoMedio,
+  resumoFinanceiro,
+  SEM_TITULOS,
   totalCentavosDe,
 } from '../entities/analise-de-credito';
 import type { RegistrarPedidoInput } from '../dto/credito.schemas';
@@ -30,9 +33,34 @@ export class AnaliseDeCreditoService {
     private readonly titulos: TituloRepository,
   ) {}
 
-  /** Fila do modal: o que chegou e ainda nao foi analisado. */
-  fila(context: TenantContext, limite: number): Promise<PedidoDeVenda[]> {
-    return this.pedidos.aguardandoAnalise(context.tenantId, limite);
+  /** Fila do modal: o que chegou e ainda nao foi analisado, cada pedido ja com
+   *  a situacao financeira do cliente — sem isso o analista abriria um por um
+   *  so para descobrir quem esta devendo. Os titulos sao lidos uma vez por
+   *  cliente, e nao uma vez por pedido. */
+  async fila(context: TenantContext, limite: number): Promise<PedidoNaFila[]> {
+    const pedidos = await this.pedidos.aguardandoAnalise(context.tenantId, limite);
+    const hoje = hojeISO();
+    const clientes = [...new Set(pedidos.map((pedido) => pedido.customerId))];
+    const resumos = new Map(
+      await Promise.all(
+        clientes.map(
+          async (customerId) =>
+            [
+              customerId,
+              resumoFinanceiro(
+                await this.titulos.listByCliente(context.tenantId, customerId),
+                customerId,
+                hoje,
+              ),
+            ] as const,
+        ),
+      ),
+    );
+
+    return pedidos.map((pedido) => ({
+      pedido,
+      cliente: resumos.get(pedido.customerId) ?? SEM_TITULOS,
+    }));
   }
 
   /** Tudo que a tela mostra de um cliente, numa chamada so: a analise e uma
@@ -94,6 +122,8 @@ export class AnaliseDeCreditoService {
       customerId: input.customerId as CustomerId,
       clienteNome: input.clienteNome,
       clienteDocumento: input.clienteDocumento,
+      clienteCidade: input.clienteCidade,
+      clienteBairro: input.clienteBairro,
       tipo: input.tipo,
       situacao: 'AGUARDANDO_ANALISE',
       origem: input.origem,

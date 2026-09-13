@@ -6,6 +6,7 @@ import {
   notasDosPedidos,
   pagamentosDoCliente,
   prazoMedio,
+  resumoFinanceiro,
   titulosEmAbertoDoCliente,
 } from './analise-de-credito';
 
@@ -211,6 +212,36 @@ describe('carteira do cliente', () => {
     expect(carteira.totalPagoCentavos).toBe(10_000);
     expect(carteira.titulosEmAberto).toHaveLength(2);
     expect(carteira.pagamentos).toHaveLength(1);
+  });
+});
+
+describe('resumo financeiro do cliente', () => {
+  it('soma vencido, a vencer e o maior atraso', () => {
+    const resumo = resumoFinanceiro(
+      [
+        titulo({ id: 'atrasado-14', vencimento: '2026-06-01', valorOriginalCentavos: 25_000 }),
+        titulo({ id: 'atrasado-45', vencimento: '2026-05-01', valorOriginalCentavos: 10_000 }),
+        titulo({ id: 'a-vencer', vencimento: '2026-07-01', valorOriginalCentavos: 40_000 }),
+        titulo({ id: 'pago', liquidacoes: [liquidacao({ valorCentavos: 10_000 })] }),
+      ],
+      CLIENTE,
+      HOJE,
+    );
+    expect(resumo).toEqual({
+      vencidoCentavos: 35_000,
+      aVencerCentavos: 40_000,
+      titulosVencidos: 2,
+      diasDeAtrasoMaximo: 45,
+    });
+  });
+
+  it('cliente sem titulo nao inventa divida', () => {
+    expect(resumoFinanceiro([], CLIENTE, HOJE)).toEqual({
+      vencidoCentavos: 0,
+      aVencerCentavos: 0,
+      titulosVencidos: 0,
+      diasDeAtrasoMaximo: 0,
+    });
   });
 });
 

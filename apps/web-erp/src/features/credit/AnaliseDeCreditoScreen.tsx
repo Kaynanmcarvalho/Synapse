@@ -1,8 +1,9 @@
-import type { PedidoDeVenda } from '@synapse/types';
-import { ListChecks, RotateCw, UserSearch } from 'lucide-react';
+import type { PedidoNaFila } from '@synapse/types';
+import { ListChecks, RotateCw } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { ConteudoDaFila } from './FilaDeAnalise';
 import { FichaDoCliente } from './FichaDoCliente';
+import { Fundo } from './Fundo';
 import type { AbaDoHistorico } from './HistoricoDoCliente';
 import { Janela } from './janela/Janela';
 import { aoAbrir, type Area } from './janela/geometria';
@@ -11,49 +12,14 @@ import { useAnaliseDeCredito, type EstadoDaFila, type EstadoDoPainel } from './u
 
 type Id = 'fila' | 'cliente';
 
-/** A fila fica encostada a esquerda e a ficha ocupa o resto: as duas cabem
- *  abertas ao mesmo tempo, que e o jeito de voltar para a lista sem fechar
- *  nada. Dai em diante quem manda e o mouse — arrastar, esticar, maximizar. */
-const ABERTURA_DA_FILA = (area: Area) => aoAbrir(area, 0.3, 0.88, 'esquerda');
-const ABERTURA_DO_CLIENTE = (area: Area) => aoAbrir(area, 0.68, 0.94, 'direita');
+/** Tamanhos de estreia, usados so na primeira vez: a fila larga o bastante para
+ *  a tabela, e a ficha por cima dela, encostada a direita. Depois disso vale o
+ *  que o usuario deixou — cada janela lembra o proprio canto. */
+const ABERTURA_DA_FILA = (area: Area) => aoAbrir(area, 0.62, 0.9, 'esquerda');
+const ABERTURA_DO_CLIENTE = (area: Area) => aoAbrir(area, 0.72, 0.94, 'direita');
 
 const BOTAO_CLARO =
   'bg-surface-soft text-button-sm text-ink inline-flex h-9 items-center gap-2 rounded-full px-4 transition hover:bg-[#ececee]';
-const BOTAO_ESCURO =
-  'bg-canvas-dark text-button-sm hover:bg-charcoal inline-flex h-11 items-center gap-2 rounded-full px-6 text-white transition';
-
-function Fundo({
-  aoAbrirFila,
-  aoAbrirCliente,
-}: {
-  readonly aoAbrirFila: () => void;
-  readonly aoAbrirCliente: (() => void) | null;
-}) {
-  return (
-    <main className="mx-auto w-full max-w-[900px] px-4 py-12 sm:px-6">
-      <h1 className="font-display text-heading-lg text-ink">Análise de crédito</h1>
-      <p className="text-body-md text-mute mt-3">
-        Todo pedido enviado pelos vendedores — do desktop ou do celular — espera aqui a liberação do
-        financeiro. A fila e a ficha do cliente abrem em janelas: arraste pela barra de título,
-        estique pelas laterais ou pelo pé, e dê dois cliques no título para ocupar a tela inteira.
-      </p>
-      <div className="mt-7 flex flex-wrap gap-3">
-        <button type="button" onClick={aoAbrirFila} className={BOTAO_ESCURO}>
-          <ListChecks size={17} aria-hidden="true" /> Fila de pedidos
-        </button>
-        {aoAbrirCliente && (
-          <button
-            type="button"
-            onClick={aoAbrirCliente}
-            className={`${BOTAO_CLARO} h-11 px-6 text-[15px]`}
-          >
-            <UserSearch size={17} aria-hidden="true" /> Ficha do cliente
-          </button>
-        )}
-      </div>
-    </main>
-  );
-}
 
 /** So escurece o que esta atras das janelas: o menu do sistema continua
  *  clicavel, e por isso a cortina comeca abaixo do cabecalho. */
@@ -82,12 +48,13 @@ function JanelaDaFila({
   readonly zIndex: number;
   readonly ativa: boolean;
   readonly aoRecarregar: () => void;
-  readonly aoEscolher: (pedido: PedidoDeVenda) => void;
+  readonly aoEscolher: (linha: PedidoNaFila) => void;
   readonly aoFechar: () => void;
   readonly aoFocar: () => void;
 }) {
   return (
     <Janela
+      id="analise-de-credito.fila"
       titulo="Fila de pedidos"
       subtitulo="Aguardando análise"
       abertura={ABERTURA_DA_FILA}
@@ -102,7 +69,7 @@ function JanelaDaFila({
       }
     >
       <ConteudoDaFila
-        pedidos={fila.status === 'pronto' ? fila.pedidos : []}
+        linhas={fila.status === 'pronto' ? fila.pedidos : []}
         carregando={fila.status === 'carregando'}
         erro={fila.status === 'erro' ? fila.mensagem : null}
         clienteSelecionado={clienteSelecionado}
@@ -141,6 +108,7 @@ function JanelaDoCliente({
 }) {
   return (
     <Janela
+      id="analise-de-credito.cliente"
       titulo={nome}
       subtitulo="Análise de crédito do cliente"
       abertura={ABERTURA_DO_CLIENTE}
@@ -189,11 +157,12 @@ export function AnaliseDeCreditoScreen() {
   );
 
   const escolher = useCallback(
-    (pedido: PedidoDeVenda) => {
+    ({ pedido }: PedidoNaFila) => {
       setCliente({ id: pedido.customerId, nome: pedido.clienteNome });
       // O pedido escolhido ja abre detalhado: foi por ele que o analista entrou.
       setAbertos(new Set([pedido.id]));
       void abrirCliente(pedido.customerId);
+      // A ficha sempre sobe: ela e a resposta ao clique, e nao pode nascer atras.
       focar('cliente');
     },
     [abrirCliente, focar],
@@ -217,6 +186,7 @@ export function AnaliseDeCreditoScreen() {
   return (
     <>
       <Fundo
+        fila={fila}
         aoAbrirFila={() => focar('fila')}
         aoAbrirCliente={cliente ? () => focar('cliente') : null}
       />

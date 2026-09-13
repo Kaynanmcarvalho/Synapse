@@ -42,6 +42,8 @@ export interface PedidoDeVenda {
   readonly customerId: CustomerId;
   readonly clienteNome: string;
   readonly clienteDocumento: string | null;
+  readonly clienteCidade: string | null;
+  readonly clienteBairro: string | null;
   readonly tipo: TipoDePedido;
   readonly situacao: SituacaoDoPedido;
   readonly origem: OrigemDoPedido;
@@ -60,6 +62,21 @@ export interface PedidoDeVenda {
   readonly enviadoEm: string;
   readonly analisadoEm: string | null;
   readonly analisadoPor: UserId | null;
+}
+
+/** Como o cliente esta hoje, em uma linha: e o que decide se o pedido sobe na
+ *  fila ou espera. Vem junto da fila para o analista nao precisar abrir um por
+ *  um so para descobrir quem esta devendo. */
+export interface ResumoFinanceiroDoCliente {
+  readonly vencidoCentavos: number;
+  readonly aVencerCentavos: number;
+  readonly titulosVencidos: number;
+  readonly diasDeAtrasoMaximo: number;
+}
+
+export interface PedidoNaFila {
+  readonly pedido: PedidoDeVenda;
+  readonly cliente: ResumoFinanceiroDoCliente;
 }
 
 export interface TituloEmAberto {

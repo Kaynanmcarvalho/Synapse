@@ -14,6 +14,8 @@ export const registrarPedidoSchema = z.object({
   customerId: z.string().min(1),
   clienteNome: z.string().min(1).max(200),
   clienteDocumento: z.string().max(32).nullable().default(null),
+  clienteCidade: z.string().max(120).nullable().default(null),
+  clienteBairro: z.string().max(120).nullable().default(null),
   tipo: z
     .enum(['VENDA', 'BONIFICACAO', 'TROCA', 'DEVOLUCAO', 'CONSIGNACAO', 'AMOSTRA'])
     .default('VENDA'),

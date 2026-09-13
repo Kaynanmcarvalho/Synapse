@@ -1,11 +1,11 @@
-import type { PainelDeAnaliseDeCredito, PedidoDeVenda } from '@synapse/types';
+import type { PainelDeAnaliseDeCredito, PedidoNaFila } from '@synapse/types';
 import { useCallback, useEffect, useState } from 'react';
 import { carregarPainelDoCliente, listarFilaDeAnalise } from './analise.api';
 
 export type EstadoDaFila =
   | { readonly status: 'carregando' }
   | { readonly status: 'erro'; readonly mensagem: string }
-  | { readonly status: 'pronto'; readonly pedidos: readonly PedidoDeVenda[] };
+  | { readonly status: 'pronto'; readonly pedidos: readonly PedidoNaFila[] };
 
 export type EstadoDoPainel =
   | { readonly status: 'vazio' }
