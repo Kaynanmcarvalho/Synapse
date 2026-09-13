@@ -19,7 +19,11 @@ export const getAdminApp = (): App => {
   }
 
   if (isEmulatorMode()) {
-    const projectId = process.env['FIREBASE_PROJECT_ID'] ?? 'demo-synapse';
+    // O `firebase emulators:exec` informa o projeto do emulador em GCLOUD_PROJECT.
+    // Ele vem antes do FIREBASE_PROJECT_ID porque o .env.local aponta este para o
+    // projeto real: sem essa ordem, o token do emulador (demo-synapse) seria recusado.
+    const projectId =
+      process.env['GCLOUD_PROJECT'] ?? process.env['FIREBASE_PROJECT_ID'] ?? 'demo-synapse';
     cached = initializeApp({ projectId }, APP_NAME);
     return cached;
   }

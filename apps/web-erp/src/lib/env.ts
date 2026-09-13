@@ -1,6 +1,7 @@
 /** Ponto unico de leitura das variaveis do Vite. */
 export const env = {
   apiUrl: import.meta.env.VITE_API_URL ?? 'http://localhost:3333/api/v1',
+  emuladorDoAuth: __FIREBASE_AUTH_EMULATOR_HOST__,
   firebase: {
     VITE_FIREBASE_API_KEY: import.meta.env.VITE_FIREBASE_API_KEY,
     VITE_FIREBASE_AUTH_DOMAIN: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,

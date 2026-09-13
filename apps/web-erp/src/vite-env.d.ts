@@ -14,3 +14,7 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/** Endereco do emulador do Auth quando o Vite sobe pelo `pnpm dev:emulador`;
+ *  vazio no `pnpm dev`. Injetado pelo `define` do vite.config.ts. */
+declare const __FIREBASE_AUTH_EMULATOR_HOST__: string;

@@ -15,16 +15,18 @@ import { env } from './env';
  *  de producao (MFA, App Check real).
  *
  *  Com `VITE_FIREBASE_PROJECT_ID` preenchido (apps/web-erp/.env.local) fala com o
- *  projeto Firebase de verdade. Sem ele, cai no emulador do Firebase Auth
- *  (127.0.0.1:9099) que o `pnpm dev:emulador` sobe, com o usuario de teste do
- *  scripts/seed-dev.mjs. */
+ *  projeto Firebase de verdade. Sem ele — ou dentro do `pnpm dev:emulador`, que
+ *  sempre vence o .env.local — cai no emulador do Firebase Auth (127.0.0.1:9099),
+ *  com o usuario de teste do scripts/seed-dev.mjs. */
 const projeto = env.firebase.VITE_FIREBASE_PROJECT_ID;
 
-/** Sem projeto configurado, a tela fala com o emulador. */
-export const usandoEmulador = !projeto;
+/** Sem projeto configurado, ou com os emuladores no ar, a tela fala com o emulador. */
+export const usandoEmulador = Boolean(env.emuladorDoAuth) || !projeto;
+
+const ENDERECO_DO_EMULADOR = `http://${env.emuladorDoAuth || '127.0.0.1:9099'}`;
 
 const app = initializeApp(
-  projeto
+  projeto && !usandoEmulador
     ? {
         apiKey: env.firebase.VITE_FIREBASE_API_KEY ?? '',
         authDomain: env.firebase.VITE_FIREBASE_AUTH_DOMAIN ?? '',
@@ -77,7 +79,7 @@ const armazenamento = {
 const getDevAuth = (): Auth => {
   if (auth) return auth;
   auth = getAuth(app);
-  if (usandoEmulador) connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+  if (usandoEmulador) connectAuthEmulator(auth, ENDERECO_DO_EMULADOR, { disableWarnings: true });
   return auth;
 };
 

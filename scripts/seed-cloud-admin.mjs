@@ -24,6 +24,13 @@ const { initializeApp, getApps, cert } = requireDoPacote('firebase-admin/app');
 const { getAuth } = requireDoPacote('firebase-admin/auth');
 const { getFirestore, FieldValue } = requireDoPacote('firebase-admin/firestore');
 
+// Mesmo .env.local da API. Variavel ja definida no terminal continua valendo.
+try {
+  process.loadEnvFile?.(join(raiz, '.env.local'));
+} catch {
+  // Sem .env.local: segue com o ambiente do terminal.
+}
+
 const lerArgumentos = (argv) => {
   const opcoes = { usuarios: [], confirmar: false };
   for (let i = 0; i < argv.length; i += 1) {
@@ -64,18 +71,25 @@ if (opcoes.usuarios.length === 0) {
   process.exit(1);
 }
 
-const credencial = {
-  projectId: process.env.FIREBASE_PROJECT_ID,
-  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  privateKey: (process.env.FIREBASE_PRIVATE_KEY ?? '').replace(/\\n/g, '\n'),
+/** A mesma leitura da API: chave em arquivo (GOOGLE_APPLICATION_CREDENTIALS) ou
+ *  nas variaveis FIREBASE_*, conferindo que a chave e do projeto configurado. */
+const lerCredencial = () => {
+  let readAdminCredentials;
+  try {
+    ({ readAdminCredentials } = requireDoPacote('./dist/cjs/admin/config.js'));
+  } catch {
+    console.error('seed-cloud-admin: rode antes `pnpm --filter @synapse/firebase build`.');
+    process.exit(1);
+  }
+  try {
+    return readAdminCredentials(process.env);
+  } catch (erro) {
+    console.error(`seed-cloud-admin: ${erro.message}. Veja o .env.example.`);
+    process.exit(1);
+  }
 };
-if (!credencial.projectId || !credencial.clientEmail || !credencial.privateKey) {
-  console.error(
-    'seed-cloud-admin: faltam FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL ou FIREBASE_PRIVATE_KEY ' +
-      'no .env.local da raiz.',
-  );
-  process.exit(1);
-}
+
+const credencial = lerCredencial();
 
 const app = getApps()[0] ?? initializeApp({ credential: cert(credencial) });
 const auth = getAuth(app);
@@ -106,18 +120,16 @@ const gravar = async (usuarios) => {
   const agora = new Date();
   const autoria = { createdBy: usuarios[0].uid, updatedBy: usuarios[0].uid, updatedAt: agora };
 
-  await db
-    .doc(`tenants/${TENANT_ID}`)
-    .set(
-      {
-        id: TENANT_ID,
-        name: TENANT_NOME,
-        status: 'active',
-        timezone: 'America/Sao_Paulo',
-        ...autoria,
-      },
-      { merge: true },
-    );
+  await db.doc(`tenants/${TENANT_ID}`).set(
+    {
+      id: TENANT_ID,
+      name: TENANT_NOME,
+      status: 'active',
+      timezone: 'America/Sao_Paulo',
+      ...autoria,
+    },
+    { merge: true },
+  );
   await db.doc(`tenants/${TENANT_ID}/company/${EMPRESA_ID}`).set(
     {
       id: EMPRESA_ID,
