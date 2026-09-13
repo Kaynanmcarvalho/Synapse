@@ -1,5 +1,6 @@
 import type { Product, Supplier } from '@synapse/types';
 import { PartnerRepository } from '../../catalog/repositories/partner.repository';
+import type { ClienteService } from '../../catalog/services/cliente.service';
 import { ProductRepository } from '../../catalog/repositories/product.repository';
 import { OrderRepository } from '../../sales/repositories/order.repository';
 import { FiscalRepository } from '../../fiscal/repositories/fiscal.repository';
@@ -23,18 +24,29 @@ function buildService() {
   const partnerRepository = new PartnerRepository();
   const orders = new OrderRepository();
   const fiscal = new FiscalRepository();
+  const clientes = { procurar: jest.fn(async () => []) };
   const titulos = { search: jest.fn(async () => []) };
   const sellers = { search: jest.fn(async () => []) };
   const service = new SearchService(
     productRepository,
     partnerRepository,
+    clientes as unknown as ClienteService,
     orders,
     fiscal,
     titulos as unknown as TituloRepository,
     sellers as unknown as SellerRepository,
     new RoleService(new RoleRepository()),
   );
-  return { service, productRepository, partnerRepository, orders, fiscal, titulos, sellers };
+  return {
+    service,
+    productRepository,
+    partnerRepository,
+    clientes,
+    orders,
+    fiscal,
+    titulos,
+    sellers,
+  };
 }
 
 const productFixture = (id: string, name: string, sku: string): Product =>
@@ -106,15 +118,17 @@ describe('SearchService.search', () => {
   });
 
   it('busca ao mesmo tempo em produtos, clientes e fornecedores', async () => {
-    const { service, productRepository, partnerRepository } = buildService();
+    const { service, productRepository, partnerRepository, clientes } = buildService();
     productRepository.save(productFixture('p1', 'Fertilizante Sol', 'FER-1'));
-    partnerRepository.saveCustomer({
-      id: 'c1',
-      tenantId: tenant.tenantId,
-      name: 'Fazenda Sol Nascente',
-      taxId: '000',
-      phone: '000',
-    } as never);
+    clientes.procurar.mockResolvedValueOnce([
+      {
+        id: 'c1',
+        tenantId: tenant.tenantId,
+        codigo: 'C-0001',
+        name: 'Fazenda Sol Nascente',
+        taxId: '00011122233',
+      },
+    ] as never);
     partnerRepository.saveSupplier({
       id: 's1',
       tenantId: tenant.tenantId,

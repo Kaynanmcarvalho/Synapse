@@ -4,6 +4,7 @@ export * from './branch.schema';
 export * from './config.schema';
 export * from './product.schema';
 export * from './category.schema';
+export * from './cliente.schema';
 export * from './partner.schema';
 export * from './pricing.schema';
 export * from './lot.schema';

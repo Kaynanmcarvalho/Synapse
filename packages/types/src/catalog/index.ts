@@ -8,6 +8,9 @@ import type {
   TenantId,
   UserId,
 } from '../common';
+import type { FichaDoCliente } from './cliente';
+
+export * from './cliente';
 
 /** ativo, inativo, bloqueado, fora de linha (§5). */
 export type ProductStatus = 'active' | 'inactive' | 'blocked' | 'discontinued';
@@ -92,7 +95,9 @@ export interface Address {
   readonly state: string;
   readonly postalCode: string;
 }
-export interface Customer extends AuditStamp {
+/** O cliente do tenant. `FichaDoCliente` traz os campos do cadastro completo —
+ *  todos opcionais, porque cliente gravado antes daquela tela continua valendo. */
+export interface Customer extends AuditStamp, FichaDoCliente {
   readonly id: CustomerId;
   readonly tenantId: TenantId;
   readonly type: CustomerType;

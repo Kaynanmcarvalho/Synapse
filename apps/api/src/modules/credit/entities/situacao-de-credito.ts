@@ -97,13 +97,16 @@ export const situacaoDeCredito = (entrada: EntradaDaSituacao): SituacaoDeCredito
   const comprometidoCentavos = emAbertoCentavos + aprovadosNaoFaturadosCentavos;
   const limiteCentavos = cadastro ? Math.max(0, cadastro.creditLimit ?? 0) : null;
 
-  // A regra de inadimplencia e a do financeiro, com a tolerancia da analise.
+  // A regra de inadimplencia e a do financeiro. A tolerancia e a do cadastro do
+  // cliente ("dias para bloqueio"), quando existe; senao, a geral. Zero vale:
+  // bloqueia no primeiro dia de atraso.
+  const tolerancia = cadastro?.diasParaBloqueio ?? parametros.toleranciaDeAtrasoDias;
   const avaliacao = avaliarCredito(
     customerId as CustomerId,
     doCliente,
     {
       bloquearInadimplente: true,
-      diasDeToleranciaAtraso: parametros.toleranciaDeAtrasoDias,
+      diasDeToleranciaAtraso: tolerancia,
       limiteDeSaldoVencidoCentavos: 0,
     },
     hoje,
@@ -123,6 +126,8 @@ export const situacaoDeCredito = (entrada: EntradaDaSituacao): SituacaoDeCredito
       0,
     ),
     bloqueado: cadastro?.financialStatus === 'BLOCKED',
+    toleranciaDeAtrasoDias: tolerancia,
+    somenteAVista: cadastro?.autorizacaoDePagamento === 'SOMENTE_A_VISTA',
     inadimplencia: avaliacao.liberado
       ? { bloqueia: false, motivo: null, mensagem: null }
       : { bloqueia: true, motivo: avaliacao.motivo, mensagem: avaliacao.mensagem },

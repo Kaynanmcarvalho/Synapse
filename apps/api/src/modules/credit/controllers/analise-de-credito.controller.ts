@@ -1,11 +1,10 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Param, Post, Query } from '@nestjs/common';
 import type { DecodedIdToken } from '@synapse/firebase/admin';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { AuditedMutation } from '../../audit/audit.decorator';
 import { CurrentTenant, CurrentUser, RequirePermission } from '../../iam/iam.decorators';
 import type { TenantContext } from '../../iam/iam.types';
 import {
-  cadastroSchema,
   decisaoSchema,
   filaQuerySchema,
   impressaoSchema,
@@ -13,7 +12,6 @@ import {
   limiteQuerySchema,
   observacaoSchema,
   registrarPedidoSchema,
-  type CadastroInput,
   type DecisaoInput,
   type FilaQuery,
   type ImpressaoInput,
@@ -65,17 +63,6 @@ export class AnaliseDeCreditoController {
   @RequirePermission('financeiro.visualizar')
   cadastro(@CurrentTenant() context: TenantContext, @Param('customerId') customerId: string) {
     return this.service.cadastro(context, customerId);
-  }
-
-  @Put('customers/:customerId/cadastro')
-  @RequirePermission('cliente.gerenciar')
-  salvarCadastro(
-    @CurrentTenant() context: TenantContext,
-    @CurrentUser() auth: DecodedIdToken,
-    @Param('customerId') customerId: string,
-    @Body(new ZodValidationPipe(cadastroSchema)) input: CadastroInput,
-  ) {
-    return this.service.salvarCadastro(context, atorDe(auth), customerId, input);
   }
 
   /** Liberacao unica dos pedidos marcados — seguem para o faturamento. Os que

@@ -6,6 +6,7 @@ import type {
   DataSubjectExport,
 } from '@synapse/types';
 import { randomUUID } from 'node:crypto';
+import { ClienteService } from '../../catalog/services/cliente.service';
 import { PartnerService } from '../../catalog/services/partner.service';
 import type { TenantContext } from '../../iam/iam.types';
 import { ConsentRepository } from '../repositories/consent.repository';
@@ -20,6 +21,7 @@ export class DataSubjectService {
   constructor(
     private readonly consents: ConsentRepository,
     private readonly partners: PartnerService,
+    private readonly clientes: ClienteService,
   ) {}
 
   recordConsent(
@@ -48,8 +50,8 @@ export class DataSubjectService {
 
   /** Exportacao completa do titular (c39-6): cadastro, historico de
    *  atendimento e todo consentimento ja registrado. */
-  exportSubjectData(tenant: TenantContext, subjectId: string): DataSubjectExport {
-    const customer = this.partners.getCustomer(tenant.tenantId, subjectId);
+  async exportSubjectData(tenant: TenantContext, subjectId: string): Promise<DataSubjectExport> {
+    const customer = await this.clientes.buscar(tenant.tenantId, subjectId);
     return {
       subjectType: 'CUSTOMER',
       subjectId,
@@ -65,8 +67,13 @@ export class DataSubjectService {
   /** Anonimizacao/exclusao (c39-7). Recusa quando ha credito em aberto — a
    *  guarda fiscal e financeira tem base legal e prevalece sobre o pedido
    *  ate a pendencia ser resolvida (§49: "quando legalmente possivel"). */
-  anonymize(tenant: TenantContext, subjectId: string): AnonymizationResult {
-    const anonymized = this.partners.anonymizeCustomer(tenant.tenantId, subjectId);
+  async anonymize(tenant: TenantContext, subjectId: string): Promise<AnonymizationResult> {
+    const anonymized = await this.clientes.anonimizar(tenant.tenantId, subjectId, {
+      uid: tenant.userId as never,
+      email: '',
+      name: '',
+      source: 'api',
+    });
     if (!anonymized) {
       return { subjectId, anonymized: false, refusalReason: 'OPEN_FINANCIAL_OBLIGATION' };
     }

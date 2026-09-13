@@ -43,6 +43,7 @@ export interface ExposicaoDoPedido {
 
 export type CodigoDoMotivo =
   | 'CLIENTE_BLOQUEADO'
+  | 'CLIENTE_SOMENTE_A_VISTA'
   | 'TITULO_VENCIDO'
   | 'SALDO_VENCIDO_ACIMA_DO_LIMITE'
   | 'SEM_LIMITE_DE_CREDITO'
@@ -108,6 +109,11 @@ export interface SituacaoDeCredito {
   readonly diasDeAtrasoMaximo: number;
   /** Cadastro com situacao financeira BLOCKED. */
   readonly bloqueado: boolean;
+  /** Tolerancia de atraso que valeu para este cliente: a do cadastro, quando
+   *  existe, senao a geral. Ausente em situacao montada antes deste campo. */
+  readonly toleranciaDeAtrasoDias?: number;
+  /** O cadastro autoriza este cliente a comprar so a vista. */
+  readonly somenteAVista?: boolean;
   /** A regra de inadimplencia do financeiro (atraso acima da tolerancia). */
   readonly inadimplencia: {
     readonly bloqueia: boolean;
@@ -373,6 +379,11 @@ export interface CadastroDoCliente {
   readonly creditLimit: number;
   /** Situacao financeira do `Customer`; so leitura aqui. */
   readonly financialStatus?: FinancialStatus | null;
+  /** Dias de atraso tolerados para este cliente (cadastro, aba Principal).
+   *  Nulo ou ausente: vale a tolerancia geral do financeiro. */
+  readonly diasParaBloqueio?: number | null;
+  /** SOMENTE_A_VISTA: pedido a prazo deste cliente fere a politica. */
+  readonly autorizacaoDePagamento?: 'SEM_RESTRICAO' | 'SOMENTE_A_VISTA';
   readonly updatedAt: string | null;
   readonly updatedByName: string | null;
 }

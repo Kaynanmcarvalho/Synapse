@@ -29,6 +29,7 @@ export const PARAMETROS_PADRAO: ParametrosDaAnalise = {
 
 export const ROTULO_DO_MOTIVO: Record<CodigoDoMotivo, string> = {
   CLIENTE_BLOQUEADO: 'Cliente bloqueado',
+  CLIENTE_SOMENTE_A_VISTA: 'Cliente somente à vista',
   TITULO_VENCIDO: 'Título vencido',
   SALDO_VENCIDO_ACIMA_DO_LIMITE: 'Saldo vencido acima do limite',
   SEM_LIMITE_DE_CREDITO: 'Sem limite de crédito',
@@ -96,11 +97,13 @@ const motivosDeInadimplencia = (
     ];
   }
   if (situacao.titulosVencidos === 0) return [];
+  // A tolerancia do cadastro do cliente vale antes da geral.
+  const tolerancia = situacao.toleranciaDeAtrasoDias ?? parametros.toleranciaDeAtrasoDias;
   const atraso = plural(situacao.diasDeAtrasoMaximo, 'dia', 'dias');
   const quantos = plural(situacao.titulosVencidos, 'título vencido', 'títulos vencidos');
   const detalhe = inadimplencia.bloqueia
-    ? `${quantos}, o mais antigo há ${atraso} — acima da tolerância de ${plural(parametros.toleranciaDeAtrasoDias, 'dia', 'dias')}.`
-    : `${quantos} há ${atraso}, dentro da tolerância de ${plural(parametros.toleranciaDeAtrasoDias, 'dia', 'dias')}.`;
+    ? `${quantos}, o mais antigo há ${atraso} — acima da tolerância de ${plural(tolerancia, 'dia', 'dias')}.`
+    : `${quantos} há ${atraso}, dentro da tolerância de ${plural(tolerancia, 'dia', 'dias')}.`;
   return [motivo('TITULO_VENCIDO', detalhe, inadimplencia.bloqueia && concedeCredito)];
 };
 
@@ -188,6 +191,17 @@ export const motivosDaAnalise = (
         'CLIENTE_BLOQUEADO',
         'O cadastro do cliente está com a situação financeira bloqueada.',
         concedeCredito,
+      ),
+    );
+  }
+  // O cadastro pode autorizar so compra a vista: pedido com prazo fere a
+  // politica e so passa por aprovacao excepcional, como as outras violacoes.
+  if (situacao.somenteAVista && concedeCredito) {
+    motivos.push(
+      motivo(
+        'CLIENTE_SOMENTE_A_VISTA',
+        'O cadastro autoriza este cliente a comprar só à vista, e o pedido concede prazo.',
+        true,
       ),
     );
   }

@@ -41,7 +41,7 @@ export const CADASTROS = montarMenu('Cadastros', [
   item('Mesas / Cartões'),
   SEP,
   submenu('Clientes', [
-    item('Clientes'),
+    item('Clientes', { para: '/cadastros/clientes' }),
     SEP,
     item('Grupo de Clientes'),
     item('Sub-Grupo de Clientes'),

@@ -1,5 +1,5 @@
 import type { Customer, Order, Seller } from '@synapse/types';
-import type { PartnerService } from '../../catalog/services/partner.service';
+import type { ClienteService } from '../../catalog/services/cliente.service';
 import type { TenantContext } from '../../iam/iam.types';
 import type { OrderService } from '../../sales/services/order.service';
 import type { SellerService } from './seller.service';
@@ -52,15 +52,15 @@ function buildService(options: { seller?: Seller; customers?: Customer[]; orders
   const sellers = {
     getOwnProfile: jest.fn(() => Promise.resolve(options.seller ?? sellerFixture())),
   };
-  const partners = {
-    listCustomers: jest.fn(() => options.customers ?? [customerFixture('c1')]),
+  const clientes = {
+    todos: jest.fn(() => Promise.resolve(options.customers ?? [customerFixture('c1')])),
   };
   const orders = { listByTenant: jest.fn(() => options.orders ?? []) };
 
   const service = new SellerDashboardService(
     sellers as unknown as SellerService,
     orders as unknown as OrderService,
-    partners as unknown as PartnerService,
+    clientes as unknown as ClienteService,
   );
   return { service };
 }

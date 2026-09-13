@@ -55,13 +55,32 @@ await writeCollection('products', plan.products, (id, index) => ({
   status: 'ACTIVE',
   createdAt: timestamp,
 }));
-await writeCollection('customers', plan.customers, (id, index) => ({
-  id,
-  tenantId: tenant,
-  name: `Cliente ${index}`,
-  taxId: String(index).padStart(11, '0'),
-  createdAt: timestamp,
-}));
+/** Prefixos de cada palavra: a regra do índice de busca da API
+ *  (apps/api/src/common/search/search-tokens.ts). A massa nasce indexada, como
+ *  o cadastro grava; sem índice, a primeira busca sem resultado tentaria
+ *  indexar meio milhão de clientes numa requisição só. */
+const prefixos = (...palavras) => [
+  ...new Set(
+    palavras.flatMap((palavra) =>
+      Array.from({ length: Math.min(palavra.length, 64) }, (_, i) => palavra.slice(0, i + 1)),
+    ),
+  ),
+];
+await writeCollection('customers', plan.customers, (id, index) => {
+  const taxId = String(index).padStart(11, '0');
+  return {
+    id,
+    tenantId: tenant,
+    name: `Cliente ${index}`,
+    taxId,
+    createdAt: timestamp,
+    searchTokens: prefixos('cliente', String(index), taxId),
+  };
+});
+writer.set(db.doc(`tenants/${tenant}/contadores/customers-indice`), {
+  completo: true,
+  em: timestamp,
+});
 await writeCollection('stockMovements', plan.stockMovements, (id, index) => ({
   id,
   tenantId: tenant,

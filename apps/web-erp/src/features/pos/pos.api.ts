@@ -89,8 +89,23 @@ export interface CustomerListItem {
   readonly taxId: string;
 }
 
-export const searchCustomers = (q: string): Promise<CustomerListItem[]> =>
-  apiRequest(`/catalog/partners/customers?q=${encodeURIComponent(q)}`);
+/** Busca no cadastro de clientes — o mesmo de /cadastros/clientes. A resposta
+ *  vem paginada; o PDV so precisa do comeco da lista. */
+export const searchCustomers = async (q: string): Promise<CustomerListItem[]> => {
+  const pagina = await apiRequest<{
+    readonly itens: readonly {
+      readonly id: string;
+      readonly nome: string;
+      readonly documento: string;
+      readonly codigo: string | null;
+    }[];
+  }>(`/catalog/customers?q=${encodeURIComponent(q)}&limit=20`);
+  return pagina.itens.map((cliente) => ({
+    id: cliente.id,
+    name: cliente.codigo ? `${cliente.codigo} · ${cliente.nome}` : cliente.nome,
+    taxId: cliente.documento,
+  }));
+};
 
 export interface PosItemInput {
   readonly productId: string;

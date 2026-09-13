@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { Customer, Order, SellerDashboard } from '@synapse/types';
-import { PartnerService } from '../../catalog/services/partner.service';
+import { ClienteService } from '../../catalog/services/cliente.service';
 import type { TenantContext } from '../../iam/iam.types';
 import { OrderService } from '../../sales/services/order.service';
 import { SellerService } from './seller.service';
@@ -22,7 +22,7 @@ export class SellerDashboardService {
   constructor(
     private readonly sellers: SellerService,
     private readonly orders: OrderService,
-    private readonly partners: PartnerService,
+    private readonly clientes: ClienteService,
   ) {}
 
   async getDashboard(context: TenantContext): Promise<SellerDashboard> {
@@ -64,8 +64,12 @@ export class SellerDashboardService {
   /** §27 "cada vendedor tem clientes" — a carteira é todo cliente cujo
    *  `responsibleSellerId` aponta pra este vendedor. */
   async getMyCustomers(context: TenantContext): Promise<Customer[]> {
-    const all = this.partners.listCustomers(context.tenantId);
-    return all.filter((customer) => customer.responsibleSellerId === context.userId);
+    const todos = await this.clientes.todos(context.tenantId);
+    return todos.filter(
+      (cliente) =>
+        cliente.responsibleSellerId === context.userId ||
+        cliente.vendedorSecundarioId === context.userId,
+    );
   }
 
   async getMyOrders(context: TenantContext, onlyPending: boolean): Promise<Order[]> {

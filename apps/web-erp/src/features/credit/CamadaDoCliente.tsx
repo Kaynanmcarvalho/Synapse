@@ -6,7 +6,7 @@ import { FichaDoCliente, type PropsDaFicha } from './FichaDoCliente';
 import type { AbaDoHistorico } from './HistoricoDoCliente';
 import { JanelaDeAnalise } from './analise/JanelaDeAnalise';
 import { GavetaDoCliente } from './cadastro/GavetaDoCliente';
-import { JanelaDoCadastro } from './cadastro/JanelaDoCadastro';
+import { JanelaDoCliente as JanelaDoCadastroDeCliente } from '../customers/JanelaDoCliente';
 import { JanelaDeDocumentos } from './documentos/JanelaDeDocumentos';
 import { useCaminhoDeDocumentos } from './documentos/useCaminhoDeDocumentos';
 import { Janela } from './janela/Janela';
@@ -222,7 +222,7 @@ export function CamadaDoCliente({
   const [aba, setAba] = useState<AbaDoHistorico>('pedidos');
   const [confirmando, setConfirmando] = useState(false);
   const [gaveta, setGaveta] = useState(false);
-  const { aberta, focar, pilha } = janelas;
+  const { aberta, focar, fechar, pilha } = janelas;
   const { setSelecionados } = ficha;
   const nome = dados?.cliente.nome ?? cliente.nome;
 
@@ -267,11 +267,12 @@ export function CamadaDoCliente({
         aoAbrirGaveta={() => setGaveta(true)}
       />
       {aberta('cadastro') && (
-        <JanelaDoCadastro
-          customerId={cliente.id}
-          nome={nome}
+        // O cadastro e um so: esta e a janela da tela de clientes, aberta por
+        // cima da analise. Salvar aqui recarrega a ficha com o limite novo.
+        <JanelaDoCadastroDeCliente
+          clienteId={cliente.id}
+          aoFechar={() => fechar('cadastro')}
           aoSalvar={recarregar}
-          {...pilha('cadastro')}
         />
       )}
       <Sobreposicoes

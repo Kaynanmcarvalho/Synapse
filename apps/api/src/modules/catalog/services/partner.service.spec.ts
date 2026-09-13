@@ -1,4 +1,3 @@
-import { BadRequestException } from '@nestjs/common';
 import { PartnerRepository } from '../repositories/partner.repository';
 import { PartnerService } from './partner.service';
 
@@ -9,56 +8,37 @@ const context = {
   branchIds: [],
   warehouseIds: [],
 };
-const input = {
-  type: 'PF' as const,
-  taxId: '52998224725',
-  stateRegistration: null,
-  municipalRegistration: null,
-  name: 'Maria Silva',
-  legalName: null,
-  address: {
-    street: 'Rua A',
-    number: '1',
-    complement: null,
-    district: 'Centro',
-    city: 'Goiânia',
-    state: 'GO',
-    postalCode: '74000000',
-  },
-  phone: '62999999999',
-  whatsapp: null,
-  email: null,
-  creditLimit: 10_000,
-  responsibleSellerId: 'seller',
-  priceTableId: 'table',
-  paymentTermId: '30d',
+
+const fornecedor = {
+  taxId: '11222333000181',
+  stateRegistration: '101234567',
+  legalName: 'Distribuidora Norte LTDA',
+  tradeName: 'Norte',
+  contacts: [{ name: 'Ana', phone: '6233330000', email: null }],
+  paymentTermId: null,
+  averageLeadDays: 5,
+  averagePrice: 1000,
+  productIds: [],
   active: true,
 };
+
 describe('PartnerService', () => {
-  it('cadastra, busca e consolida histórico', () => {
+  it('cadastra e acha fornecedor', () => {
     const service = new PartnerService(new PartnerRepository());
-    const customer = service.createCustomer(context, input);
-    expect(service.searchCustomers('tenant', '529.982').items).toHaveLength(1);
-    service.addHistory(customer.id, {
+    const criado = service.createSupplier(context, fornecedor);
+    expect(service.searchSuppliers('tenant', 'norte').items).toHaveLength(1);
+    expect(service.getSupplier('tenant', criado.id).tradeName).toBe('Norte');
+  });
+
+  it('historico de atendimento guarda o que foi registrado', () => {
+    const service = new PartnerService(new PartnerRepository());
+    service.addHistory('cliente-1', {
       kind: 'ORDER',
       referenceId: 'order',
       amount: 500,
       occurredAt: new Date().toISOString(),
       description: 'Pedido',
     });
-    expect(service.history(customer.id).items).toHaveLength(1);
-  });
-  it('bloqueia venda acima do crédito', () => {
-    const service = new PartnerService(new PartnerRepository());
-    const customer = service.createCustomer(context, input);
-    expect(() => service.assertCredit('tenant', customer.id, 10_001)).toThrow(BadRequestException);
-  });
-  it('bloqueia venda de cliente inadimplente', () => {
-    const service = new PartnerService(new PartnerRepository());
-    const customer = service.createCustomer(context, input);
-    service.setFinancialStatus('tenant', customer.id, 'OVERDUE');
-    expect(() => service.assertCredit('tenant', customer.id, 1)).toThrow(
-      'Cliente bloqueado por inadimplência',
-    );
+    expect(service.history('cliente-1').items).toHaveLength(1);
   });
 });

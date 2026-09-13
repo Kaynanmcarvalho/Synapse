@@ -1,31 +1,19 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import type { AuditActor, Customer, CustomerHistoryEntry, Supplier } from '@synapse/types';
-import type { CustomerInput, SupplierInput } from '@synapse/validation';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import type { AuditActor, CustomerHistoryEntry, Supplier } from '@synapse/types';
+import type { SupplierInput } from '@synapse/validation';
 import { randomUUID } from 'node:crypto';
 import type { TenantContext } from '../../iam/iam.types';
 import { PartnerRepository } from '../repositories/partner.repository';
 
+/** Fornecedores e o historico de atendimento do cliente.
+ *
+ *  O cadastro de clientes saiu daqui: vive no ClienteService, gravado no
+ *  Firestore. Antes havia duas verdades sobre o mesmo cliente — este servico,
+ *  em memoria, e o documento que a analise de credito lia. */
 @Injectable()
 export class PartnerService {
   constructor(private readonly repository: PartnerRepository) {}
-  createCustomer(context: TenantContext, input: CustomerInput): Customer {
-    const now = new Date().toISOString();
-    const actor = this.actor(context);
-    return this.repository.saveCustomer({
-      ...input,
-      id: randomUUID() as Customer['id'],
-      tenantId: context.tenantId as Customer['tenantId'],
-      openCredit: 0,
-      financialStatus: 'REGULAR',
-      responsibleSellerId: input.responsibleSellerId as Customer['responsibleSellerId'],
-      priceTableId: input.priceTableId as Customer['priceTableId'],
-      createdAt: now,
-      createdBy: actor,
-      updatedAt: now,
-      updatedBy: actor,
-      version: 1,
-    });
-  }
+
   createSupplier(context: TenantContext, input: SupplierInput): Supplier {
     const now = new Date().toISOString();
     const actor = this.actor(context);
@@ -41,56 +29,23 @@ export class PartnerService {
       version: 1,
     });
   }
-  getCustomer(tenantId: string, customerId: string) {
-    const customer = this.repository.findCustomer(tenantId, customerId);
-    if (!customer) throw new NotFoundException('Cliente não encontrado');
-    return customer;
-  }
+
   getSupplier(tenantId: string, supplierId: string) {
     const supplier = this.repository.findSupplier(tenantId, supplierId);
-    if (!supplier) throw new NotFoundException('Fornecedor não encontrado');
+    if (!supplier) throw new NotFoundException('Fornecedor nao encontrado');
     return supplier;
   }
-  assertCredit(tenantId: string, customerId: string, saleAmount: number) {
-    const customer = this.repository.findCustomer(tenantId, customerId);
-    if (!customer) throw new NotFoundException('Cliente não encontrado');
-    if (customer.financialStatus !== 'REGULAR')
-      throw new BadRequestException('Cliente bloqueado por inadimplência');
-    if (customer.openCredit + saleAmount > customer.creditLimit)
-      throw new BadRequestException('Limite de crédito excedido');
-    return customer;
-  }
-  setFinancialStatus(tenantId: string, customerId: string, status: Customer['financialStatus']) {
-    const customer = this.repository.findCustomer(tenantId, customerId);
-    if (!customer) throw new NotFoundException('Cliente não encontrado');
-    return this.repository.updateCustomer({
-      ...customer,
-      financialStatus: status,
-      version: customer.version + 1,
-      updatedAt: new Date().toISOString(),
-    });
-  }
-  /** LGPD §49: so anonimiza quando nao ha obrigacao financeira em aberto — o
-   *  historico de venda em si permanece (fiscal exige guarda-lo), so os dados
-   *  pessoais somem. Devolve null quando a anonimizacao foi recusada. */
-  anonymizeCustomer(tenantId: string, customerId: string): Customer | null {
-    const customer = this.repository.findCustomer(tenantId, customerId);
-    if (!customer) throw new NotFoundException('Cliente não encontrado');
-    if (customer.openCredit > 0) return null;
 
-    return this.repository.updateCustomer({
-      ...customer,
-      name: 'Cliente anonimizado',
-      legalName: null,
-      taxId: '00000000000',
-      phone: '',
-      whatsapp: null,
-      email: null,
-      address: { ...customer.address, street: '', number: '', complement: null },
-      version: customer.version + 1,
-      updatedAt: new Date().toISOString(),
-    });
+  searchSuppliers(tenantId: string, term: string, limit = 50, cursor?: string) {
+    return this.repository.searchSuppliers(tenantId, term, limit, cursor);
   }
+
+  listSuppliers(tenantId: string) {
+    return this.repository.listSuppliers(tenantId);
+  }
+
+  /** Atendimento registrado do cliente (ligacao, visita, ocorrencia). Hoje so a
+   *  exportacao da LGPD le isto, e nenhum fluxo grava: a lista vem vazia. */
   addHistory(customerId: string, entry: Omit<CustomerHistoryEntry, 'id' | 'customerId'>) {
     this.repository.addHistory({
       ...entry,
@@ -98,23 +53,11 @@ export class PartnerService {
       customerId: customerId as CustomerHistoryEntry['customerId'],
     });
   }
+
   history(customerId: string, limit = 50, cursor?: string) {
     return this.repository.customerHistory(customerId, limit, cursor);
   }
-  searchCustomers(tenantId: string, term: string, limit = 50, cursor?: string) {
-    return this.repository.searchCustomers(tenantId, term, limit, cursor);
-  }
-  searchSuppliers(tenantId: string, term: string, limit = 50, cursor?: string) {
-    return this.repository.searchSuppliers(tenantId, term, limit, cursor);
-  }
-  /** Lista inteira do tenant, para agregacao interna. A busca pagina em 50 por
-   *  padrao: usa-la aqui cortaria a carteira do vendedor no 50º cliente, calada. */
-  listCustomers(tenantId: string) {
-    return this.repository.listCustomers(tenantId);
-  }
-  listSuppliers(tenantId: string) {
-    return this.repository.listSuppliers(tenantId);
-  }
+
   private actor(context: TenantContext): AuditActor {
     return { uid: context.userId as AuditActor['uid'], email: '', name: '', source: 'api' };
   }

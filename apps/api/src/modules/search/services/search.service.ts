@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { Permission } from '@synapse/types';
 import { ProductRepository } from '../../catalog/repositories/product.repository';
 import { PartnerRepository } from '../../catalog/repositories/partner.repository';
+import { ClienteService } from '../../catalog/services/cliente.service';
 import { OrderRepository } from '../../sales/repositories/order.repository';
 import { FiscalRepository } from '../../fiscal/repositories/fiscal.repository';
 import { TituloRepository } from '../../finance/repositories/titulo.repository';
@@ -29,6 +30,7 @@ export class SearchService {
   constructor(
     private readonly products: ProductRepository,
     private readonly partners: PartnerRepository,
+    private readonly clientes: ClienteService,
     private readonly orders: OrderRepository,
     private readonly fiscal: FiscalRepository,
     private readonly titulos: TituloRepository,
@@ -43,7 +45,8 @@ export class SearchService {
       !context.branchIds.length || context.branchIds.includes(branchId);
 
     if (allowed('produto.visualizar')) items.push(...this.searchProducts(context, query, limit));
-    if (allowed('cliente.gerenciar')) items.push(...this.searchCustomers(context, query, limit));
+    if (allowed('cliente.gerenciar'))
+      items.push(...(await this.searchCustomers(context, query, limit)));
     if (allowed('fornecedor.gerenciar')) items.push(...this.searchSuppliers(context, query, limit));
     if (allowed('venda.criar'))
       items.push(...this.searchOrders(context, query, limit, branchAllowed));
@@ -67,16 +70,20 @@ export class SearchService {
     }));
   }
 
-  private searchCustomers(
+  /** Cliente vem do cadastro gravado, e nao de indice em memoria: o que o
+   *  balcao cadastrou aparece na busca na mesma hora, e continua depois do
+   *  restart. */
+  private async searchCustomers(
     context: TenantContext,
     query: string,
     limit: number,
-  ): SearchResultItem[] {
-    return this.partners.customerIndex.search(context.tenantId, query, limit).map((c) => ({
+  ): Promise<SearchResultItem[]> {
+    const achados = await this.clientes.procurar(context.tenantId, query, limit);
+    return achados.map((cliente) => ({
       type: 'customer' as const,
-      id: c.id,
-      title: c.name,
-      subtitle: c.taxId,
+      id: cliente.id,
+      title: cliente.codigo ? `${cliente.codigo} · ${cliente.name}` : cliente.name,
+      subtitle: cliente.taxId,
       path: '/cadastros/clientes',
     }));
   }

@@ -1,6 +1,7 @@
 import type { PedidoNaFila } from '@synapse/types';
 import { RotateCw } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { CamadaDoCliente, type ClienteEscolhido } from './CamadaDoCliente';
 import { ConteudoDaFila } from './FilaDeAnalise';
 import { Fundo } from './Fundo';
@@ -74,6 +75,22 @@ export function AnaliseDeCreditoScreen() {
   const janelas = usePilha();
   const { ordem, focar, fechar, pilha } = janelas;
   const [cliente, setCliente] = useState<ClienteEscolhido | null>(null);
+  const [parametros] = useSearchParams();
+  const clienteDaUrl = parametros.get('cliente');
+
+  // `/vendas/analise-de-credito?cliente=<id>` abre a ficha direto: e por aqui
+  // que o cadastro de clientes manda ver o credito de quem esta na tela.
+  useEffect(() => {
+    if (!clienteDaUrl || cliente?.id === clienteDaUrl) return;
+    setCliente({
+      id: clienteDaUrl,
+      nome: 'Cliente',
+      pedidoInicial: '',
+      escolhidoEm: Date.now(),
+    });
+    void abrirCliente(clienteDaUrl);
+    focar('cliente');
+  }, [clienteDaUrl, cliente?.id, abrirCliente, focar]);
 
   const recarregar = useCallback(() => {
     void carregarFila();

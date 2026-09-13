@@ -211,3 +211,39 @@ describe('pedido aprovado, depois titulo: sem contagem dupla', () => {
     );
   });
 });
+
+describe('dias para bloqueio e autorização do cadastro', () => {
+  // HOJE e 2026-09-13: vencido em 08/09 tem 5 dias de atraso.
+  const vencido = titulo({ id: 'v', valorOriginalCentavos: 100_000, vencimento: '2026-09-08' });
+
+  it('sem valor no cadastro, vale a tolerância geral de 2 dias: bloqueia', () => {
+    const situacao = situacaoDeCredito(entrada({ titulos: [vencido] }));
+    expect(situacao.toleranciaDeAtrasoDias).toBe(2);
+    expect(situacao.inadimplencia.bloqueia).toBe(true);
+  });
+
+  it('com 10 dias no cadastro, 5 dias de atraso ainda não bloqueia', () => {
+    const situacao = situacaoDeCredito(
+      entrada({ titulos: [vencido], cadastro: { ...cadastro(), diasParaBloqueio: 10 } }),
+    );
+    expect(situacao.toleranciaDeAtrasoDias).toBe(10);
+    expect(situacao.inadimplencia.bloqueia).toBe(false);
+  });
+
+  it('zero dias no cadastro: bloqueia no primeiro dia de atraso', () => {
+    const umDia = titulo({ id: 'u', valorOriginalCentavos: 100_000, vencimento: '2026-09-12' });
+    const situacao = situacaoDeCredito(
+      entrada({ titulos: [umDia], cadastro: { ...cadastro(), diasParaBloqueio: 0 } }),
+    );
+    expect(situacao.toleranciaDeAtrasoDias).toBe(0);
+    expect(situacao.inadimplencia.bloqueia).toBe(true);
+  });
+
+  it('autorização somente à vista chega na situação', () => {
+    const situacao = situacaoDeCredito(
+      entrada({ cadastro: { ...cadastro(), autorizacaoDePagamento: 'SOMENTE_A_VISTA' } }),
+    );
+    expect(situacao.somenteAVista).toBe(true);
+    expect(situacaoDeCredito(entrada()).somenteAVista).toBe(false);
+  });
+});

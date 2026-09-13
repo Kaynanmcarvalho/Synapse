@@ -28,7 +28,7 @@ import {
 } from '../entities/analise-de-credito';
 import { avaliarPedido, registroDaAvaliacao, resumoDaAvaliacao } from '../entities/avaliacao';
 import { comportamentoFinanceiro, pontualidadeRecente } from '../entities/comportamento';
-import type { CadastroInput, RegistrarPedidoInput } from '../dto/credito.schemas';
+import type { RegistrarPedidoInput } from '../dto/credito.schemas';
 import { acionarAnalise, evento, type Ator } from '../entities/historico';
 import { situacaoDeCredito } from '../entities/situacao-de-credito';
 import { ClienteRepository } from '../repositories/cliente.repository';
@@ -79,26 +79,14 @@ export class AnaliseDeCreditoService {
     });
   }
 
-  /** Cadastro do cliente para o formulario. Sem cadastro gravado, abre um
-   *  rascunho com o que o vendedor ja informou no ultimo pedido. */
+  /** Cadastro do cliente para a ficha. Sem cadastro gravado, mostra um rascunho
+   *  com o que o vendedor informou no ultimo pedido — e a tela de cadastro que
+   *  transforma isso em cliente de verdade. */
   async cadastro(context: TenantContext, customerId: string): Promise<CadastroDoCliente> {
     const gravado = await this.clientes.buscar(context.tenantId, customerId);
     if (gravado) return gravado;
     const [ultimo] = await this.pedidos.doCliente(context.tenantId, customerId, 1);
     return rascunhoDoCadastro(customerId, ultimo ?? null);
-  }
-
-  salvarCadastro(
-    context: TenantContext,
-    ator: Ator,
-    customerId: string,
-    input: CadastroInput,
-  ): Promise<CadastroDoCliente> {
-    return this.clientes.salvar(
-      context.tenantId,
-      { ...input, id: customerId as CustomerId, updatedAt: null, updatedByName: null },
-      ator,
-    );
   }
 
   /** Fila do modal: o que chegou e ainda nao foi analisado, cada pedido com a

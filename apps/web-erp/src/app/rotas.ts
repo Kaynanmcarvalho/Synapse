@@ -12,6 +12,7 @@ export const ROTAS = {
   boletos: '/financeiro/boletos',
   pdv: '/vendas/pdv',
   analiseDeCredito: '/vendas/analise-de-credito',
+  clientes: '/cadastros/clientes',
   produtos: '/cadastros/produtos',
   cargos: '/configuracoes/cargos',
   filiais: '/configuracoes/filiais',

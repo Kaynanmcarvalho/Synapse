@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { DashboardScreen } from '../features/dashboard/DashboardScreen';
 import { StockScreen } from '../features/inventory/StockScreen';
+import { ClientesScreen } from '../features/customers/ClientesScreen';
 import { ProductsScreen } from '../features/products/ProductsScreen';
 import { PosScreen } from '../features/pos/PosScreen';
 import { InventoryScreen } from '../features/inventory/InventoryScreen';
@@ -41,6 +42,7 @@ export function App() {
               <Route path={ROTAS.boletos} element={<BoletosScreen />} />
               <Route path={ROTAS.pdv} element={<PosScreen />} />
               <Route path={ROTAS.analiseDeCredito} element={<AnaliseDeCreditoScreen />} />
+              <Route path={ROTAS.clientes} element={<ClientesScreen />} />
               <Route path={ROTAS.produtos} element={<ProductsScreen />} />
               <Route path={ROTAS.cargos} element={<RolesScreen />} />
               <Route path={ROTAS.filiais} element={<BranchConfigScreen />} />

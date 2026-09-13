@@ -244,3 +244,30 @@ describe('justificativa', () => {
     expect(justificativaValida('Cliente quitou o vencido hoje por PIX.')).toBe(true);
   });
 });
+
+describe('cadastro do cliente na política', () => {
+  it('somente à vista: pedido a prazo fere a política', () => {
+    const motivo = motivosDaAnalise(situacao({ somenteAVista: true }), aPrazo(100)).find(
+      (m) => m.codigo === 'CLIENTE_SOMENTE_A_VISTA',
+    );
+    expect(motivo).toMatchObject({ rotulo: 'Cliente somente à vista', violaPolitica: true });
+  });
+
+  it('somente à vista não pesa em operação que não concede prazo', () => {
+    expect(codigos(situacao({ somenteAVista: true }), troca)).not.toContain(
+      'CLIENTE_SOMENTE_A_VISTA',
+    );
+  });
+
+  it('sem a marca no cadastro, nada muda', () => {
+    expect(codigos(situacao(), aPrazo(100))).not.toContain('CLIENTE_SOMENTE_A_VISTA');
+  });
+
+  it('a tolerância do cadastro aparece no detalhe do título vencido', () => {
+    const detalhe = motivosDaAnalise(
+      situacao({ titulosVencidos: 1, diasDeAtrasoMaximo: 4, toleranciaDeAtrasoDias: 7 }),
+      aPrazo(100),
+    ).find((m) => m.codigo === 'TITULO_VENCIDO')?.detalhe;
+    expect(detalhe).toContain('tolerância de 7 dias');
+  });
+});

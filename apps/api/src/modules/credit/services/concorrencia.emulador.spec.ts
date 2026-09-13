@@ -5,6 +5,7 @@ import { TituloRepository } from '../../finance/repositories/titulo.repository';
 import type { TenantContext } from '../../iam/iam.types';
 import { RoleRepository } from '../../iam/repositories/role.repository';
 import { RoleService } from '../../iam/services/role.service';
+import { ClienteRepository as CadastroDeClientes } from '../../catalog/repositories/cliente.repository';
 import { ClienteRepository } from '../repositories/cliente.repository';
 import { PedidoDeVendaRepository } from '../repositories/pedido-de-venda.repository';
 import { JUSTIFICATIVA } from '../testing/em-memoria';
@@ -28,7 +29,7 @@ const montarNoEmulador = () => {
   const db = getAdminFirestore();
   const pedidos = new PedidoDeVendaRepository(db);
   const titulos = new TituloRepository(db);
-  const clientes = new ClienteRepository(db);
+  const clientes = new ClienteRepository(new CadastroDeClientes(db));
   const leitor = new LeitorDeCredito(pedidos, titulos, clientes);
   const roles = new RoleService(new RoleRepository());
   return {

@@ -22,7 +22,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "test:watch": "turbo run test:watch",
-    "test:credito:emulador": "firebase emulators:exec --only firestore --project demo-synapse \"pnpm --filter @synapse/api exec jest --runInBand concorrencia.emulador\"",
+    "test:emulador": "firebase emulators:exec --only firestore --project demo-synapse \"pnpm --filter @synapse/api exec jest --runInBand emulador\"",
     "clean": "turbo run clean && rimraf node_modules",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,md,yml,yaml,css}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,mjs,cjs,json,md,yml,yaml,css}\"",

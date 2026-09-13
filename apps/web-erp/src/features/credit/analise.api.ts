@@ -1,6 +1,5 @@
 import type {
   AcaoDeCredito,
-  CadastroDoCliente,
   DetalheDaNota,
   DetalheDoPedido,
   DetalheDoTitulo,
@@ -83,21 +82,3 @@ export const buscarNota = (pedidoId: string): Promise<DetalheDaNota> =>
 
 export const buscarTitulo = (id: string): Promise<DetalheDoTitulo> =>
   apiRequest(`/credit-analysis/titulos/${caminho(id)}`);
-
-export type CamposDoCadastro = Omit<
-  CadastroDoCliente,
-  'id' | 'updatedAt' | 'updatedByName' | 'financialStatus'
->;
-
-export const buscarCadastro = (customerId: string): Promise<CadastroDoCliente> =>
-  apiRequest(`/credit-analysis/customers/${caminho(customerId)}/cadastro`);
-
-export const salvarCadastro = (
-  customerId: string,
-  campos: CamposDoCadastro,
-): Promise<CadastroDoCliente> =>
-  apiRequest(`/credit-analysis/customers/${caminho(customerId)}/cadastro`, {
-    method: 'PUT',
-    headers: JSON_HEADERS,
-    body: JSON.stringify(campos),
-  });
