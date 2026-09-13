@@ -13,6 +13,7 @@ import { BoletosScreen } from '../features/finance/BoletosScreen';
 import { BranchConfigScreen } from '../features/config/BranchConfigScreen';
 import { FiscalSettingsScreen } from '../features/fiscal/FiscalSettingsScreen';
 import { AuditScreen } from '../features/audit/AuditScreen';
+import { AnaliseDeCreditoScreen } from '../features/credit/AnaliseDeCreditoScreen';
 import { LoginScreen } from '../features/auth/LoginScreen';
 import { HomeScreen } from '../features/home/HomeScreen';
 import { ModuloEmBreveScreen } from '../features/modules/ModuloEmBreveScreen';
@@ -39,6 +40,7 @@ export function App() {
               <Route path={ROTAS.compras} element={<PurchasingScreen />} />
               <Route path={ROTAS.boletos} element={<BoletosScreen />} />
               <Route path={ROTAS.pdv} element={<PosScreen />} />
+              <Route path={ROTAS.analiseDeCredito} element={<AnaliseDeCreditoScreen />} />
               <Route path={ROTAS.produtos} element={<ProductsScreen />} />
               <Route path={ROTAS.cargos} element={<RolesScreen />} />
               <Route path={ROTAS.filiais} element={<BranchConfigScreen />} />

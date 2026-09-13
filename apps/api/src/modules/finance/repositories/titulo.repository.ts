@@ -41,6 +41,12 @@ export class TituloRepository {
     return snapshot.docs.map((document: QueryDocumentSnapshot) => document.data() as Titulo);
   }
 
+  /** Todos os titulos de um cliente — a ficha que a analise de credito le. */
+  async listByCliente(tenantId: string, customerId: string): Promise<Titulo[]> {
+    const snapshot = await this.collection(tenantId).where('customerId', '==', customerId).get();
+    return snapshot.docs.map((document: QueryDocumentSnapshot) => document.data() as Titulo);
+  }
+
   async listAll(tenantId: string): Promise<Titulo[]> {
     const snapshot = await this.collection(tenantId).get();
     return snapshot.docs.map((document: QueryDocumentSnapshot) => document.data() as Titulo);

@@ -8,6 +8,7 @@ export * from './inventory';
 export * from './sales';
 export * from './fiscal';
 export * from './finance';
+export * from './credit';
 export * from './pricing';
 export * from './compliance';
 export * from './banking';

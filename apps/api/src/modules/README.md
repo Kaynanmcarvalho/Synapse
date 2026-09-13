@@ -24,6 +24,7 @@ um arquivo grande concentrando varias responsabilidades (spec 70).
 | `fiscal`      | F5   | NF-e, NFC-e, DF-e, MDF-e e o FiscalProvider                  |
 | `finance`     | F6   | boletos, contas a pagar e receber, conciliacao, BankProvider |
 | `field-sales` | F7   | app do vendedor externo e portal web                         |
+| `credit`      | F7   | analise de credito: fila de pedidos e ficha do cliente       |
 | `analytics`   | F8   | dashboards, curva ABC, compras, expedicao                    |
 | `platform`    | F9   | planos, limites, billing, feature flags, notificacoes        |
 

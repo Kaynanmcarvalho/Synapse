@@ -12,6 +12,7 @@
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { semearAnaliseDeCredito } from './seed-analise-de-credito.mjs';
 
 if (!process.env.FIRESTORE_EMULATOR_HOST || !process.env.FIREBASE_AUTH_EMULATOR_HOST) {
   console.error(
@@ -100,9 +101,13 @@ const main = async () => {
     await auth.setCustomUserClaims(usuario.uid, { ...usuario.customClaims, tenantId: TENANT_ID });
   }
 
+  const credito = await semearAnaliseDeCredito(db, TENANT_ID);
+
   process.stdout.write(
     `seed-dev: pronto - login ${USUARIO.email} / ${USUARIO.senha} ` +
-      `(tenant ${TENANT_ID}, cargo ADMIN_EMPRESA, projeto ${PROJETO})\n`,
+      `(tenant ${TENANT_ID}, cargo ADMIN_EMPRESA, projeto ${PROJETO})\n` +
+      `seed-dev: analise de credito - ${credito.pedidos} pedidos e ${credito.titulos} titulos ` +
+      `de ${credito.clientes} clientes\n`,
   );
 };
 

@@ -141,6 +141,52 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "pedidosDeVenda",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "situacao",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "enviadoEm",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pedidosDeVenda",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "customerId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "enviadoEm",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pedidosDeVenda",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "customerId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "situacao",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "enviadoEm",
+          "order": "DESCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []

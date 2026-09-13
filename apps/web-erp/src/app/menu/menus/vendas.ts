@@ -31,7 +31,9 @@ export const VENDAS = montarMenu('Vendas', [
     item('Nova Ordem de Serviço'),
   ]),
   SEP,
-  item('Caixa Balcão', { para: '/vendas/pdv', atalho: 'Ctrl+I' }),
+  // Unica troca proposital em relacao ao Syndata: no lugar do "Caixa Balcao"
+  // fica a Analise de Credito, onde caem os pedidos que os vendedores enviam.
+  item('Análise de Crédito', { para: '/vendas/analise-de-credito', atalho: 'Ctrl+I' }),
   SEP,
   item('Impressão de Documento Avulso'),
   SEP,

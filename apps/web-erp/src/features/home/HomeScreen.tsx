@@ -3,6 +3,7 @@ import {
   Boxes,
   CircleAlert,
   CircleCheck,
+  ClipboardCheck,
   FileInput,
   FileText,
   Gauge,
@@ -29,6 +30,7 @@ const ACESSO_RAPIDO: ReadonlyArray<{
   readonly nome?: string;
   readonly icone: LucideIcon;
 }> = [
+  { rotulo: 'Análise de Crédito', icone: ClipboardCheck },
   { rotulo: 'Venda PDV NFC-e', icone: ScanLine },
   { rotulo: 'Lançamento de Nota Fiscal de Entrada', icone: FileInput },
   { rotulo: 'Balanço de Estoque', icone: PackageSearch },
