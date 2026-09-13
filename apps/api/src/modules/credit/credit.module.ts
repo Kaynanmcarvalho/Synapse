@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { FinanceModule } from '../finance/finance.module';
 import { AnaliseDeCreditoController } from './controllers/analise-de-credito.controller';
+import { ClienteRepository } from './repositories/cliente.repository';
 import { PedidoDeVendaRepository } from './repositories/pedido-de-venda.repository';
 import { AnaliseDeCreditoService } from './services/analise-de-credito.service';
 
@@ -10,7 +11,7 @@ import { AnaliseDeCreditoService } from './services/analise-de-credito.service';
 @Module({
   imports: [FinanceModule],
   controllers: [AnaliseDeCreditoController],
-  providers: [PedidoDeVendaRepository, AnaliseDeCreditoService],
+  providers: [PedidoDeVendaRepository, ClienteRepository, AnaliseDeCreditoService],
   exports: [AnaliseDeCreditoService, PedidoDeVendaRepository],
 })
 export class CreditModule {}

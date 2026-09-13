@@ -1,5 +1,7 @@
 import type {
+  CadastroDoCliente,
   CarteiraDoCliente,
+  CustomerId,
   ResumoFinanceiroDoCliente,
   NotaDoCliente,
   PagamentoDoCliente,
@@ -47,6 +49,7 @@ export const titulosEmAbertoDoCliente = (
     .filter(contaNoSaldo)
     .map((titulo) => ({
       id: titulo.id,
+      pedidoId: titulo.orderId,
       ...identificacaoDoTitulo(titulo, pedidosPorId),
       vencimento: titulo.vencimento,
       valorCentavos: titulo.valorOriginalCentavos,
@@ -69,6 +72,7 @@ export const pagamentosDoCliente = (
       const identificacao = identificacaoDoTitulo(titulo, pedidosPorId);
       return titulo.liquidacoes.map((liquidacao) => ({
         tituloId: titulo.id,
+        pedidoId: titulo.orderId,
         ...identificacao,
         vencimento: titulo.vencimento,
         pagoEm: liquidacao.data,
@@ -151,6 +155,38 @@ export const notasDosPedidos = (
     )
     .sort((a, b) => b.emitidaEm.localeCompare(a.emitidaEm))
     .slice(0, limite);
+
+/** Cadastro que ainda nao existe: abre com o que o ultimo pedido trouxe, em vez
+ *  de um formulario em branco que obriga o analista a redigitar tudo. */
+export const rascunhoDoCadastro = (
+  customerId: string,
+  pedido: PedidoDeVenda | null,
+): CadastroDoCliente => {
+  const documento = (pedido?.clienteDocumento ?? '').replace(/\D/g, '');
+  return {
+    id: customerId as CustomerId,
+    type: documento.length === 11 ? 'PF' : 'PJ',
+    name: pedido?.clienteNome ?? '',
+    legalName: null,
+    taxId: documento,
+    stateRegistration: null,
+    phone: '',
+    whatsapp: null,
+    email: null,
+    address: {
+      street: '',
+      number: '',
+      complement: null,
+      district: pedido?.clienteBairro ?? '',
+      city: pedido?.clienteCidade ?? '',
+      state: '',
+      postalCode: '',
+    },
+    creditLimit: 0,
+    updatedAt: null,
+    updatedByName: null,
+  };
+};
 
 export const emAnalise = (pedido: PedidoDeVenda): boolean =>
   pedido.situacao === 'AGUARDANDO_ANALISE';

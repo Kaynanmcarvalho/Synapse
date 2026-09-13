@@ -12,6 +12,111 @@ const DIA = 86_400_000;
 const dia = (deslocamento) => new Date(Date.now() + deslocamento * DIA).toISOString().slice(0, 10);
 const instante = (deslocamento) => new Date(Date.now() + deslocamento * DIA).toISOString();
 
+/** Quem mexeu em cada etapa, para o historico ter nome e sobrenome. */
+const PESSOAS = {
+  GERENCIA_COMERCIAL: { uid: 'gerente-dev', nome: 'Paulo Gerência' },
+  CREDITO: { uid: 'credito-dev', nome: 'Carla Crédito' },
+  FATURAMENTO: { uid: 'faturamento-dev', nome: 'Fernanda Faturamento' },
+  EXPEDICAO: { uid: 'expedicao-dev', nome: 'Jorge Expedição' },
+};
+
+const depois = (iso, horas) => new Date(Date.parse(iso) + horas * 3_600_000).toISOString();
+
+const ev = (tipo, etapa, pessoa, em, detalhe = null) => ({
+  tipo,
+  etapa,
+  em,
+  porUid: pessoa.uid,
+  porNome: pessoa.nome,
+  detalhe,
+});
+
+const obs = (id, etapa, pessoa, em, texto) => ({
+  id,
+  etapa,
+  texto,
+  em,
+  porUid: pessoa.uid,
+  porNome: pessoa.nome,
+});
+
+/** "14/21/28/35" vira [14, 21, 28, 35]; "3x" vira tres parcelas de 30 dias. */
+const diasDaCondicao = (condicao) => {
+  const vezes = /(\d+)\s*x/i.exec(condicao);
+  if (vezes) return Array.from({ length: Number(vezes[1]) }, (_, i) => 30 * (i + 1));
+  const numeros = condicao.match(/\d+/g)?.map(Number) ?? [];
+  return numeros.length ? numeros : [0];
+};
+
+/** Historico coerente com a situacao: pedido faturado passou por credito,
+ *  faturamento e entrega; pedido na fila so foi lancado (e as vezes editado). */
+const historicoDe = (dados, vendedor) => {
+  const inicio = dados.enviadoEm;
+  const lancado = ev(
+    'LANCADO',
+    'VENDEDOR',
+    vendedor,
+    inicio,
+    `Enviado pelo ${dados.origem ?? 'MOBILE'}`,
+  );
+  const editado = ev(
+    'EDITADO',
+    'GERENCIA_COMERCIAL',
+    PESSOAS.GERENCIA_COMERCIAL,
+    depois(inicio, 0.6),
+    'Quantidade ajustada e desconto revisado',
+  );
+  if ((dados.situacao ?? 'AGUARDANDO_ANALISE') !== 'FATURADO') {
+    return dados.editado ? [lancado, editado] : [lancado];
+  }
+  return [
+    lancado,
+    editado,
+    ev('LIBERADO', 'CREDITO', PESSOAS.CREDITO, depois(inicio, 2), 'Liberado na análise de crédito'),
+    ev('IMPRESSO', 'FATURAMENTO', PESSOAS.FATURAMENTO, depois(inicio, 3)),
+    ev(
+      'FATURADO',
+      'FATURAMENTO',
+      PESSOAS.FATURAMENTO,
+      depois(inicio, 20),
+      `NF ${dados.nota?.numero} série ${dados.nota?.serie}`,
+    ),
+    ev(
+      'EM_ROTA',
+      'EXPEDICAO',
+      PESSOAS.EXPEDICAO,
+      depois(inicio, 26),
+      'Rota Centro-Sul · Caminhão 02',
+    ),
+    ev(
+      'ENTREGUE',
+      'EXPEDICAO',
+      PESSOAS.EXPEDICAO,
+      depois(inicio, 31),
+      'Recebido por João (conferente)',
+    ),
+  ];
+};
+
+const observacoesDe = (dados, vendedor) => {
+  const lista = [];
+  if (dados.observacao) {
+    lista.push(obs(`${dados.id}-o1`, 'VENDEDOR', vendedor, dados.enviadoEm, dados.observacao));
+  }
+  for (const [indice, extra] of (dados.notas ?? []).entries()) {
+    lista.push(
+      obs(
+        `${dados.id}-o${indice + 2}`,
+        extra.etapa,
+        PESSOAS[extra.etapa] ?? vendedor,
+        depois(dados.enviadoEm, extra.horas ?? 1),
+        extra.texto,
+      ),
+    );
+  }
+  return lista;
+};
+
 const item = (productId, descricao, unidades, precoUnitarioCentavos) => ({
   productId,
   descricao,
@@ -23,6 +128,10 @@ const item = (productId, descricao, unidades, precoUnitarioCentavos) => ({
 
 const pedido = (tenantId, cliente, dados) => {
   const itens = dados.itens;
+  const vendedor = {
+    uid: dados.vendedorId ?? 'vendedor-dev',
+    nome: dados.vendedorNome ?? 'Marcos Vendas',
+  };
   return {
     id: dados.id,
     numero: dados.numero,
@@ -39,6 +148,7 @@ const pedido = (tenantId, cliente, dados) => {
     vendedorId: dados.vendedorId ?? 'vendedor-dev',
     vendedorNome: dados.vendedorNome ?? 'Marcos Vendas',
     condicaoDePagamento: dados.condicao ?? '28/35/42 dias',
+    vencimentosEmDias: diasDaCondicao(dados.condicao ?? '28/35/42 dias'),
     prazoMedioEmDias: dados.prazo ?? 35,
     formaDePagamento: dados.forma ?? 'Boleto',
     totalCentavos: itens.reduce((soma, linha) => soma + linha.totalCentavos, 0),
@@ -46,6 +156,8 @@ const pedido = (tenantId, cliente, dados) => {
     itens,
     observacao: dados.observacao ?? null,
     impressoPor: [],
+    historico: historicoDe(dados, vendedor),
+    observacoes: observacoesDe(dados, vendedor),
     nota: dados.nota ?? null,
     enviadoEm: dados.enviadoEm,
     analisadoEm: null,
@@ -116,6 +228,15 @@ const pedidosDe = (tenantId) => {
       id: 'pedido-dev-101',
       numero: 101,
       enviadoEm: instante(-0.2),
+      editado: true,
+      observacao: 'Cliente pediu entrega até sexta, antes das 10h.',
+      notas: [
+        {
+          etapa: 'GERENCIA_COMERCIAL',
+          horas: 0.7,
+          texto: 'Desconto de 3% autorizado — cliente fechou volume do mês.',
+        },
+      ],
       condicao: '14/21/28/35',
       prazo: 24,
       itens: [
@@ -139,6 +260,16 @@ const pedidosDe = (tenantId) => {
       id: 'pedido-dev-090',
       numero: 90,
       situacao: 'FATURADO',
+      observacao: 'Descarregar pela doca lateral.',
+      notas: [
+        {
+          etapa: 'CREDITO',
+          horas: 2,
+          texto:
+            'Liberado com 12 dias de atraso na parcela anterior — combinado com o financeiro do cliente.',
+        },
+        { etapa: 'EXPEDICAO', horas: 31, texto: 'Entregue completo; canhoto assinado.' },
+      ],
       enviadoEm: instante(-32),
       nota: { numero: 4412, serie: 1, chaveDeAcesso: null, emitidaEm: instante(-31) },
       itens: [item('produto-dev-1', 'Arroz tipo 1 5kg (fardo)', 30, 12_990)],
@@ -291,6 +422,73 @@ const titulosDe = (tenantId) => {
   ];
 };
 
+const CADASTROS = {
+  'cliente-dev-1': {
+    legalName: 'Mercado do Bairro Comércio de Alimentos LTDA',
+    stateRegistration: '10.123.456-7',
+    phone: '(62) 3241-5566',
+    whatsapp: '(62) 99812-4455',
+    email: 'compras@mercadodobairro.com.br',
+    street: 'Rua T-37',
+    number: '1450',
+    state: 'GO',
+    postalCode: '74230020',
+    creditLimit: 1_500_000,
+  },
+  'cliente-dev-2': {
+    legalName: 'Padaria Estrela Panificação LTDA',
+    stateRegistration: '10.765.432-1',
+    phone: '(62) 3283-9090',
+    whatsapp: null,
+    email: 'financeiro@padariaestrela.com.br',
+    street: 'Avenida Rio Verde',
+    number: '220',
+    state: 'GO',
+    postalCode: '74953010',
+    creditLimit: 600_000,
+  },
+  'cliente-dev-3': {
+    legalName: 'Atacado Sul Distribuidora EIRELI',
+    stateRegistration: '10.456.789-0',
+    phone: '(62) 3324-1122',
+    whatsapp: '(62) 98100-7788',
+    email: 'contato@atacadosul.com.br',
+    street: 'Avenida Brasil Sul',
+    number: '3100',
+    state: 'GO',
+    postalCode: '75113570',
+    creditLimit: 2_000_000,
+  },
+};
+
+const cadastroDe = (tenantId, cliente) => {
+  const extra = CADASTROS[cliente.id];
+  return {
+    id: cliente.id,
+    tenantId,
+    type: 'PJ',
+    name: cliente.nome,
+    legalName: extra.legalName,
+    taxId: cliente.documento,
+    stateRegistration: extra.stateRegistration,
+    phone: extra.phone,
+    whatsapp: extra.whatsapp,
+    email: extra.email,
+    address: {
+      street: extra.street,
+      number: extra.number,
+      complement: null,
+      district: cliente.bairro,
+      city: cliente.cidade,
+      state: extra.state,
+      postalCode: extra.postalCode,
+    },
+    creditLimit: extra.creditLimit,
+    updatedAt: instante(-40),
+    updatedByName: 'Paulo Gerência',
+  };
+};
+
 /** Grava a carga. `db` e o Firestore ja apontado para o emulador. */
 export const semearAnaliseDeCredito = async (db, tenantId) => {
   const pedidos = pedidosDe(tenantId);
@@ -299,6 +497,11 @@ export const semearAnaliseDeCredito = async (db, tenantId) => {
 
   for (const registro of pedidos) {
     lote.set(db.doc(`tenants/${tenantId}/pedidosDeVenda/${registro.id}`), registro, {
+      merge: true,
+    });
+  }
+  for (const cliente of CLIENTES) {
+    lote.set(db.doc(`tenants/${tenantId}/customers/${cliente.id}`), cadastroDe(tenantId, cliente), {
       merge: true,
     });
   }

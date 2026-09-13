@@ -1,12 +1,14 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import type {
   BranchId,
+  CadastroDoCliente,
   CustomerId,
   ItemDoPedido,
   PainelDeAnaliseDeCredito,
   PedidoDeVenda,
   PedidoNaFila,
   ProductId,
+  ResultadoDaLiberacao,
   TenantId,
   UserId,
 } from '@synapse/types';
@@ -17,11 +19,14 @@ import {
   carteiraDoCliente,
   notasDosPedidos,
   prazoMedio,
+  rascunhoDoCadastro,
   resumoFinanceiro,
   SEM_TITULOS,
   totalCentavosDe,
 } from '../entities/analise-de-credito';
-import type { RegistrarPedidoInput } from '../dto/credito.schemas';
+import type { CadastroInput, RegistrarPedidoInput } from '../dto/credito.schemas';
+import { evento, type Ator } from '../entities/historico';
+import { ClienteRepository } from '../repositories/cliente.repository';
 import { PedidoDeVendaRepository } from '../repositories/pedido-de-venda.repository';
 
 const hojeISO = (): string => new Date().toISOString().slice(0, 10);
@@ -31,7 +36,60 @@ export class AnaliseDeCreditoService {
   constructor(
     private readonly pedidos: PedidoDeVendaRepository,
     private readonly titulos: TituloRepository,
+    private readonly clientes: ClienteRepository,
   ) {}
+
+  /** O pedido inteiro, para a janela de detalhe — tambem quando ele e aberto
+   *  pela lupa de um titulo ou de uma nota, e nao so pela fila. */
+  async pedido(context: TenantContext, id: string): Promise<PedidoDeVenda> {
+    const pedido = await this.pedidos.buscar(context.tenantId, id);
+    if (!pedido) throw new NotFoundException('Pedido não encontrado');
+    return pedido;
+  }
+
+  /** Liberacao unica para os pedidos que o analista marcou: seguem para o
+   *  faturamento, cada um com o rastro de quem liberou e quando. */
+  liberar(
+    context: TenantContext,
+    ator: Ator,
+    ids: readonly string[],
+  ): Promise<ResultadoDaLiberacao> {
+    return this.pedidos.liberar(context.tenantId, ids, ator);
+  }
+
+  /** Observacao escrita aqui e sempre da etapa de credito. */
+  observar(context: TenantContext, ator: Ator, id: string, texto: string) {
+    return this.pedidos.observar(context.tenantId, id, {
+      id: randomUUID(),
+      etapa: 'CREDITO',
+      texto,
+      em: new Date().toISOString(),
+      porUid: ator.uid,
+      porNome: ator.nome,
+    });
+  }
+
+  /** Cadastro do cliente para o formulario. Sem cadastro gravado, abre um
+   *  rascunho com o que o vendedor ja informou no ultimo pedido. */
+  async cadastro(context: TenantContext, customerId: string): Promise<CadastroDoCliente> {
+    const gravado = await this.clientes.buscar(context.tenantId, customerId);
+    if (gravado) return gravado;
+    const [ultimo] = await this.pedidos.doCliente(context.tenantId, customerId, 1);
+    return rascunhoDoCadastro(customerId, ultimo ?? null);
+  }
+
+  salvarCadastro(
+    context: TenantContext,
+    ator: Ator,
+    customerId: string,
+    input: CadastroInput,
+  ): Promise<CadastroDoCliente> {
+    return this.clientes.salvar(
+      context.tenantId,
+      { ...input, id: customerId as CustomerId, updatedAt: null, updatedByName: null },
+      ator,
+    );
+  }
 
   /** Fila do modal: o que chegou e ainda nao foi analisado, cada pedido ja com
    *  a situacao financeira do cliente — sem isso o analista abriria um por um
@@ -100,14 +158,19 @@ export class AnaliseDeCreditoService {
   }
 
   /** "Ja imprimi este" e marca de quem imprimiu, e nao do pedido. */
-  marcarImpressao(context: TenantContext, id: string, impresso: boolean) {
-    return this.pedidos.marcarImpressao(context.tenantId, id, context.userId, impresso);
+  marcarImpressao(context: TenantContext, ator: Ator, id: string, impresso: boolean) {
+    return this.pedidos.marcarImpressao(context.tenantId, id, ator, impresso);
   }
 
   /** Porta de entrada do pedido, venha do desktop ou do celular: os dois caem
    *  na mesma fila, com a mesma regra. O total NUNCA vem do corpo da
    *  requisicao — e somado aqui a partir dos itens. */
-  async registrar(context: TenantContext, input: RegistrarPedidoInput): Promise<PedidoDeVenda> {
+  async registrar(
+    context: TenantContext,
+    ator: Ator,
+    input: RegistrarPedidoInput,
+  ): Promise<PedidoDeVenda> {
+    const agora = new Date().toISOString();
     const itens: ItemDoPedido[] = input.itens.map((item) => ({
       productId: item.productId as ProductId,
       descricao: item.descricao,
@@ -136,6 +199,7 @@ export class AnaliseDeCreditoService {
       vendedorId: (input.vendedorId ?? context.userId) as UserId,
       vendedorNome: input.vendedorNome,
       condicaoDePagamento: input.condicaoDePagamento,
+      vencimentosEmDias: input.vencimentosEmDias,
       prazoMedioEmDias: prazoMedio(input.vencimentosEmDias),
       formaDePagamento: input.formaDePagamento,
       totalCentavos: itens.reduce((soma, item) => soma + item.totalCentavos, 0),
@@ -143,8 +207,21 @@ export class AnaliseDeCreditoService {
       itens,
       observacao: input.observacao,
       impressoPor: [],
+      historico: [evento('LANCADO', 'VENDEDOR', ator, agora, `Enviado pelo ${input.origem}`)],
+      observacoes: input.observacao
+        ? [
+            {
+              id: randomUUID(),
+              etapa: 'VENDEDOR',
+              texto: input.observacao,
+              em: agora,
+              porUid: ator.uid,
+              porNome: ator.nome,
+            },
+          ]
+        : [],
       nota: null,
-      enviadoEm: new Date().toISOString(),
+      enviadoEm: agora,
       analisadoEm: null,
       analisadoPor: null,
     });
