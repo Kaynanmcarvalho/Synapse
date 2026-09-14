@@ -1,7 +1,7 @@
 import type { Product, Supplier } from '@synapse/types';
 import type { Firestore } from '@synapse/firebase/admin';
 import { FakeFirestore } from '../../../../test/fake-firestore';
-import { PartnerRepository } from '../../catalog/repositories/partner.repository';
+import { FornecedorRepository } from '../../catalog/repositories/fornecedor.repository';
 import type { ClienteService } from '../../catalog/services/cliente.service';
 import { ProductRepository } from '../../catalog/repositories/product.repository';
 import { OrderRepository } from '../../sales/repositories/order.repository';
@@ -23,7 +23,7 @@ const tenant: TenantContext = {
 
 function buildService() {
   const productRepository = new ProductRepository(new FakeFirestore() as unknown as Firestore);
-  const partnerRepository = new PartnerRepository();
+  const fornecedores = new FornecedorRepository(new FakeFirestore() as unknown as Firestore);
   const orders = new OrderRepository();
   const clientes = { procurar: jest.fn(async () => []) };
   const fiscal = new FiscalRepository(new FakeFirestore() as unknown as Firestore);
@@ -31,7 +31,7 @@ function buildService() {
   const sellers = { search: jest.fn(async () => []) };
   const service = new SearchService(
     productRepository,
-    partnerRepository,
+    fornecedores,
     clientes as unknown as ClienteService,
     orders,
     fiscal,
@@ -42,7 +42,7 @@ function buildService() {
   return {
     service,
     productRepository,
-    partnerRepository,
+    fornecedores,
     clientes,
     orders,
     fiscal,
@@ -120,8 +120,8 @@ describe('SearchService.search', () => {
   });
 
   it('busca ao mesmo tempo em produtos, clientes e fornecedores', async () => {
-    const { service, productRepository, partnerRepository, clientes } = buildService();
-    productRepository.save(productFixture('p1', 'Fertilizante Sol', 'FER-1'));
+    const { service, productRepository, fornecedores, clientes } = buildService();
+    await productRepository.save(productFixture('p1', 'Fertilizante Sol', 'FER-1'));
     clientes.procurar.mockResolvedValueOnce([
       {
         id: 'c1',
@@ -131,12 +131,12 @@ describe('SearchService.search', () => {
         taxId: '00011122233',
       },
     ] as never);
-    partnerRepository.saveSupplier({
+    await fornecedores.criar({
       id: 's1',
       tenantId: tenant.tenantId,
       tradeName: 'Solar Insumos',
       legalName: 'Solar Insumos Agropecuaria Ltda',
-      taxId: '111',
+      taxId: '11222333000181',
       contacts: [],
     } as unknown as Supplier);
 

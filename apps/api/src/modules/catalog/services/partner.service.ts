@@ -3,6 +3,7 @@ import type { AuditActor, CustomerHistoryEntry, Supplier } from '@synapse/types'
 import type { SupplierInput } from '@synapse/validation';
 import { randomUUID } from 'node:crypto';
 import type { TenantContext } from '../../iam/iam.types';
+import { FornecedorRepository } from '../repositories/fornecedor.repository';
 import { PartnerRepository } from '../repositories/partner.repository';
 
 /** Fornecedores e o historico de atendimento do cliente.
@@ -12,12 +13,17 @@ import { PartnerRepository } from '../repositories/partner.repository';
  *  em memoria, e o documento que a analise de credito lia. */
 @Injectable()
 export class PartnerService {
-  constructor(private readonly repository: PartnerRepository) {}
+  constructor(
+    private readonly repository: PartnerRepository,
+    private readonly fornecedores: FornecedorRepository,
+  ) {}
 
-  createSupplier(context: TenantContext, input: SupplierInput): Supplier {
+  /** Rota antiga (catalog/partners/suppliers): grava no mesmo cadastro de
+   *  fornecedores da tela, com o próximo código. */
+  createSupplier(context: TenantContext, input: SupplierInput): Promise<Supplier> {
     const now = new Date().toISOString();
     const actor = this.actor(context);
-    return this.repository.saveSupplier({
+    return this.fornecedores.criar({
       ...input,
       id: randomUUID() as Supplier['id'],
       tenantId: context.tenantId as Supplier['tenantId'],
@@ -30,18 +36,19 @@ export class PartnerService {
     });
   }
 
-  getSupplier(tenantId: string, supplierId: string) {
-    const supplier = this.repository.findSupplier(tenantId, supplierId);
+  async getSupplier(tenantId: string, supplierId: string): Promise<Supplier> {
+    const supplier = await this.fornecedores.buscar(tenantId, supplierId);
     if (!supplier) throw new NotFoundException('Fornecedor nao encontrado');
     return supplier;
   }
 
-  searchSuppliers(tenantId: string, term: string, limit = 50, cursor?: string) {
-    return this.repository.searchSuppliers(tenantId, term, limit, cursor);
+  async searchSuppliers(tenantId: string, term: string, limit = 50) {
+    const items = await this.fornecedores.procurar(tenantId, term, limit);
+    return { items, nextCursor: null, hasMore: false };
   }
 
-  listSuppliers(tenantId: string) {
-    return this.repository.listSuppliers(tenantId);
+  listSuppliers(tenantId: string): Promise<Supplier[]> {
+    return this.fornecedores.todos(tenantId);
   }
 
   /** Atendimento registrado do cliente (ligacao, visita, ocorrencia). Hoje so a

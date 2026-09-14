@@ -24,6 +24,6 @@ import { ReceivingService } from './services/receiving.service';
     ReceivingService,
     NfeXmlParserService,
   ],
-  exports: [PurchaseOrderService, ReceivingService],
+  exports: [PurchaseOrderService, ReceivingService, PurchaseOrderRepository],
 })
 export class PurchasingModule {}

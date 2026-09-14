@@ -28,7 +28,7 @@ export class PartnerController {
     @Query('q') query = '',
     @Query(new ZodValidationPipe(paginationDtoSchema)) page: PaginationDto,
   ) {
-    return this.service.searchSuppliers(tenant.tenantId, query, page.limit, page.cursor);
+    return this.service.searchSuppliers(tenant.tenantId, query, page.limit);
   }
   @Get('customers/:id/history')
   @RequirePermission('cliente.gerenciar')

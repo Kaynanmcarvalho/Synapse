@@ -1,3 +1,6 @@
+import type { Firestore } from '@synapse/firebase/admin';
+import { FakeFirestore } from '../../../../test/fake-firestore';
+import { FornecedorRepository } from '../repositories/fornecedor.repository';
 import { PartnerRepository } from '../repositories/partner.repository';
 import { PartnerService } from './partner.service';
 
@@ -23,15 +26,22 @@ const fornecedor = {
 };
 
 describe('PartnerService', () => {
-  it('cadastra e acha fornecedor', () => {
-    const service = new PartnerService(new PartnerRepository());
-    const criado = service.createSupplier(context, fornecedor);
-    expect(service.searchSuppliers('tenant', 'norte').items).toHaveLength(1);
-    expect(service.getSupplier('tenant', criado.id).tradeName).toBe('Norte');
+  it('cadastra e acha fornecedor', async () => {
+    const service = new PartnerService(
+      new PartnerRepository(),
+      new FornecedorRepository(new FakeFirestore() as unknown as Firestore),
+    );
+    const criado = await service.createSupplier(context, fornecedor);
+    expect((await service.searchSuppliers('tenant', 'norte')).items).toHaveLength(1);
+    expect((await service.getSupplier('tenant', criado.id)).tradeName).toBe('Norte');
+    expect(criado.codigo).toBe(1);
   });
 
   it('historico de atendimento guarda o que foi registrado', () => {
-    const service = new PartnerService(new PartnerRepository());
+    const service = new PartnerService(
+      new PartnerRepository(),
+      new FornecedorRepository(new FakeFirestore() as unknown as Firestore),
+    );
     service.addHistory('cliente-1', {
       kind: 'ORDER',
       referenceId: 'order',

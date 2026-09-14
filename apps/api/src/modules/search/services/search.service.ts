@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { Permission } from '@synapse/types';
 import { ProductRepository } from '../../catalog/repositories/product.repository';
-import { PartnerRepository } from '../../catalog/repositories/partner.repository';
+import { FornecedorRepository } from '../../catalog/repositories/fornecedor.repository';
 import { ClienteService } from '../../catalog/services/cliente.service';
 import { OrderRepository } from '../../sales/repositories/order.repository';
 import { FiscalRepository } from '../../fiscal/repositories/fiscal.repository';
@@ -29,7 +29,7 @@ export interface GlobalSearchResult {
 export class SearchService {
   constructor(
     private readonly products: ProductRepository,
-    private readonly partners: PartnerRepository,
+    private readonly fornecedores: FornecedorRepository,
     private readonly clientes: ClienteService,
     private readonly orders: OrderRepository,
     private readonly fiscal: FiscalRepository,
@@ -48,7 +48,8 @@ export class SearchService {
       items.push(...(await this.searchProducts(context, query, limit)));
     if (allowed('cliente.gerenciar'))
       items.push(...(await this.searchCustomers(context, query, limit)));
-    if (allowed('fornecedor.gerenciar')) items.push(...this.searchSuppliers(context, query, limit));
+    if (allowed('fornecedor.gerenciar'))
+      items.push(...(await this.searchSuppliers(context, query, limit)));
     if (allowed('venda.criar'))
       items.push(...this.searchOrders(context, query, limit, branchAllowed));
     if (allowed('fiscal.visualizar'))
@@ -93,17 +94,17 @@ export class SearchService {
     }));
   }
 
-  private searchSuppliers(
+  private async searchSuppliers(
     context: TenantContext,
     query: string,
     limit: number,
-  ): SearchResultItem[] {
-    return this.partners.supplierIndex.search(context.tenantId, query, limit).map((s) => ({
+  ): Promise<SearchResultItem[]> {
+    return (await this.fornecedores.procurar(context.tenantId, query, limit)).map((s) => ({
       type: 'supplier' as const,
       id: s.id,
-      title: s.tradeName,
+      title: s.codigo ? `${s.codigo} · ${s.tradeName}` : s.tradeName,
       subtitle: s.taxId,
-      path: '/compras',
+      path: '/cadastros/fornecedores',
     }));
   }
 

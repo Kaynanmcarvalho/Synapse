@@ -1,3 +1,4 @@
+import { FornecedorRepository } from '../../catalog/repositories/fornecedor.repository';
 import type { Firestore } from '@synapse/firebase/admin';
 import { FakeFirestore } from '../../../../test/fake-firestore';
 import { NotFoundException } from '@nestjs/common';
@@ -143,13 +144,16 @@ function buildService(repository: FakeStockIntelligenceRepository) {
   const productRepository = new ProductRepository(new FakeFirestore() as unknown as Firestore);
   const partnerRepository = new PartnerRepository();
   const products = new ProductService(productRepository);
-  const partners = new PartnerService(partnerRepository);
+  const fornecedorRepository = new FornecedorRepository(
+    new FakeFirestore() as unknown as Firestore,
+  );
+  const partners = new PartnerService(partnerRepository, fornecedorRepository);
   const service = new StockIntelligenceService(
     repository as unknown as StockIntelligenceRepository,
     products,
     partners,
   );
-  return { service, productRepository, partnerRepository };
+  return { service, productRepository, fornecedorRepository };
 }
 
 describe('StockIntelligenceService.recalculate', () => {
@@ -198,7 +202,7 @@ describe('StockIntelligenceService.recalculate', () => {
 
   it('usa o averageLeadDays do fornecedor do produto quando ele existe', async () => {
     const repository = new FakeStockIntelligenceRepository();
-    const { service, productRepository, partnerRepository } = buildService(repository);
+    const { service, productRepository, fornecedorRepository } = buildService(repository);
 
     const supplier = {
       id: 'supplier-1',
@@ -209,7 +213,7 @@ describe('StockIntelligenceService.recalculate', () => {
       contacts: [],
       averageLeadDays: 12,
     } as unknown as Supplier;
-    partnerRepository.saveSupplier(supplier);
+    await fornecedorRepository.criar(supplier);
     await productRepository.save({
       ...productInput('C', 50, 20),
       tenantId: tenant.tenantId,

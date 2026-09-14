@@ -8,6 +8,7 @@ import type {
   TenantId,
   UserId,
 } from '../common';
+import type { FichaDoFornecedor } from '../cadastros/fornecedor';
 import type { FichaDoCliente } from './cliente';
 
 export * from './cliente';
@@ -118,7 +119,9 @@ export interface Customer extends AuditStamp, FichaDoCliente {
   readonly financialStatus: FinancialStatus;
   readonly active: boolean;
 }
-export interface Supplier extends AuditStamp {
+/** O fornecedor do tenant. `FichaDoFornecedor` traz a ficha completa do cadastro —
+ *  opcional, porque fornecedor gravado antes daquela tela continua valendo. */
+export interface Supplier extends AuditStamp, FichaDoFornecedor {
   readonly id: SupplierId;
   readonly tenantId: TenantId;
   readonly taxId: string;

@@ -49,7 +49,7 @@ export class ReceivingService {
     const parsed = this.xmlParser.parse(input.xml);
     const order = await this.getOrder(context, orderId);
     const supplier = order.supplierId
-      ? this.partners.getSupplier(context.tenantId, order.supplierId)
+      ? await this.partners.getSupplier(context.tenantId, order.supplierId)
       : null;
     if (supplier && this.onlyDigits(supplier.taxId) !== this.onlyDigits(parsed.issuerTaxId)) {
       throw new BadRequestException(

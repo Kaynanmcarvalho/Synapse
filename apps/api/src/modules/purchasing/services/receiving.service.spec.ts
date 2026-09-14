@@ -1,3 +1,4 @@
+import { FornecedorRepository } from '../../catalog/repositories/fornecedor.repository';
 import type { Firestore } from '@synapse/firebase/admin';
 import { FakeFirestore } from '../../../../test/fake-firestore';
 import { BadRequestException } from '@nestjs/common';
@@ -128,7 +129,10 @@ function buildService() {
   const productRepository = new ProductRepository(new FakeFirestore() as unknown as Firestore);
   const products = new ProductService(productRepository);
   const partnerRepository = new PartnerRepository();
-  const partners = new PartnerService(partnerRepository);
+  const fornecedorRepository = new FornecedorRepository(
+    new FakeFirestore() as unknown as Firestore,
+  );
+  const partners = new PartnerService(partnerRepository, fornecedorRepository);
   const tituloRepository = {
     create: jest.fn((_t: string, titulo: Titulo) => Promise.resolve(titulo)),
   };
@@ -152,6 +156,7 @@ function buildService() {
     inventory,
     productRepository,
     partnerRepository,
+    fornecedorRepository,
     tituloRepository,
   };
 }
@@ -174,11 +179,17 @@ const supplierFixture = (id: string): Supplier =>
 
 describe('ReceivingService.receiveManual', () => {
   it('aplica o movimento de estoque, atualiza o custo médio e gera o título a pagar', async () => {
-    const { service, purchaseOrders, receivings, inventory, productRepository, partnerRepository } =
-      buildService();
+    const {
+      service,
+      purchaseOrders,
+      receivings,
+      inventory,
+      productRepository,
+      fornecedorRepository,
+    } = buildService();
 
     await productRepository.save(productFixture('produto-a', 100, 10)); // custo em centavos: 10
-    partnerRepository.saveSupplier(supplierFixture('fornecedor-1'));
+    await fornecedorRepository.criar(supplierFixture('fornecedor-1'));
     receivings.balances.set('matriz_wh1_produto-a', {
       productId: 'produto-a',
       branchId: 'matriz',
@@ -270,8 +281,11 @@ describe('ReceivingService.receiveManual', () => {
 
 describe('ReceivingService.receiveFromXml', () => {
   it('rejeita quando o CNPJ do emitente não bate com o fornecedor do pedido', async () => {
-    const { service, purchaseOrders, partnerRepository } = buildService();
-    partnerRepository.saveSupplier({ ...supplierFixture('fornecedor-1'), taxId: '99999999000199' });
+    const { service, purchaseOrders, fornecedorRepository } = buildService();
+    await fornecedorRepository.criar({
+      ...supplierFixture('fornecedor-1'),
+      taxId: '99999999000199',
+    });
 
     let order = criarRascunho({
       tenantId: tenant.tenantId as never,
@@ -299,8 +313,8 @@ describe('ReceivingService.receiveFromXml', () => {
   });
 
   it('rejeita item da NF-e que não está no pedido', async () => {
-    const { service, purchaseOrders, partnerRepository } = buildService();
-    partnerRepository.saveSupplier(supplierFixture('fornecedor-1'));
+    const { service, purchaseOrders, fornecedorRepository } = buildService();
+    await fornecedorRepository.criar(supplierFixture('fornecedor-1'));
 
     let order = criarRascunho({
       tenantId: tenant.tenantId as never,

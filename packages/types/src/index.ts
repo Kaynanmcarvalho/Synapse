@@ -4,6 +4,7 @@ export * from './tenant';
 export * from './iam';
 export * from './config';
 export * from './catalog';
+export * from './cadastros';
 export * from './inventory';
 export * from './sales';
 export * from './fiscal';

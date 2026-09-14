@@ -8,3 +8,7 @@ export * from './cliente.schema';
 export * from './partner.schema';
 export * from './pricing.schema';
 export * from './lot.schema';
+export * from './cadastro-comum.schema';
+export * from './tabela.schema';
+export * from './fornecedor.schema';
+export * from './funcionario.schema';

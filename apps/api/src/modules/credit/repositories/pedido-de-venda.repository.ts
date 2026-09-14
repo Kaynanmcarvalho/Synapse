@@ -308,6 +308,20 @@ export class PedidoDeVendaRepository {
     return resultados.flatMap((resultado) => this.dados(resultado));
   }
 
+  /** Pedidos de um vendedor: pelo funcionário (Ponto de Vendas, PDV) ou pelo
+   *  login (app do vendedor, desktop). */
+  async doVendedor(
+    tenantId: string,
+    campo: 'funcionarioId' | 'vendedorId',
+    valor: string,
+    desde: string | null,
+    limite: number,
+  ): Promise<PedidoDeVenda[]> {
+    let consulta = this.colecao(tenantId).where(campo, '==', valor);
+    if (desde) consulta = consulta.where('enviadoEm', '>=', desde);
+    return this.dados(await consulta.orderBy('enviadoEm', 'desc').limit(limite).get());
+  }
+
   async doCliente(tenantId: string, customerId: string, limite: number): Promise<PedidoDeVenda[]> {
     return this.dados(
       await this.colecao(tenantId)

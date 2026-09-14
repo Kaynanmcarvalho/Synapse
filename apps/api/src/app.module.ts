@@ -25,6 +25,8 @@ import { SearchModule } from './modules/search/search.module';
 import { PlatformModule } from './modules/platform/platform.module';
 import { FieldSalesModule } from './modules/field-sales/field-sales.module';
 import { CreditModule } from './modules/credit/credit.module';
+import { CadastrosBaseModule } from './modules/cadastros/cadastros-base.module';
+import { CadastrosModule } from './modules/cadastros/cadastros.module';
 
 @Module({
   imports: [
@@ -61,6 +63,8 @@ import { CreditModule } from './modules/credit/credit.module';
     PlatformModule,
     FieldSalesModule,
     CreditModule,
+    CadastrosBaseModule,
+    CadastrosModule,
   ],
 })
 export class AppModule {}

@@ -1,3 +1,6 @@
+import type { Firestore } from '@synapse/firebase/admin';
+import { FakeFirestore } from '../../../../test/fake-firestore';
+import { FornecedorRepository } from '../../catalog/repositories/fornecedor.repository';
 import type { Customer } from '@synapse/types';
 import { PartnerRepository } from '../../catalog/repositories/partner.repository';
 import type { ClienteService } from '../../catalog/services/cliente.service';
@@ -68,7 +71,10 @@ const setup = (extra: Partial<Customer> = {}) => {
       return Promise.resolve(guardado.atual);
     }),
   };
-  const partners = new PartnerService(new PartnerRepository());
+  const partners = new PartnerService(
+    new PartnerRepository(),
+    new FornecedorRepository(new FakeFirestore() as unknown as Firestore),
+  );
   const service = new DataSubjectService(
     new ConsentRepository(),
     partners,

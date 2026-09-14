@@ -48,6 +48,12 @@ export class PurchaseOrderRepository {
     return snapshot.docs.map((document: QueryDocumentSnapshot) => document.data() as PurchaseOrder);
   }
 
+  /** Todos os pedidos de um fornecedor, para a aba Documentos da ficha. */
+  async listBySupplier(tenantId: string, supplierId: string): Promise<PurchaseOrder[]> {
+    const snapshot = await this.collection(tenantId).where('supplierId', '==', supplierId).get();
+    return snapshot.docs.map((document: QueryDocumentSnapshot) => document.data() as PurchaseOrder);
+  }
+
   /** Todos os pedidos já recebidos (ao menos uma vez) de um fornecedor, para
    *  o histórico de preço por produto (§40) — não filtra por status porque
    *  um RECEBIDO_PARCIAL já tem preço real pago, não só cotado. */

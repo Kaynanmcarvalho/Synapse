@@ -121,6 +121,11 @@ export interface PedidoDeVenda {
   /** O representante comercial — dono da venda e da comissao. */
   readonly vendedorId: UserId | null;
   readonly vendedorNome: string;
+  /** O funcionário vendedor (Cadastro de Funcionários), quando o pedido veio do
+   *  Ponto de Vendas ou do PDV. Pedido do app do vendedor guarda só o login. */
+  readonly funcionarioId?: string | null;
+  /** Código do funcionário vendedor, como sai na impressão: "15 - RENIER". */
+  readonly vendedorCodigo?: number | null;
   /** O usuario que digitou o pedido (caixa do balcao, backoffice). Pode ser o
    *  proprio vendedor, mas nao e a mesma coisa. Pedido anterior a este campo
    *  guarda a mesma informacao no evento LANCADO do historico. */

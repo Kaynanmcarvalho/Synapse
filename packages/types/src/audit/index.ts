@@ -8,7 +8,10 @@ export type AuditedDomain =
   | 'SUPPLIER'
   | 'PRODUCT'
   | 'BRANCH'
-  | 'CONFIG';
+  | 'CONFIG'
+  | 'EMPLOYEE'
+  | 'SALES'
+  | 'LOOKUP';
 export interface AuditLog {
   readonly id: string;
   readonly tenantId: string;
