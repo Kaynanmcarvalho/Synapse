@@ -29,9 +29,9 @@ export class PlatformOnboardingService {
   async getStatus(context: TenantContext): Promise<OnboardingStatus> {
     const platformStatus = await this.repository.getStatus(context.tenantId);
     const config = await this.fiscalConfig.get(context.tenantId);
-    const branches = this.branches.list(context);
+    const branches = await this.branches.list(context);
     const hasStock = await this.stockIntelligence.hasAnyStock(context.tenantId);
-    const productPage = this.products.search(context, {}, 1);
+    const productPage = await this.products.search(context, {}, 1);
     const members = await this.memberships.listByTenant(context.tenantId);
 
     const steps = this.buildSteps({

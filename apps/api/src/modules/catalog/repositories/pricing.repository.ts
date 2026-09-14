@@ -1,61 +1,112 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import type { Firestore, QueryDocumentSnapshot } from '@synapse/firebase/admin';
 import type { PriceTableEntry, PromotionEntry } from '@synapse/types';
+import { FIREBASE_FIRESTORE } from '../../iam/firebase.tokens';
 
+/** As regras de preco do §6 no Firestore, sob o tenant:
+ *
+ *  - `precosPorFilial/{produto}_{filial}` e `precosPorCliente/{produto}_{cliente}`;
+ *  - `tabelasDePreco/{id}` e `promocoes/{id}`, consultadas por produto;
+ *  - `limitesDeDesconto/{vendedor}`.
+ *
+ *  Antes era memoria da API: reiniciar zerava o limite de desconto de todo
+ *  vendedor e apagava as tabelas de preco. */
 @Injectable()
 export class PricingRepository {
-  private readonly branchPrices = new Map<string, number>();
-  private readonly customerPrices = new Map<string, number>();
-  private readonly priceTables = new Map<string, PriceTableEntry[]>();
-  private readonly promotions = new Map<string, PromotionEntry[]>();
-  private readonly sellerDiscountLimits = new Map<string, number>();
+  constructor(@Inject(FIREBASE_FIRESTORE) private readonly db: Firestore) {}
 
-  setBranchPrice(tenantId: string, productId: string, branchId: string, price: number): void {
-    this.branchPrices.set(`${tenantId}:${productId}:${branchId}`, price);
+  private doc(tenantId: string, collection: string, id: string) {
+    return this.db.doc(`tenants/${tenantId}/${collection}/${id}`);
   }
 
-  getBranchPrice(tenantId: string, productId: string, branchId: string): number | undefined {
-    return this.branchPrices.get(`${tenantId}:${productId}:${branchId}`);
+  private async readNumber(
+    tenantId: string,
+    collection: string,
+    id: string,
+    field: string,
+  ): Promise<number | undefined> {
+    const snapshot = await this.doc(tenantId, collection, id).get();
+    const value = snapshot.exists ? snapshot.data()?.[field] : undefined;
+    return typeof value === 'number' ? value : undefined;
   }
 
-  setCustomerPrice(tenantId: string, productId: string, customerId: string, price: number): void {
-    this.customerPrices.set(`${tenantId}:${productId}:${customerId}`, price);
+  async setBranchPrice(
+    tenantId: string,
+    productId: string,
+    branchId: string,
+    price: number,
+  ): Promise<void> {
+    await this.doc(tenantId, 'precosPorFilial', `${productId}_${branchId}`).set({
+      productId,
+      branchId,
+      price,
+      updatedAt: new Date().toISOString(),
+    });
   }
 
-  getCustomerPrice(tenantId: string, productId: string, customerId: string): number | undefined {
-    return this.customerPrices.get(`${tenantId}:${productId}:${customerId}`);
+  getBranchPrice(tenantId: string, productId: string, branchId: string) {
+    return this.readNumber(tenantId, 'precosPorFilial', `${productId}_${branchId}`, 'price');
   }
 
-  addPriceTableEntry(entry: PriceTableEntry): PriceTableEntry {
-    const key = `${entry.tenantId}:${entry.productId}`;
-    const entries = this.priceTables.get(key) ?? [];
-    entries.push(entry);
-    this.priceTables.set(key, entries);
+  async setCustomerPrice(
+    tenantId: string,
+    productId: string,
+    customerId: string,
+    price: number,
+  ): Promise<void> {
+    await this.doc(tenantId, 'precosPorCliente', `${productId}_${customerId}`).set({
+      productId,
+      customerId,
+      price,
+      updatedAt: new Date().toISOString(),
+    });
+  }
+
+  getCustomerPrice(tenantId: string, productId: string, customerId: string) {
+    return this.readNumber(tenantId, 'precosPorCliente', `${productId}_${customerId}`, 'price');
+  }
+
+  async addPriceTableEntry(entry: PriceTableEntry): Promise<PriceTableEntry> {
+    await this.doc(entry.tenantId, 'tabelasDePreco', entry.id).set(entry);
     return entry;
   }
 
-  listPriceTableEntries(tenantId: string, productId: string): PriceTableEntry[] {
-    return this.priceTables.get(`${tenantId}:${productId}`) ?? [];
+  async listPriceTableEntries(tenantId: string, productId: string): Promise<PriceTableEntry[]> {
+    const snapshot = await this.db
+      .collection(`tenants/${tenantId}/tabelasDePreco`)
+      .where('productId', '==', productId)
+      .get();
+    return snapshot.docs.map((doc: QueryDocumentSnapshot) => doc.data() as PriceTableEntry);
   }
 
-  addPromotion(entry: PromotionEntry): PromotionEntry {
-    const key = `${entry.tenantId}:${entry.productId}`;
-    const entries = this.promotions.get(key) ?? [];
-    entries.push(entry);
-    this.promotions.set(key, entries);
+  async addPromotion(entry: PromotionEntry): Promise<PromotionEntry> {
+    await this.doc(entry.tenantId, 'promocoes', entry.id).set(entry);
     return entry;
   }
 
-  listPromotions(tenantId: string, productId: string): PromotionEntry[] {
-    return this.promotions.get(`${tenantId}:${productId}`) ?? [];
+  async listPromotions(tenantId: string, productId: string): Promise<PromotionEntry[]> {
+    const snapshot = await this.db
+      .collection(`tenants/${tenantId}/promocoes`)
+      .where('productId', '==', productId)
+      .get();
+    return snapshot.docs.map((doc: QueryDocumentSnapshot) => doc.data() as PromotionEntry);
   }
 
-  setSellerDiscountLimit(tenantId: string, sellerId: string, limitPercent: number): void {
-    this.sellerDiscountLimits.set(`${tenantId}:${sellerId}`, limitPercent);
+  async setSellerDiscountLimit(
+    tenantId: string,
+    sellerId: string,
+    limitPercent: number,
+  ): Promise<void> {
+    await this.doc(tenantId, 'limitesDeDesconto', sellerId).set({
+      sellerId,
+      limitPercent,
+      updatedAt: new Date().toISOString(),
+    });
   }
 
   /** Sem limite configurado, o vendedor nao tem autonomia nenhuma — todo
    *  desconto negociado exige aprovacao (§6: "limite por vendedor"). */
-  getSellerDiscountLimit(tenantId: string, sellerId: string): number {
-    return this.sellerDiscountLimits.get(`${tenantId}:${sellerId}`) ?? 0;
+  async getSellerDiscountLimit(tenantId: string, sellerId: string): Promise<number> {
+    return (await this.readNumber(tenantId, 'limitesDeDesconto', sellerId, 'limitPercent')) ?? 0;
   }
 }

@@ -1,28 +1,41 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import type { Firestore, QueryDocumentSnapshot } from '@synapse/firebase/admin';
 import type { Branch } from '@synapse/types';
+import { FIREBASE_FIRESTORE } from '../firebase.tokens';
 
+/** Filiais em `tenants/{t}/branches/{id}`. Antes era memoria: reiniciar a API
+ *  apagava as filiais, e o PDV ficava sem onde abrir o caixa. */
 @Injectable()
 export class BranchRepository {
-  private readonly branches = new Map<string, Branch>();
+  constructor(@Inject(FIREBASE_FIRESTORE) private readonly db: Firestore) {}
 
-  private key(tenantId: string, id: string): string {
-    return `${tenantId}:${id}`;
+  private collection(tenantId: string) {
+    return this.db.collection(`tenants/${tenantId}/branches`);
   }
 
-  save(branch: Branch): Branch {
-    this.branches.set(this.key(branch.tenantId, branch.id), branch);
+  async save(branch: Branch): Promise<Branch> {
+    await this.collection(branch.tenantId).doc(branch.id).set(branch);
     return branch;
   }
 
-  findById(tenantId: string, id: string): Branch | undefined {
-    return this.branches.get(this.key(tenantId, id));
+  async findById(tenantId: string, id: string): Promise<Branch | undefined> {
+    const snapshot = await this.collection(tenantId).doc(id).get();
+    return snapshot.exists ? (snapshot.data() as Branch) : undefined;
   }
 
-  listByTenant(tenantId: string): Branch[] {
-    return [...this.branches.values()].filter((branch) => branch.tenantId === tenantId);
+  /** Matriz primeiro, depois as filiais na ordem em que foram criadas. */
+  async listByTenant(tenantId: string): Promise<Branch[]> {
+    const snapshot = await this.collection(tenantId).get();
+    return snapshot.docs
+      .map((doc: QueryDocumentSnapshot) => doc.data() as Branch)
+      .sort(
+        (a, b) =>
+          Number(b.isHeadquarters) - Number(a.isHeadquarters) ||
+          (a.createdAt ?? '').localeCompare(b.createdAt ?? ''),
+      );
   }
 
-  delete(tenantId: string, id: string): void {
-    this.branches.delete(this.key(tenantId, id));
+  async delete(tenantId: string, id: string): Promise<void> {
+    await this.collection(tenantId).doc(id).delete();
   }
 }

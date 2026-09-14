@@ -45,11 +45,18 @@ describe('Venda -> NFC-e -> recebimento', () => {
       resolve: () => new MockFiscalProvider(),
     } as unknown as FiscalProviderRegistry);
     const cashRepository = new CashSessionRepository();
-    const products = new ProductRepository();
-    products.save({ id: 'product', tenantId: 'tenant', pricing: { salePrice: 150 } } as Product);
+    const products = new ProductRepository(new FakeFirestore() as unknown as Firestore);
+    await products.save({
+      id: 'product',
+      tenantId: 'tenant',
+      pricing: { salePrice: 150 },
+    } as Product);
     // salePrice e em reais: o PricingService converte para centavos (x100).
-    const pricing = new PricingService(new PricingRepository(), products);
-    pricing.setSellerDiscountLimit(context, context.userId, 1_000);
+    const pricing = new PricingService(
+      new PricingRepository(new FakeFirestore() as unknown as Firestore),
+      products,
+    );
+    await pricing.setSellerDiscountLimit(context, context.userId, 1_000);
     const pos = new PosService(cashRepository, pricing);
     const cash = pos.openCash(context, 'branch', 2_000);
 

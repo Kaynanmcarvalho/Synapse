@@ -39,13 +39,14 @@ export class PricingService {
   ) {}
 
   /** Catálogo em reais; vendas em centavos e quantidades em milésimos. */
-  priceSaleItems(
+  async priceSaleItems(
     tenant: TenantContext,
     branchId: string,
     customerId: string | null,
     items: readonly PosItem[],
-  ): PosItem[] {
-    return items.map((item) => {
+  ): Promise<PosItem[]> {
+    const priced: PosItem[] = [];
+    for (const item of items) {
       if (
         !Number.isSafeInteger(item.quantity) ||
         item.quantity <= 0 ||
@@ -56,7 +57,7 @@ export class PricingService {
       ) {
         throw new BadRequestException('Quantidade, desconto ou acréscimo inválido');
       }
-      const result = this.resolvePrice(tenant, {
+      const result = await this.resolvePrice(tenant, {
         productId: item.productId,
         branchId,
         quantity: item.quantity / 1000,
@@ -66,11 +67,15 @@ export class PricingService {
       const unitPrice = Math.round(result.price * 100);
       const total = Math.round((item.quantity * unitPrice) / 1000) - item.discount + item.surcharge;
       if (total < 0) throw new BadRequestException('Desconto excede o valor do item');
-      return { ...item, unitPrice, total };
-    });
+      priced.push({ ...item, unitPrice, total });
+    }
+    return priced;
   }
 
-  createPriceTableEntry(tenant: TenantContext, input: CreatePriceTableEntryInput): PriceTableEntry {
+  createPriceTableEntry(
+    tenant: TenantContext,
+    input: CreatePriceTableEntryInput,
+  ): Promise<PriceTableEntry> {
     const entry: PriceTableEntry = {
       id: asPriceTableId(randomUUID()),
       tenantId: tenant.tenantId as PriceTableEntry['tenantId'],
@@ -88,8 +93,13 @@ export class PricingService {
     return this.repository.addPriceTableEntry(entry);
   }
 
-  setBranchPrice(tenant: TenantContext, productId: string, branchId: string, price: number): void {
-    this.repository.setBranchPrice(tenant.tenantId, productId, branchId, price);
+  setBranchPrice(
+    tenant: TenantContext,
+    productId: string,
+    branchId: string,
+    price: number,
+  ): Promise<void> {
+    return this.repository.setBranchPrice(tenant.tenantId, productId, branchId, price);
   }
 
   setCustomerPrice(
@@ -97,26 +107,33 @@ export class PricingService {
     productId: string,
     customerId: string,
     price: number,
-  ): void {
-    this.repository.setCustomerPrice(tenant.tenantId, productId, customerId, price);
+  ): Promise<void> {
+    return this.repository.setCustomerPrice(tenant.tenantId, productId, customerId, price);
   }
 
-  setSellerDiscountLimit(tenant: TenantContext, sellerId: string, limitPercent: number): void {
-    this.repository.setSellerDiscountLimit(tenant.tenantId, sellerId, limitPercent);
+  setSellerDiscountLimit(
+    tenant: TenantContext,
+    sellerId: string,
+    limitPercent: number,
+  ): Promise<void> {
+    return this.repository.setSellerDiscountLimit(tenant.tenantId, sellerId, limitPercent);
   }
 
   /** §27/§1 "o desconto máximo é validado no backend": quem decide o limite
    *  de um vendedor é este método, nunca um valor que chegou no corpo da
    *  requisição — usado por `OrderService.quote` pra não confiar no cliente. */
-  getSellerDiscountLimit(tenant: TenantContext, sellerId: string): number {
+  getSellerDiscountLimit(tenant: TenantContext, sellerId: string): Promise<number> {
     return this.repository.getSellerDiscountLimit(tenant.tenantId, sellerId);
   }
 
   /** Percorre os seis niveis do §6, da base para o topo. Cada nivel presente
    *  sobrescreve o anterior; o resultado guarda de qual nivel o preco final
    *  veio, para a UI explicar ("este preco vem da tabela Atacado GO"). */
-  resolvePrice(tenant: TenantContext, input: ResolvePriceInput): PriceResolutionResult {
-    const product = this.products.findById(tenant.tenantId, input.productId);
+  async resolvePrice(
+    tenant: TenantContext,
+    input: ResolvePriceInput,
+  ): Promise<PriceResolutionResult> {
+    const product = await this.products.findById(tenant.tenantId, input.productId);
     if (!product) throw new NotFoundException('Produto nao encontrado');
 
     const at = input.at ?? today();
@@ -125,7 +142,7 @@ export class PricingService {
     let appliedRuleId: string | null = null;
 
     if (input.branchId) {
-      const branchPrice = this.repository.getBranchPrice(
+      const branchPrice = await this.repository.getBranchPrice(
         tenant.tenantId,
         input.productId,
         input.branchId,
@@ -136,7 +153,7 @@ export class PricingService {
       }
     }
 
-    const tableEntry = this.bestPriceTableEntry(tenant.tenantId, input, at);
+    const tableEntry = await this.bestPriceTableEntry(tenant.tenantId, input, at);
     if (tableEntry) {
       price = tableEntry.price;
       source = 'TABELA_PRECO';
@@ -144,7 +161,7 @@ export class PricingService {
     }
 
     if (input.customerId) {
-      const customerPrice = this.repository.getCustomerPrice(
+      const customerPrice = await this.repository.getCustomerPrice(
         tenant.tenantId,
         input.productId,
         input.customerId,
@@ -156,13 +173,11 @@ export class PricingService {
       }
     }
 
-    const promotion = this.repository
-      .listPromotions(tenant.tenantId, input.productId)
-      .find(
-        (promo) =>
-          (!promo.branchId || promo.branchId === input.branchId) &&
-          isWithinVigencia(at, promo.startsAt, promo.endsAt),
-      );
+    const promotion = (await this.repository.listPromotions(tenant.tenantId, input.productId)).find(
+      (promo) =>
+        (!promo.branchId || promo.branchId === input.branchId) &&
+        isWithinVigencia(at, promo.startsAt, promo.endsAt),
+    );
     if (promotion) {
       price = promotion.price;
       source = 'PROMOCAO';
@@ -173,7 +188,7 @@ export class PricingService {
     if (input.negotiatedPrice != null) {
       const sellerId = input.sellerId ?? tenant.userId;
       const discountPercent = price === 0 ? 0 : ((price - input.negotiatedPrice) / price) * 100;
-      const limit = this.repository.getSellerDiscountLimit(tenant.tenantId, sellerId);
+      const limit = await this.repository.getSellerDiscountLimit(tenant.tenantId, sellerId);
       if (discountPercent <= limit) {
         price = input.negotiatedPrice;
         source = 'NEGOCIACAO_AUTORIZADA';
@@ -186,13 +201,12 @@ export class PricingService {
     return { price, source, requiresApproval, appliedRuleId };
   }
 
-  private bestPriceTableEntry(
+  private async bestPriceTableEntry(
     tenantId: string,
     input: ResolvePriceInput,
     at: string,
-  ): PriceTableEntry | null {
-    const candidates = this.repository
-      .listPriceTableEntries(tenantId, input.productId)
+  ): Promise<PriceTableEntry | null> {
+    const candidates = (await this.repository.listPriceTableEntries(tenantId, input.productId))
       .filter((entry) => isWithinVigencia(at, entry.startsAt, entry.endsAt))
       .filter((entry) => entry.minQuantity == null || input.quantity >= entry.minQuantity)
       .map((entry) => ({ entry, score: specificity(entry, input) }))

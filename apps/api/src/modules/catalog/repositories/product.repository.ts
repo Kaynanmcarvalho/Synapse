@@ -1,6 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import type { Firestore, QueryDocumentSnapshot } from '@synapse/firebase/admin';
 import type { Page, Product } from '@synapse/types';
-import { TenantSearchIndex } from '../../../common/search/tenant-search-index';
+import { searchTerms, searchTokens } from '../../../common/search/search-tokens';
+import { FIREBASE_FIRESTORE } from '../../iam/firebase.tokens';
 
 export interface ProductSearchFilter {
   readonly q?: string;
@@ -8,103 +10,156 @@ export interface ProductSearchFilter {
   readonly categoryId?: string;
 }
 
-/** Em memoria, na mesma linha de PartnerRepository — troca por Firestore
- *  quando o volume real (100 mil+ produtos, §5) exigir consulta indexada.
- *  O contrato de paginacao por cursor ja fica pronto para essa troca. */
+/** Quantos documentos a busca por texto le antes de filtrar status e categoria
+ *  em memoria: o Firestore nao combina `array-contains` com outros filtros sem
+ *  indice composto para cada combinacao. */
+const LEITURA_DA_BUSCA = 300;
+
+type ProdutoGravado = Product & { readonly searchTokens?: readonly string[] };
+
+/** O que o balcao digita para achar o produto: nome, SKU, codigo interno,
+ *  codigo de barras, marca e descricao curta. */
+const textoDeBusca = (product: Product): string =>
+  [
+    product.name,
+    product.sku,
+    product.internalCode ?? '',
+    product.ean ?? '',
+    product.brand ?? '',
+    product.shortDescription ?? '',
+  ].join(' ');
+
+const doGravado = (dados: unknown): Product => {
+  const { searchTokens: _tokens, ...product } = dados as ProdutoGravado;
+  return product;
+};
+
+/** O catalogo de produtos em `tenants/{t}/products/{id}`.
+ *
+ *  Antes ficava num `Map` em memoria: reiniciar a API apagava o catalogo, e o
+ *  PDV vendia produto que nao existia mais. Agora a tela de produtos, o PDV, o
+ *  Ponto de Vendas, a busca global, as compras e a inteligencia de estoque leem
+ *  deste mesmo documento. */
 @Injectable()
 export class ProductRepository {
-  readonly searchIndex = new TenantSearchIndex<Product>();
-  private readonly products = new Map<string, Product>();
-  /** Ordem de insercao, por tenant — e o que o cursor de paginacao anda. */
-  private readonly order = new Map<string, string[]>();
+  constructor(@Inject(FIREBASE_FIRESTORE) private readonly db: Firestore) {}
 
-  private key(tenantId: string, id: string): string {
-    return `${tenantId}:${id}`;
+  private collection(tenantId: string) {
+    return this.db.collection(`tenants/${tenantId}/products`);
   }
 
-  save(product: Product): Product {
-    this.searchIndex.put(product, `${product.name} ${product.sku} ${product.ean ?? ''}`);
-    const key = this.key(product.tenantId, product.id);
-    if (!this.products.has(key)) {
-      const ids = this.order.get(product.tenantId) ?? [];
-      ids.push(product.id);
-      this.order.set(product.tenantId, ids);
-    }
-    this.products.set(key, product);
+  async save(product: Product): Promise<Product> {
+    await this.collection(product.tenantId)
+      .doc(product.id)
+      .set({ ...product, searchTokens: searchTokens(textoDeBusca(product)) });
     return product;
   }
 
-  findById(tenantId: string, id: string): Product | undefined {
-    return this.products.get(this.key(tenantId, id));
+  async findById(tenantId: string, id: string): Promise<Product | undefined> {
+    const snapshot = await this.collection(tenantId).doc(id).get();
+    return snapshot.exists ? doGravado(snapshot.data()) : undefined;
   }
 
-  findBySku(tenantId: string, sku: string): Product | undefined {
-    return [...this.products.values()].find(
-      (product) => product.tenantId === tenantId && product.sku === sku,
+  /** Varios de uma vez, numa ida so: o pedido e a venda precisam de todos os
+   *  itens para conferir preco e status. */
+  async findMany(tenantId: string, ids: readonly string[]): Promise<ReadonlyMap<string, Product>> {
+    const unicos = [...new Set(ids)].filter(Boolean);
+    if (unicos.length === 0) return new Map();
+    const snapshots = await this.db.getAll(
+      ...unicos.map((id) => this.collection(tenantId).doc(id)),
+    );
+    return new Map(
+      snapshots.flatMap((snapshot) =>
+        snapshot.exists ? [[snapshot.id, doGravado(snapshot.data())] as const] : [],
+      ),
     );
   }
 
-  delete(tenantId: string, id: string): void {
-    this.searchIndex.remove(tenantId, id);
-    this.products.delete(this.key(tenantId, id));
-    const ids = this.order.get(tenantId);
-    if (ids)
-      this.order.set(
-        tenantId,
-        ids.filter((existing) => existing !== id),
-      );
+  async findBySku(tenantId: string, sku: string): Promise<Product | undefined> {
+    const result = await this.collection(tenantId).where('sku', '==', sku).limit(1).get();
+    const [first] = result.docs;
+    return first ? doGravado(first.data()) : undefined;
   }
 
-  search(
+  /** Codigo de barras lido no balcao ou no PDV. */
+  async findByEan(tenantId: string, ean: string): Promise<Product | undefined> {
+    const result = await this.collection(tenantId).where('ean', '==', ean).limit(1).get();
+    const [first] = result.docs;
+    return first ? doGravado(first.data()) : undefined;
+  }
+
+  async delete(tenantId: string, id: string): Promise<void> {
+    await this.collection(tenantId).doc(id).delete();
+  }
+
+  /** Lista por nome, paginando pelo id do ultimo lido. Com texto, procura por
+   *  prefixo de palavra (e por SKU ou codigo de barras exatos) e devolve uma
+   *  pagina so — e o que a caixa de busca precisa. */
+  async search(
     tenantId: string,
     filter: ProductSearchFilter,
     limit: number,
     cursor?: string,
-  ): Page<Product> {
-    const ids = this.order.get(tenantId) ?? [];
-    const cursorIndex = cursor ? ids.indexOf(cursor) : -1;
-    let index = cursorIndex === -1 ? 0 : cursorIndex + 1;
+  ): Promise<Page<Product>> {
+    const texto = filter.q?.trim();
+    if (texto) return this.searchText(tenantId, texto, filter, limit);
 
-    const matches: Product[] = [];
-    let lastMatchedId: string | null = null;
-
-    for (; index < ids.length; index += 1) {
-      if (matches.length === limit) break;
-      const productId = ids[index];
-      const product = productId ? this.products.get(this.key(tenantId, productId)) : undefined;
-      if (!product || !this.matches(product, filter)) continue;
-      matches.push(product);
-      lastMatchedId = product.id;
+    let query = this.collection(tenantId)
+      .orderBy('name')
+      .limit(limit + 1);
+    if (filter.status) query = query.where('status', '==', filter.status);
+    if (filter.categoryId) query = query.where('categoryId', '==', filter.categoryId);
+    if (cursor) {
+      const anchor = await this.collection(tenantId).doc(cursor).get();
+      if (anchor.exists) query = query.startAfter(anchor);
     }
-
-    const hasMore = this.hasMatchFrom(tenantId, ids, index, filter);
-    return { items: matches, nextCursor: hasMore ? lastMatchedId : null, hasMore };
+    const docs = (await query.get()).docs as QueryDocumentSnapshot[];
+    const items = docs.slice(0, limit).map((doc) => doGravado(doc.data()));
+    const hasMore = docs.length > limit;
+    return { items, nextCursor: hasMore ? (items.at(-1)?.id ?? null) : null, hasMore };
   }
 
-  private hasMatchFrom(
+  /** O catalogo inteiro, para agregacao interna (inteligencia de estoque,
+   *  recalculo de custo). Nunca para resposta de API. */
+  async listAll(tenantId: string, max = 20_000): Promise<Product[]> {
+    const snapshot = await this.collection(tenantId).limit(max).get();
+    return snapshot.docs.map((doc: QueryDocumentSnapshot) => doGravado(doc.data()));
+  }
+
+  private async searchText(
     tenantId: string,
-    ids: readonly string[],
-    fromIndex: number,
+    texto: string,
     filter: ProductSearchFilter,
-  ): boolean {
-    for (let i = fromIndex; i < ids.length; i += 1) {
-      const productId = ids[i];
-      const product = productId ? this.products.get(this.key(tenantId, productId)) : undefined;
-      if (product && this.matches(product, filter)) return true;
-    }
-    return false;
-  }
+    limit: number,
+  ): Promise<Page<Product>> {
+    const cabe = (product: Product) =>
+      (!filter.status || product.status === filter.status) &&
+      (!filter.categoryId || product.categoryId === filter.categoryId);
 
-  private matches(product: Product, filter: ProductSearchFilter): boolean {
-    if (filter.status && product.status !== filter.status) return false;
-    if (filter.categoryId && product.categoryId !== filter.categoryId) return false;
-    if (filter.q) {
-      const term = filter.q.toLocaleLowerCase('pt-BR');
-      const haystack = [product.sku, product.name, product.ean ?? '', product.internalCode ?? '']
-        .join(' ')
-        .toLocaleLowerCase('pt-BR');
-      if (!haystack.includes(term)) return false;
+    const exatos = await Promise.all([
+      this.findBySku(tenantId, texto),
+      this.findBySku(tenantId, texto.toUpperCase()),
+      /^\d{8,14}$/.test(texto) ? this.findByEan(tenantId, texto) : undefined,
+    ]);
+    const achados = new Map<string, Product>();
+    for (const product of exatos) if (product && cabe(product)) achados.set(product.id, product);
+
+    const termos = searchTerms(texto).slice(0, 10);
+    const [primeiro, ...demais] = termos;
+    if (primeiro) {
+      const result = await this.collection(tenantId)
+        .where('searchTokens', 'array-contains', primeiro)
+        .limit(LEITURA_DA_BUSCA)
+        .get();
+      const porNome = result.docs
+        .map((doc: QueryDocumentSnapshot) => doc.data() as ProdutoGravado)
+        .filter((gravado) => demais.every((termo) => gravado.searchTokens?.includes(termo)))
+        .map(doGravado)
+        .filter(cabe)
+        .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+      for (const product of porNome) achados.set(product.id, product);
     }
-    return true;
+    const items = [...achados.values()];
+    return { items: items.slice(0, limit), nextCursor: null, hasMore: items.length > limit };
   }
 }

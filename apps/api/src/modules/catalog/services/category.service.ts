@@ -9,12 +9,12 @@ import { CategoryRepository } from '../repositories/category.repository';
 export class CategoryService {
   constructor(private readonly repository: CategoryRepository) {}
 
-  list(tenant: TenantContext): Category[] {
+  list(tenant: TenantContext): Promise<Category[]> {
     return this.repository.listByTenant(tenant.tenantId);
   }
 
-  create(tenant: TenantContext, input: CreateCategoryInput): Category {
-    if (input.parentId && !this.repository.findById(tenant.tenantId, input.parentId)) {
+  async create(tenant: TenantContext, input: CreateCategoryInput): Promise<Category> {
+    if (input.parentId && !(await this.repository.findById(tenant.tenantId, input.parentId))) {
       throw new NotFoundException('Categoria pai nao encontrada');
     }
     const category: Category = {

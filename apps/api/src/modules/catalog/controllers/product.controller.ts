@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  NotFoundException,
   Body,
   Controller,
   Get,
@@ -51,6 +52,21 @@ export class ProductController {
       query.limit,
       query.cursor,
     );
+  }
+
+  /** Codigo de barras, SKU ou codigo interno: o que o leitor ou o balcao digita. */
+  @Get('by-code/:code')
+  @RequirePermission('produto.visualizar')
+  async byCode(@CurrentTenant() tenant: TenantContext, @Param('code') code: string) {
+    const product = await this.products.findByCode(tenant, code);
+    if (!product) throw new NotFoundException('Produto nao encontrado');
+    return product;
+  }
+
+  @Get(':id')
+  @RequirePermission('produto.visualizar')
+  findOne(@CurrentTenant() tenant: TenantContext, @Param('id') id: string) {
+    return this.products.findById(tenant, id);
   }
 
   @Post()

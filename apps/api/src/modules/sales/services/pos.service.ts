@@ -87,7 +87,7 @@ export class PosService {
     if (session.tenantId !== context.tenantId || session.operatorId !== context.userId) {
       throw new NotFoundException('Caixa não encontrado');
     }
-    const items: PosItem[] = this.pricing.priceSaleItems(
+    const items: PosItem[] = await this.pricing.priceSaleItems(
       context,
       session.branchId,
       input.customerId ?? null,
@@ -105,7 +105,8 @@ export class PosService {
     const discount = items.reduce((sum, item) => sum + item.discount, 0);
     const surcharge = items.reduce((sum, item) => sum + item.surcharge, 0);
     const total = subtotal - discount + surcharge;
-    if (discount * 100 > subtotal * this.pricing.getSellerDiscountLimit(context, context.userId))
+    const discountLimit = await this.pricing.getSellerDiscountLimit(context, context.userId);
+    if (discount * 100 > subtotal * discountLimit)
       throw new BadRequestException('Desconto excede o limite do operador');
     if (input.payments.reduce((sum, payment) => sum + payment.amount, 0) !== total)
       throw new BadRequestException('A soma dos pagamentos deve ser igual ao total da venda');

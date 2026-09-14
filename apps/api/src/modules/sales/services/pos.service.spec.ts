@@ -1,3 +1,5 @@
+import type { Firestore } from '@synapse/firebase/admin';
+import { FakeFirestore } from '../../../../test/fake-firestore';
 import { BadRequestException } from '@nestjs/common';
 import { CashSessionRepository } from '../repositories/cash-session.repository';
 import { PosService } from './pos.service';
@@ -7,10 +9,17 @@ import { ProductRepository } from '../../catalog/repositories/product.repository
 import type { Product } from '@synapse/types';
 
 function createService(price: number, limit: number, productId: string) {
-  const products = new ProductRepository();
-  products.save({ id: productId, tenantId: 'tenant', pricing: { salePrice: price } } as Product);
-  const pricing = new PricingService(new PricingRepository(), products);
-  pricing.setSellerDiscountLimit(context, context.userId, limit);
+  const products = new ProductRepository(new FakeFirestore() as unknown as Firestore);
+  void products.save({
+    id: productId,
+    tenantId: 'tenant',
+    pricing: { salePrice: price },
+  } as Product);
+  const pricing = new PricingService(
+    new PricingRepository(new FakeFirestore() as unknown as Firestore),
+    products,
+  );
+  void pricing.setSellerDiscountLimit(context, context.userId, limit);
   return new PosService(new CashSessionRepository(), pricing);
 }
 

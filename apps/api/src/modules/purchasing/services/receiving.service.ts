@@ -185,7 +185,7 @@ export class ReceivingService {
     warehouseId: string,
     linha: { productId: string; quantityReceived: number; unitCostReceived: number },
   ): Promise<void> {
-    const target = this.findProductById(context, linha.productId);
+    const target = await this.findProductById(context, linha.productId);
     if (!target) return;
 
     const balanceBefore = await this.receivings.getBalance(
@@ -201,7 +201,7 @@ export class ReceivingService {
       linha.unitCostReceived,
     );
 
-    this.products.update(context, linha.productId, {
+    await this.products.update(context, linha.productId, {
       pricing: {
         cost: newAverageCost,
         averageCost: newAverageCost,
@@ -213,19 +213,11 @@ export class ReceivingService {
     });
   }
 
-  private findProductById(context: TenantContext, productId: string): Product | undefined {
-    // MAX_PAGE_LIMIT paginado seria mais correto para catalogos gigantes,
-    // mas ProductService ainda nao expoe findById — extensao para quando o
-    // volume exigir (o mesmo limite ja documentado em ProductRepository).
-    let cursor: string | undefined;
-    for (let guard = 0; guard < 50; guard += 1) {
-      const page = this.products.search(context, {}, 200, cursor);
-      const found = page.items.find((item) => item.id === productId);
-      if (found) return found;
-      if (!page.hasMore || !page.nextCursor) return undefined;
-      cursor = page.nextCursor;
-    }
-    return undefined;
+  private async findProductById(
+    context: TenantContext,
+    productId: string,
+  ): Promise<Product | undefined> {
+    return this.products.findById(context, productId).catch(() => undefined);
   }
 
   private async getOrder(context: TenantContext, orderId: string): Promise<PurchaseOrder> {

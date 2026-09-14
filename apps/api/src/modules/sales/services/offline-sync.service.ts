@@ -27,7 +27,7 @@ export class OfflineSyncService {
     if (previous) return previous;
     const items: PosItem[] = [];
     for (const line of input.items) {
-      const resolved = this.prices.resolvePrice(context, {
+      const resolved = await this.prices.resolvePrice(context, {
         productId: line.productId,
         branchId: input.branchId,
         customerId: input.customerId,
@@ -68,7 +68,7 @@ export class OfflineSyncService {
         reason: 'Preço alterado desde a última sincronização',
         items,
       });
-    const quote = this.orders.quote(context, {
+    const quote = await this.orders.quote(context, {
       branchId: input.branchId,
       customerId: input.customerId,
       channel: 'EXTERNAL',

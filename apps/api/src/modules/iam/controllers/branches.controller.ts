@@ -45,8 +45,8 @@ export class BranchesController {
   @Delete(':id')
   @RequirePermission('filial.gerenciar')
   @AuditedMutation({ domain: 'BRANCH', entity: 'Branch', collection: 'branches' })
-  remove(@CurrentTenant() tenant: TenantContext, @Param('id') id: string) {
-    this.branches.remove(tenant, id);
+  async remove(@CurrentTenant() tenant: TenantContext, @Param('id') id: string) {
+    await this.branches.remove(tenant, id);
     return { removed: true };
   }
 }

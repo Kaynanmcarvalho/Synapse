@@ -30,7 +30,7 @@ export class OrderService {
    *  é sempre resolvido aqui, a partir de quem está autenticado
    *  (`context.userId`), contra o que `PricingService`/`preco.gerenciar`
    *  configurou pra esse vendedor especificamente. */
-  quote(
+  async quote(
     context: TenantContext,
     input: {
       branchId: string;
@@ -38,15 +38,15 @@ export class OrderService {
       channel: OrderChannel;
       items: readonly PosItem[];
     },
-  ): Order {
+  ): Promise<Order> {
     const actor = this.actor(context);
-    const items = this.pricing.priceSaleItems(
+    const items = await this.pricing.priceSaleItems(
       context,
       input.branchId,
       input.customerId,
       input.items,
     );
-    const limitPercent = this.pricing.getSellerDiscountLimit(context, context.userId);
+    const limitPercent = await this.pricing.getSellerDiscountLimit(context, context.userId);
     const limitBasisPoints = Math.round(limitPercent * 100);
     return this.repository.save({
       id: randomUUID() as Order['id'],

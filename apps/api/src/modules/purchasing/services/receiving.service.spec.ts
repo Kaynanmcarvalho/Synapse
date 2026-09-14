@@ -1,3 +1,5 @@
+import type { Firestore } from '@synapse/firebase/admin';
+import { FakeFirestore } from '../../../../test/fake-firestore';
 import { BadRequestException } from '@nestjs/common';
 import type {
   Product,
@@ -123,7 +125,7 @@ function buildService() {
   const purchaseOrders = new FakePurchaseOrderRepository();
   const receivings = new FakeReceivingRepository();
   const inventory = new FakeInventoryService();
-  const productRepository = new ProductRepository();
+  const productRepository = new ProductRepository(new FakeFirestore() as unknown as Firestore);
   const products = new ProductService(productRepository);
   const partnerRepository = new PartnerRepository();
   const partners = new PartnerService(partnerRepository);
@@ -175,7 +177,7 @@ describe('ReceivingService.receiveManual', () => {
     const { service, purchaseOrders, receivings, inventory, productRepository, partnerRepository } =
       buildService();
 
-    productRepository.save(productFixture('produto-a', 100, 10)); // custo em centavos: 10
+    await productRepository.save(productFixture('produto-a', 100, 10)); // custo em centavos: 10
     partnerRepository.saveSupplier(supplierFixture('fornecedor-1'));
     receivings.balances.set('matriz_wh1_produto-a', {
       productId: 'produto-a',
@@ -212,7 +214,7 @@ describe('ReceivingService.receiveManual', () => {
     expect(receiving.totalCostCentavos).toBe(15_000); // 10 * 1500
     expect(receiving.tituloId).toBeTruthy();
 
-    const updatedProduct = productRepository.findById(tenant.tenantId, 'produto-a');
+    const updatedProduct = await productRepository.findById(tenant.tenantId, 'produto-a');
     // (20*10 + 10*1500) / 30 = 506.67 -> arredonda pra 507
     expect(updatedProduct?.pricing.averageCost).toBe(507);
 

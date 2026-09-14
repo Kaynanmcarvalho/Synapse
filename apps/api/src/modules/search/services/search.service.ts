@@ -44,7 +44,8 @@ export class SearchService {
     const branchAllowed = (branchId: string) =>
       !context.branchIds.length || context.branchIds.includes(branchId);
 
-    if (allowed('produto.visualizar')) items.push(...this.searchProducts(context, query, limit));
+    if (allowed('produto.visualizar'))
+      items.push(...(await this.searchProducts(context, query, limit)));
     if (allowed('cliente.gerenciar'))
       items.push(...(await this.searchCustomers(context, query, limit)));
     if (allowed('fornecedor.gerenciar')) items.push(...this.searchSuppliers(context, query, limit));
@@ -60,8 +61,12 @@ export class SearchService {
     return { items, unavailable: [] };
   }
 
-  private searchProducts(context: TenantContext, query: string, limit: number): SearchResultItem[] {
-    return this.products.searchIndex.search(context.tenantId, query, limit).map((p) => ({
+  private async searchProducts(
+    context: TenantContext,
+    query: string,
+    limit: number,
+  ): Promise<SearchResultItem[]> {
+    return (await this.products.search(context.tenantId, { q: query }, limit)).items.map((p) => ({
       type: 'product' as const,
       id: p.id,
       title: p.name,

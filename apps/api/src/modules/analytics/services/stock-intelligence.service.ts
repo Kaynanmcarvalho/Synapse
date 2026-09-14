@@ -193,7 +193,7 @@ export class StockIntelligenceService {
     const products: Product[] = [];
     let cursor: string | undefined;
     for (;;) {
-      const page: Page<Product> = this.products.search(context, {}, MAX_PAGE_LIMIT, cursor);
+      const page: Page<Product> = await this.products.search(context, {}, MAX_PAGE_LIMIT, cursor);
       products.push(...page.items);
       if (!page.hasMore || !page.nextCursor) break;
       cursor = page.nextCursor;

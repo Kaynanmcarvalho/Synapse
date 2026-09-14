@@ -89,8 +89,8 @@ const csvRowToProductInput = (row: ProductCsvRow): CreateProductInput => ({
 export class ProductService {
   constructor(private readonly repository: ProductRepository) {}
 
-  create(tenant: TenantContext, input: CreateProductInput): Product {
-    if (this.repository.findBySku(tenant.tenantId, input.sku)) {
+  async create(tenant: TenantContext, input: CreateProductInput): Promise<Product> {
+    if (await this.repository.findBySku(tenant.tenantId, input.sku)) {
       throw new ConflictException(`Ja existe um produto com o SKU ${input.sku}`);
     }
     const now = new Date().toISOString();
@@ -111,8 +111,17 @@ export class ProductService {
     return this.repository.save(product);
   }
 
-  update(tenant: TenantContext, productId: string, input: UpdateProductInput): Product {
-    const product = this.find(tenant.tenantId, productId);
+  async update(
+    tenant: TenantContext,
+    productId: string,
+    input: UpdateProductInput,
+  ): Promise<Product> {
+    const product = await this.find(tenant.tenantId, productId);
+    if (input.sku && input.sku !== product.sku) {
+      const other = await this.repository.findBySku(tenant.tenantId, input.sku);
+      if (other && other.id !== product.id)
+        throw new ConflictException(`Ja existe um produto com o SKU ${input.sku}`);
+    }
     const updated: Product = {
       ...product,
       ...input,
@@ -129,8 +138,12 @@ export class ProductService {
     return this.repository.save(updated);
   }
 
-  setStatus(tenant: TenantContext, productId: string, status: ProductStatus): Product {
-    const product = this.find(tenant.tenantId, productId);
+  async setStatus(
+    tenant: TenantContext,
+    productId: string,
+    status: ProductStatus,
+  ): Promise<Product> {
+    const product = await this.find(tenant.tenantId, productId);
     return this.repository.save({
       ...product,
       status,
@@ -140,8 +153,8 @@ export class ProductService {
     });
   }
 
-  setPhoto(tenant: TenantContext, productId: string, photoUrl: string): Product {
-    const product = this.find(tenant.tenantId, productId);
+  async setPhoto(tenant: TenantContext, productId: string, photoUrl: string): Promise<Product> {
+    const product = await this.find(tenant.tenantId, productId);
     return this.repository.save({
       ...product,
       photoUrl,
@@ -153,8 +166,8 @@ export class ProductService {
 
   /** Um produto so entra numa venda nova se o status permitir (§5) — bloqueado
    *  e fora de linha nunca entram, mesmo que ainda apareçam em relatorios. */
-  assertCanSell(tenant: TenantContext, productId: string): Product {
-    const product = this.find(tenant.tenantId, productId);
+  async assertCanSell(tenant: TenantContext, productId: string): Promise<Product> {
+    const product = await this.find(tenant.tenantId, productId);
     if (!PRODUCT_STATUS_ALLOWS_SALE[product.status]) {
       throw new BadRequestException(
         `Produto ${product.sku} esta com status "${product.status}" e nao pode ser vendido`,
@@ -168,17 +181,40 @@ export class ProductService {
     filter: ProductSearchFilter,
     limit: number,
     cursor?: string,
-  ): Page<Product> {
+  ): Promise<Page<Product>> {
     return this.repository.search(tenant.tenantId, filter, limit, cursor);
+  }
+
+  async findById(tenant: TenantContext, productId: string): Promise<Product> {
+    return this.find(tenant.tenantId, productId);
+  }
+
+  /** Produto pelo codigo de barras, SKU ou codigo interno — o que o leitor ou o
+   *  balcao digita no campo "Produto / Servico". */
+  async findByCode(tenant: TenantContext, code: string): Promise<Product | undefined> {
+    const limpo = code.trim();
+    if (!limpo) return undefined;
+    return (
+      (/^\d{8,14}$/.test(limpo)
+        ? await this.repository.findByEan(tenant.tenantId, limpo)
+        : undefined) ??
+      (await this.repository.findBySku(tenant.tenantId, limpo)) ??
+      (await this.repository.findBySku(tenant.tenantId, limpo.toUpperCase())) ??
+      (await this.repository.findById(tenant.tenantId, limpo))
+    );
+  }
+
+  listAll(tenant: TenantContext): Promise<Product[]> {
+    return this.repository.listAll(tenant.tenantId);
   }
 
   /** Cada linha e validada e criada de forma independente — uma linha ruim
    *  nao derruba o restante da planilha (c8-5). */
-  importCsv(tenant: TenantContext, csvText: string): ProductImportResult {
+  async importCsv(tenant: TenantContext, csvText: string): Promise<ProductImportResult> {
     const records = csvToRecords(csvText);
     const rows: ProductImportRowResult[] = [];
 
-    records.forEach((record, index) => {
+    for (const [index, record] of records.entries()) {
       const line = index + 2; // +1 cabecalho, +1 para contar a partir de 1
       const parsed = productCsvRowSchema.safeParse(record);
       if (!parsed.success) {
@@ -187,15 +223,15 @@ export class ProductService {
           ok: false,
           error: parsed.error.issues.map((issue) => issue.message).join('; '),
         });
-        return;
+        continue;
       }
       try {
-        const product = this.create(tenant, csvRowToProductInput(parsed.data));
+        const product = await this.create(tenant, csvRowToProductInput(parsed.data));
         rows.push({ line, ok: true, sku: product.sku });
       } catch (error) {
         rows.push({ line, ok: false, error: (error as Error).message });
       }
-    });
+    }
 
     return {
       imported: rows.filter((row) => row.ok).length,
@@ -204,8 +240,8 @@ export class ProductService {
     };
   }
 
-  private find(tenantId: string, productId: string): Product {
-    const product = this.repository.findById(tenantId, productId);
+  private async find(tenantId: string, productId: string): Promise<Product> {
+    const product = await this.repository.findById(tenantId, productId);
     if (!product) throw new NotFoundException('Produto nao encontrado');
     return product;
   }

@@ -1,3 +1,5 @@
+import type { Firestore } from '@synapse/firebase/admin';
+import { FakeFirestore } from '../../../../test/fake-firestore';
 import { NotFoundException } from '@nestjs/common';
 import type {
   Product,
@@ -138,7 +140,7 @@ const movementOf = (productId: string, branchId: string, quantity: number): Stoc
   }) as StockMovement;
 
 function buildService(repository: FakeStockIntelligenceRepository) {
-  const productRepository = new ProductRepository();
+  const productRepository = new ProductRepository(new FakeFirestore() as unknown as Firestore);
   const partnerRepository = new PartnerRepository();
   const products = new ProductService(productRepository);
   const partners = new PartnerService(partnerRepository);
@@ -155,8 +157,14 @@ describe('StockIntelligenceService.recalculate', () => {
     const repository = new FakeStockIntelligenceRepository();
     const { service, productRepository } = buildService(repository);
 
-    productRepository.save({ ...productInput('A', 100, 50), tenantId: tenant.tenantId } as Product);
-    productRepository.save({ ...productInput('B', 100, 50), tenantId: tenant.tenantId } as Product);
+    await productRepository.save({
+      ...productInput('A', 100, 50),
+      tenantId: tenant.tenantId,
+    } as Product);
+    await productRepository.save({
+      ...productInput('B', 100, 50),
+      tenantId: tenant.tenantId,
+    } as Product);
 
     repository.balances = [
       { branchId: 'matriz', productId: 'product-A', available: 10 } as unknown as StockBalance,
@@ -202,7 +210,7 @@ describe('StockIntelligenceService.recalculate', () => {
       averageLeadDays: 12,
     } as unknown as Supplier;
     partnerRepository.saveSupplier(supplier);
-    productRepository.save({
+    await productRepository.save({
       ...productInput('C', 50, 20),
       tenantId: tenant.tenantId,
       supplierId: supplier.id,
@@ -219,7 +227,10 @@ describe('StockIntelligenceService.recalculateAllTenants', () => {
   it('descobre as filiais pelos saldos e segue para a próxima mesmo se uma falhar', async () => {
     const repository = new FakeStockIntelligenceRepository();
     const { service, productRepository } = buildService(repository);
-    productRepository.save({ ...productInput('D', 10, 5), tenantId: tenant.tenantId } as Product);
+    await productRepository.save({
+      ...productInput('D', 10, 5),
+      tenantId: tenant.tenantId,
+    } as Product);
 
     repository.tenantIds = [tenant.tenantId];
     repository.balances = [

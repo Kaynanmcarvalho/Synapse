@@ -9,17 +9,17 @@ import { BranchRepository } from '../repositories/branch.repository';
 export class BranchService {
   constructor(private readonly repository: BranchRepository) {}
 
-  list(tenant: TenantContext): Branch[] {
+  list(tenant: TenantContext): Promise<Branch[]> {
     return this.repository.listByTenant(tenant.tenantId);
   }
 
-  create(tenant: TenantContext, input: CreateBranchInput): Branch {
+  async create(tenant: TenantContext, input: CreateBranchInput): Promise<Branch> {
     const now = new Date().toISOString();
     const actor = this.actor(tenant);
     if (input.isHeadquarters) {
-      const existingHq = this.repository
-        .listByTenant(tenant.tenantId)
-        .find((branch) => branch.isHeadquarters);
+      const existingHq = (await this.repository.listByTenant(tenant.tenantId)).find(
+        (branch) => branch.isHeadquarters,
+      );
       if (existingHq) throw new ConflictException('O tenant ja tem uma matriz cadastrada');
     }
     const branch: Branch = {
@@ -36,8 +36,8 @@ export class BranchService {
     return this.repository.save(branch);
   }
 
-  update(tenant: TenantContext, branchId: string, input: UpdateBranchInput): Branch {
-    const branch = this.repository.findById(tenant.tenantId, branchId);
+  async update(tenant: TenantContext, branchId: string, input: UpdateBranchInput): Promise<Branch> {
+    const branch = await this.repository.findById(tenant.tenantId, branchId);
     if (!branch) throw new NotFoundException('Filial nao encontrada');
     const updated: Branch = {
       ...branch,
@@ -50,11 +50,11 @@ export class BranchService {
     return this.repository.save(updated);
   }
 
-  remove(tenant: TenantContext, branchId: string): void {
-    const branch = this.repository.findById(tenant.tenantId, branchId);
+  async remove(tenant: TenantContext, branchId: string): Promise<void> {
+    const branch = await this.repository.findById(tenant.tenantId, branchId);
     if (!branch) throw new NotFoundException('Filial nao encontrada');
     if (branch.isHeadquarters) throw new ConflictException('A matriz nao pode ser excluida');
-    this.repository.delete(tenant.tenantId, branchId);
+    await this.repository.delete(tenant.tenantId, branchId);
   }
 
   private actor(tenant: TenantContext): AuditActor {

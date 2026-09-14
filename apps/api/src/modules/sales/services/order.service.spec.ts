@@ -1,3 +1,5 @@
+import type { Firestore } from '@synapse/firebase/admin';
+import { FakeFirestore } from '../../../../test/fake-firestore';
 import type { PosItem, Product } from '@synapse/types';
 import { PricingRepository } from '../../catalog/repositories/pricing.repository';
 import { ProductRepository } from '../../catalog/repositories/product.repository';
@@ -33,15 +35,18 @@ describe('OrderService', () => {
         },
       ]),
     ) as unknown as SalesInventoryPort;
-    const products = new ProductRepository();
-    products.save({ id: 'p', tenantId: 't', pricing: { salePrice: 10 } } as Product);
-    const pricing = new PricingService(new PricingRepository(), products);
+    const products = new ProductRepository(new FakeFirestore() as unknown as Firestore);
+    await products.save({ id: 'p', tenantId: 't', pricing: { salePrice: 10 } } as Product);
+    const pricing = new PricingService(
+      new PricingRepository(new FakeFirestore() as unknown as Firestore),
+      products,
+    );
     // 20% de desconto no item; limite do vendedor em 1% -> exige aprovação.
     // O limite é resolvido no service a partir do PricingService, nunca do
     // corpo da requisição (§27/§1) — é isso que este teste está provando.
-    pricing.setSellerDiscountLimit(context, context.userId, 1);
+    await pricing.setSellerDiscountLimit(context, context.userId, 1);
     const service = new OrderService(new OrderRepository(), pricing);
-    const quote = service.quote(context, {
+    const quote = await service.quote(context, {
       branchId: 'b',
       customerId: 'c',
       channel: 'WHATSAPP',

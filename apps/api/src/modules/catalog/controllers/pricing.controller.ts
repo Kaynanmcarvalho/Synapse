@@ -53,22 +53,22 @@ export class PricingController {
   @Post('branch-price')
   @RequirePermission('preco.gerenciar')
   @AuditedMutation({ domain: 'PRICE', entity: 'BranchPrice', collection: 'branchPrices' })
-  setBranchPrice(
+  async setBranchPrice(
     @CurrentTenant() tenant: TenantContext,
     @Body(new ZodValidationPipe(branchPriceSchema)) body: z.infer<typeof branchPriceSchema>,
   ) {
-    this.pricing.setBranchPrice(tenant, body.productId, body.branchId, body.price);
+    await this.pricing.setBranchPrice(tenant, body.productId, body.branchId, body.price);
     return { ok: true };
   }
 
   @Post('customer-price')
   @RequirePermission('preco.gerenciar')
   @AuditedMutation({ domain: 'PRICE', entity: 'CustomerPrice', collection: 'customerPrices' })
-  setCustomerPrice(
+  async setCustomerPrice(
     @CurrentTenant() tenant: TenantContext,
     @Body(new ZodValidationPipe(customerPriceSchema)) body: z.infer<typeof customerPriceSchema>,
   ) {
-    this.pricing.setCustomerPrice(tenant, body.productId, body.customerId, body.price);
+    await this.pricing.setCustomerPrice(tenant, body.productId, body.customerId, body.price);
     return { ok: true };
   }
 
@@ -79,11 +79,11 @@ export class PricingController {
     entity: 'SellerDiscountLimit',
     collection: 'sellerDiscountLimits',
   })
-  setSellerDiscountLimit(
+  async setSellerDiscountLimit(
     @CurrentTenant() tenant: TenantContext,
     @Body(new ZodValidationPipe(sellerLimitSchema)) body: z.infer<typeof sellerLimitSchema>,
   ) {
-    this.pricing.setSellerDiscountLimit(tenant, body.sellerId, body.limitPercent);
+    await this.pricing.setSellerDiscountLimit(tenant, body.sellerId, body.limitPercent);
     return { ok: true };
   }
 }

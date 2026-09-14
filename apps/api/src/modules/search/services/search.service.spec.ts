@@ -22,7 +22,7 @@ const tenant: TenantContext = {
 };
 
 function buildService() {
-  const productRepository = new ProductRepository();
+  const productRepository = new ProductRepository(new FakeFirestore() as unknown as Firestore);
   const partnerRepository = new PartnerRepository();
   const orders = new OrderRepository();
   const clientes = { procurar: jest.fn(async () => []) };
