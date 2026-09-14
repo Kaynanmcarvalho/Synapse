@@ -3,18 +3,60 @@ import { Modal, useOverlayClose } from '@synapse/ui';
 import {
   ArrowLeft,
   ArrowRight,
-  ChevronRight,
   CircleAlert,
   CircleCheck,
   LoaderCircle,
   Save,
   X,
 } from 'lucide-react';
+import { type ReactNode, type RefObject, useEffect } from 'react';
 import { ETAPAS, rotuloDoAmbiente } from './assistente.dados';
 import { quando } from './assistente.formato';
 import type { EtapaId, Pendencia } from './assistente.tipos';
 import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO } from './campos';
 import type { Aviso } from './useAssistente';
+
+/** Janela do assistente: fundo escurecido, os paineis flutuando por cima e a
+ *  barra de acoes logo abaixo deles.
+ *
+ *  De proposito nao leva `role="dialog"`: os atalhos F6/F7/F8/Esc se desligam
+ *  quando existe dialogo aberto na pagina, e quem abre dialogo aqui e o
+ *  descarte de alteracoes — que precisa mesmo tirar os atalhos do assistente. */
+export function JanelaDoAssistente({
+  area,
+  aoFechar,
+  children,
+}: {
+  readonly area: RefObject<HTMLElement | null>;
+  readonly aoFechar: () => void;
+  readonly children: ReactNode;
+}) {
+  // A pagina atras da janela nao rola enquanto o assistente esta aberto.
+  useEffect(() => {
+    const anterior = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = anterior;
+    };
+  }, []);
+  return (
+    <div className="fixed inset-0 z-40 flex flex-col">
+      <button
+        type="button"
+        tabIndex={-1}
+        aria-label="Fechar o assistente"
+        onClick={aoFechar}
+        className="animate-backdrop-in absolute inset-0 h-full w-full cursor-default bg-slate-950/55 backdrop-blur-md motion-reduce:animate-none"
+      />
+      <main
+        ref={area}
+        className="animate-modal-in relative flex min-h-0 flex-1 flex-col gap-3 p-3 motion-reduce:animate-none sm:gap-4 sm:p-5 lg:p-6"
+      >
+        {children}
+      </main>
+    </div>
+  );
+}
 
 export function AvisoFlutuante({
   aviso,
@@ -27,7 +69,7 @@ export function AvisoFlutuante({
   return (
     <div
       role={erro ? 'alert' : 'status'}
-      className="bg-ink text-body-sm fixed bottom-24 left-1/2 z-30 flex w-[calc(100%-32px)] max-w-lg -translate-x-1/2 items-start gap-3 rounded-2xl px-4 py-3 text-white shadow-lg"
+      className="bg-ink text-body-sm fixed bottom-28 left-1/2 z-30 flex w-[calc(100%-32px)] max-w-lg -translate-x-1/2 items-start gap-3 rounded-2xl px-4 py-3 text-white shadow-lg"
     >
       {erro ? (
         <CircleAlert size={18} className="mt-0.5 shrink-0 text-[#ff8a95]" aria-hidden="true" />
@@ -53,6 +95,8 @@ const TOM_DO_AMBIENTE: Record<FiscalEnvironment, string> = {
   MOCK: 'bg-surface-soft text-charcoal',
 };
 
+/** Cabecalho da janela: mora no alto do painel das etapas, que e por onde o
+ *  assistente comeca. */
 export function Cabecalho({
   ambiente,
   sujo,
@@ -63,29 +107,23 @@ export function Cabecalho({
   readonly atualizadoEm: string | null;
 }) {
   return (
-    <header>
-      <nav
-        aria-label="Localização no menu"
-        className="text-body-sm text-stone flex flex-wrap items-center gap-1"
-      >
-        Configurações <ChevronRight size={14} aria-hidden="true" />
-        <span className="text-ink font-semibold">Assistente de Configuração de NF-e</span>
-      </nav>
-      <div className="mt-4 flex flex-wrap items-end justify-between gap-4">
-        <h1 className="font-display text-ink sm:text-display-md text-[32px] font-medium leading-tight tracking-[-0.4px]">
-          Assistente de Configuração
-        </h1>
-        <div className="flex flex-wrap items-center gap-3">
-          <span
-            className={`text-button-sm inline-flex h-8 items-center gap-2 rounded-full px-3 ${TOM_DO_AMBIENTE[ambiente]}`}
-          >
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />
-            {rotuloDoAmbiente(ambiente)}
-          </span>
-          <span className="text-body-sm text-stone">
-            {sujo ? 'Alterações não salvas' : `Salvo ${quando(atualizadoEm)}`}
-          </span>
-        </div>
+    <header className="border-hairline-light shrink-0 border-b px-4 py-3 2xl:px-5 2xl:pb-4 2xl:pt-5">
+      <p className="text-stone 2xl:text-caption hidden text-[11px] font-medium uppercase tracking-[0.08em] lg:block">
+        Configurações · Fiscal
+      </p>
+      <h1 className="font-display text-body-sm text-ink 2xl:text-heading-sm font-semibold leading-snug lg:mt-0.5 2xl:mt-1 2xl:font-medium 2xl:leading-tight">
+        Assistente de Configuração de NF-e
+      </h1>
+      <div className="mt-2 flex flex-wrap items-center gap-2 2xl:mt-3">
+        <span
+          className={`2xl:text-caption inline-flex h-6 items-center gap-1.5 rounded-full px-2 text-[12px] font-semibold 2xl:h-7 2xl:gap-2 2xl:px-2.5 ${TOM_DO_AMBIENTE[ambiente]}`}
+        >
+          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />
+          {rotuloDoAmbiente(ambiente)}
+        </span>
+        <span className="text-stone 2xl:text-caption text-[12px]">
+          {sujo ? 'Alterações não salvas' : `Salvo ${quando(atualizadoEm)}`}
+        </span>
       </div>
     </header>
   );
@@ -101,23 +139,27 @@ export function TrilhaDeEtapas({
   readonly aoEscolher: (etapa: EtapaId) => void;
 }) {
   return (
-    <nav aria-label="Etapas do assistente" className="lg:sticky lg:top-24 lg:self-start">
-      <ol className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 lg:mx-0 lg:flex-col lg:gap-1 lg:overflow-visible lg:px-0">
+    <nav
+      aria-label="Etapas do assistente"
+      className="min-w-0 lg:min-h-0 lg:flex-1 lg:overflow-y-auto"
+    >
+      <p className="text-caption text-stone hidden px-5 pt-4 2xl:block">6 etapas para concluir</p>
+      <ol className="flex gap-1.5 overflow-x-auto p-2 lg:flex-col lg:gap-0.5 lg:overflow-visible 2xl:mt-1 2xl:gap-1 2xl:px-3 2xl:pb-4">
         {ETAPAS.map((etapa, indice) => {
           const ativa = etapa.id === atual;
           const bloqueios = pendencias.filter((p) => p.etapa === etapa.id && p.bloqueia).length;
           const avisos = pendencias.filter((p) => p.etapa === etapa.id).length;
           return (
-            <li key={etapa.id} className="shrink-0">
+            <li key={etapa.id} className="shrink-0 lg:shrink">
               <button
                 type="button"
                 onClick={() => aoEscolher(etapa.id)}
                 aria-current={ativa ? 'step' : undefined}
-                className={`text-body-sm flex h-11 w-full items-center gap-3 rounded-full px-3 text-left transition lg:rounded-xl ${ativa ? 'bg-surface-soft text-ink font-semibold' : 'text-mute hover:text-ink'}`}
+                className={`text-caption 2xl:text-body-sm flex min-h-10 w-full items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-left transition 2xl:min-h-12 2xl:gap-3 2xl:rounded-2xl 2xl:px-3 2xl:py-2.5 ${ativa ? 'bg-canvas-dark shadow-cartao font-semibold text-white' : 'text-mute hover:bg-surface-soft hover:text-ink'}`}
               >
                 <span
                   aria-hidden="true"
-                  className={`text-caption flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-semibold ${ativa ? 'bg-ink text-white' : 'bg-surface-soft text-charcoal'}`}
+                  className={`2xl:text-caption flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold 2xl:h-7 2xl:w-7 ${ativa ? 'bg-white/15 text-white' : 'bg-surface-soft text-charcoal'}`}
                 >
                   {indice + 1}
                 </span>
@@ -161,30 +203,31 @@ export function BarraDeAcoes({
   readonly aoCancelar: () => void;
 }) {
   return (
-    <div className="border-hairline-light bg-canvas-light/95 fixed inset-x-0 bottom-0 z-20 border-t backdrop-blur-xl">
-      <div className="mx-auto flex max-w-[1280px] flex-wrap items-center gap-2 px-4 py-3 sm:px-6 lg:px-8">
-        <button type="button" className={BOTAO_SECUNDARIO} onClick={aoVoltar} disabled={primeira}>
-          <ArrowLeft size={16} aria-hidden="true" /> <Tecla>F6</Tecla> Voltar
-        </button>
-        <button type="button" className={BOTAO_SECUNDARIO} onClick={aoAvancar} disabled={ultima}>
-          <Tecla>F7</Tecla> Próximo <ArrowRight size={16} aria-hidden="true" />
-        </button>
-        <span className="flex-1" />
-        <button type="button" className={BOTAO_SECUNDARIO} onClick={aoCancelar}>
-          <X size={16} aria-hidden="true" /> <Tecla>Esc</Tecla> Cancelar
-        </button>
-        <button type="button" className={BOTAO_PRIMARIO} onClick={aoSalvar} disabled={salvando}>
-          {salvando ? (
-            <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />
-          ) : (
-            <Save size={16} aria-hidden="true" />
-          )}
-          <kbd className="text-caption hidden rounded-md bg-white/15 px-1.5 font-sans font-medium sm:inline">
-            F8
-          </kbd>
-          Salvar configuração
-        </button>
-      </div>
+    <div
+      aria-label="Ações do assistente"
+      className="border-hairline-light bg-canvas-light/95 shadow-janela mx-auto flex w-full max-w-[940px] shrink-0 flex-wrap items-center gap-2 rounded-2xl border p-2 backdrop-blur-xl sm:flex-nowrap sm:px-3"
+    >
+      <button type="button" className={BOTAO_SECUNDARIO} onClick={aoVoltar} disabled={primeira}>
+        <ArrowLeft size={16} aria-hidden="true" /> <Tecla>F6</Tecla> Voltar
+      </button>
+      <button type="button" className={BOTAO_SECUNDARIO} onClick={aoAvancar} disabled={ultima}>
+        <Tecla>F7</Tecla> Próximo <ArrowRight size={16} aria-hidden="true" />
+      </button>
+      <span className="hidden flex-1 sm:block" />
+      <button type="button" className={BOTAO_SECUNDARIO} onClick={aoCancelar}>
+        <X size={16} aria-hidden="true" /> <Tecla>Esc</Tecla> Cancelar
+      </button>
+      <button type="button" className={BOTAO_PRIMARIO} onClick={aoSalvar} disabled={salvando}>
+        {salvando ? (
+          <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />
+        ) : (
+          <Save size={16} aria-hidden="true" />
+        )}
+        <kbd className="text-caption hidden rounded-md bg-white/15 px-1.5 font-sans font-medium sm:inline">
+          F8
+        </kbd>
+        Salvar configuração
+      </button>
     </div>
   );
 }
