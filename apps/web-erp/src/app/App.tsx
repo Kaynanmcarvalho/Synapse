@@ -2,6 +2,9 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { DashboardScreen } from '../features/dashboard/DashboardScreen';
 import { StockScreen } from '../features/inventory/StockScreen';
 import { ClientesScreen } from '../features/customers/ClientesScreen';
+import { TabelaAuxiliarScreen } from '../features/cadastros/tabelas/TabelaAuxiliarScreen';
+import { FornecedoresScreen } from '../features/fornecedores/FornecedoresScreen';
+import { FuncionariosScreen } from '../features/funcionarios/FuncionariosScreen';
 import { ProductsScreen } from '../features/products/ProductsScreen';
 import { PosScreen } from '../features/pos/PosScreen';
 import { InventoryScreen } from '../features/inventory/InventoryScreen';
@@ -43,6 +46,28 @@ export function App() {
               <Route path={ROTAS.pdv} element={<PosScreen />} />
               <Route path={ROTAS.analiseDeCredito} element={<AnaliseDeCreditoScreen />} />
               <Route path={ROTAS.clientes} element={<ClientesScreen />} />
+              <Route path={ROTAS.fornecedores} element={<FornecedoresScreen />} />
+              <Route
+                path={ROTAS.gruposDeFornecedor}
+                element={<TabelaAuxiliarScreen key="grupos" tipo="grupos-de-fornecedor" />}
+              />
+              <Route
+                path={ROTAS.subgruposDeFornecedor}
+                element={<TabelaAuxiliarScreen key="subgrupos" tipo="subgrupos-de-fornecedor" />}
+              />
+              <Route path={ROTAS.funcionarios} element={<FuncionariosScreen />} />
+              <Route
+                path={ROTAS.cargosDeFuncionario}
+                element={<TabelaAuxiliarScreen key="cargos" tipo="cargos" />}
+              />
+              <Route
+                path={ROTAS.departamentos}
+                element={<TabelaAuxiliarScreen key="departamentos" tipo="departamentos" />}
+              />
+              <Route
+                path={ROTAS.pracasERegioes}
+                element={<TabelaAuxiliarScreen key="pracas" tipo="pracas" />}
+              />
               <Route path={ROTAS.produtos} element={<ProductsScreen />} />
               <Route path={ROTAS.cargos} element={<RolesScreen />} />
               <Route path={ROTAS.filiais} element={<BranchConfigScreen />} />

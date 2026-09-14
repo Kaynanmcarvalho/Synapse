@@ -36,7 +36,7 @@ export const CADASTROS = montarMenu('Cadastros', [
   ]),
   SEP,
   item('Transportadoras'),
-  item('Praças e Regiões'),
+  item('Praças e Regiões', { para: '/cadastros/pracas-e-regioes' }),
   item('Assessores de Venda'),
   item('Mesas / Cartões'),
   SEP,
@@ -53,16 +53,18 @@ export const CADASTROS = montarMenu('Cadastros', [
     item('Configuração de Clientes em Lote'),
   ]),
   submenu('Fornecedores', [
-    item('Fornecedores'),
+    item('Fornecedores', { para: '/cadastros/fornecedores' }),
     SEP,
-    item('Grupo de Fornecedores'),
-    item('Sub-Grupo de Fornecedores'),
+    item('Grupo de Fornecedores', { para: '/cadastros/fornecedores/grupos' }),
+    item('Sub-Grupo de Fornecedores', { para: '/cadastros/fornecedores/sub-grupos' }),
   ]),
   submenu('Funcionários', [
-    item('Funcionários'),
+    item('Funcionários', { para: '/cadastros/funcionarios' }),
     SEP,
-    item('Cargos', { para: '/configuracoes/cargos' }),
-    item('Departamentos'),
+    // Cargo do funcionário (vendedor, gerente). Cargos de permissão ficam em
+    // Ferramentas > Manutenção de Usuários.
+    item('Cargos', { para: '/cadastros/funcionarios/cargos' }),
+    item('Departamentos', { para: '/cadastros/funcionarios/departamentos' }),
   ]),
   submenu('Produtos / Serviços', [
     item('Produtos / Serviços', { para: '/cadastros/produtos' }),
