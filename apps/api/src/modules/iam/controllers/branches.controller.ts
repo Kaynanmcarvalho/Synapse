@@ -7,7 +7,7 @@ import {
 } from '@synapse/validation';
 import { ZodValidationPipe } from '../../../common/pipes/zod-validation.pipe';
 import { AuditedMutation } from '../../audit/audit.decorator';
-import { CurrentTenant, RequirePermission } from '../iam.decorators';
+import { CurrentTenant, RequirePermission, SkipPermission } from '../iam.decorators';
 import type { TenantContext } from '../iam.types';
 import { BranchService } from '../services/branch.service';
 
@@ -15,8 +15,11 @@ import { BranchService } from '../services/branch.service';
 export class BranchesController {
   constructor(private readonly branches: BranchService) {}
 
+  /** Toda pessoa do tenant lê as filiais em que atua: o PDV e o Ponto de Vendas
+   *  precisam delas para abrir o caixa. Criar, alterar e excluir continuam
+   *  pedindo filial.gerenciar. */
   @Get()
-  @RequirePermission('filial.gerenciar')
+  @SkipPermission()
   list(@CurrentTenant() tenant: TenantContext) {
     return this.branches.list(tenant);
   }

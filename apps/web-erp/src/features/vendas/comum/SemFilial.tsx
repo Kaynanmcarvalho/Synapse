@@ -23,7 +23,8 @@ export function SemFilial({
       <Building2 size={30} aria-hidden="true" className="text-faint" />
       <h1 className="font-display text-heading-sm text-ink">Nenhuma filial para vender</h1>
       <p className="text-body-sm text-stone">
-        {erro ?? 'A venda acontece numa filial. Cadastre a matriz em Configurações › Filiais.'}
+        {erro ??
+          'A venda acontece numa filial. Cadastre em Cadastros › Parâmetros da Empresa › Configuração por Filial.'}
       </p>
       <Link to={ROTAS.filiais} className={BOTAO_ESCURO}>
         Abrir Filiais

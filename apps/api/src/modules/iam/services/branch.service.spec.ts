@@ -46,9 +46,56 @@ describe('BranchService', () => {
     const service = novoServico();
     await service.create(
       { ...tenant, tenantId: 'tenant-a' },
-      { name: 'Filial A', isHeadquarters: false },
+      { name: 'Filial A', isHeadquarters: true },
     );
-    expect(await service.list({ ...tenant, tenantId: 'tenant-b' })).toHaveLength(0);
+    expect(
+      (await service.list({ ...tenant, tenantId: 'tenant-b' })).map((filial) => filial.name),
+    ).toEqual(['Matriz']);
+  });
+
+  it('empresa sem filial ganha a Matriz uma vez só, mesmo com várias telas abrindo juntas', async () => {
+    const db = new FakeFirestore();
+    const listas = await Promise.all([
+      novoServico(db).list(tenant),
+      novoServico(db).list(tenant),
+      novoServico(db).list(tenant),
+    ]);
+    expect(listas.map((lista) => lista.map((filial) => filial.id))).toEqual([
+      ['matriz'],
+      ['matriz'],
+      ['matriz'],
+    ]);
+    expect(await novoServico(db).list(tenant)).toEqual([
+      expect.objectContaining({ id: 'matriz', name: 'Matriz', isHeadquarters: true }),
+    ]);
+  });
+
+  it('quem atua só em algumas filiais lista só essas', async () => {
+    const service = novoServico();
+    const matriz = await service.create(tenant, { name: 'Matriz', isHeadquarters: true });
+    const aparecida = await service.create(tenant, { name: 'Aparecida', isHeadquarters: false });
+    expect(
+      (await service.list({ ...tenant, branchIds: [aparecida.id] })).map((filial) => filial.id),
+    ).toEqual([aparecida.id]);
+    expect((await service.list(tenant)).map((filial) => filial.id)).toEqual([
+      matriz.id,
+      aparecida.id,
+    ]);
+  });
+
+  it('não deixa a empresa sem matriz nem com duas', async () => {
+    const service = novoServico();
+    const matriz = await service.create(tenant, { name: 'Matriz', isHeadquarters: true });
+    const filial = await service.create(tenant, { name: 'Aparecida', isHeadquarters: false });
+    await expect(service.update(tenant, matriz.id, { isHeadquarters: false })).rejects.toThrow(
+      'precisa de uma matriz',
+    );
+    await expect(service.update(tenant, filial.id, { isHeadquarters: true })).rejects.toThrow(
+      'ja tem uma matriz',
+    );
+    expect((await service.update(tenant, filial.id, { name: 'Filial Aparecida' })).name).toBe(
+      'Filial Aparecida',
+    );
   });
 
   it('continua existindo depois de a API reiniciar', async () => {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { CONFIG_DOMAINS, type ResolvedConfigValue } from '@synapse/types';
 import { apiRequest } from '../../lib/dev-auth';
+import { FiliaisDaEmpresa } from './FiliaisDaEmpresa';
 
 function useBranchConfig() {
   const [branchId, setBranchId] = useState('');
@@ -69,7 +70,8 @@ function ConfigFields({ form }: { readonly form: BranchConfigForm }) {
   return (
     <>
       <label>
-        Filial (vazio para configuração global da empresa)
+        Id da filial (vazio para configuração global da empresa; a matriz criada pelo sistema é
+        &quot;matriz&quot;)
         <input
           className="mt-1 w-full rounded border bg-transparent p-2"
           value={form.branchId}
@@ -150,6 +152,7 @@ export function BranchConfigScreen() {
   return (
     <main className="mx-auto max-w-3xl space-y-5 p-4 sm:p-8">
       <h1 className="text-2xl font-bold">Configuração por filial</h1>
+      <FiliaisDaEmpresa />
       <p>Consulte a origem de cada valor, configure a empresa ou sobrescreva uma filial.</p>
       <fieldset
         disabled={form.busy}

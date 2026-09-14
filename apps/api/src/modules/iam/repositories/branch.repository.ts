@@ -18,6 +18,17 @@ export class BranchRepository {
     return branch;
   }
 
+  /** Cria a filial só se o id ainda não existe. A matriz automática usa id fixo:
+   *  duas telas abrindo juntas criam uma matriz só, e a segunda fica quieta. */
+  async criarSeNaoExiste(branch: Branch): Promise<void> {
+    try {
+      await this.collection(branch.tenantId).doc(branch.id).create(branch);
+    } catch (error) {
+      const code = (error as { code?: string | number }).code;
+      if (code !== 6 && code !== 'already-exists') throw error;
+    }
+  }
+
   async findById(tenantId: string, id: string): Promise<Branch | undefined> {
     const snapshot = await this.collection(tenantId).doc(id).get();
     return snapshot.exists ? (snapshot.data() as Branch) : undefined;

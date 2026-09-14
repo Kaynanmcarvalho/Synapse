@@ -5,12 +5,25 @@ import { randomUUID } from 'node:crypto';
 import type { TenantContext } from '../iam.types';
 import { BranchRepository } from '../repositories/branch.repository';
 
+/** Id da matriz que o sistema cria para a empresa que ainda não tem filial. */
+export const MATRIZ_PADRAO = 'matriz';
+
 @Injectable()
 export class BranchService {
   constructor(private readonly repository: BranchRepository) {}
 
-  list(tenant: TenantContext): Promise<Branch[]> {
-    return this.repository.listByTenant(tenant.tenantId);
+  /** As filiais em que a pessoa atua (membership sem filial = todas). Empresa
+   *  sem filial nenhuma ganha a Matriz na primeira leitura: o PDV, o Ponto de
+   *  Vendas e o caixa não funcionam sem uma. */
+  async list(tenant: TenantContext): Promise<Branch[]> {
+    let filiais = await this.repository.listByTenant(tenant.tenantId);
+    if (filiais.length === 0) {
+      await this.repository.criarSeNaoExiste(this.matrizPadrao(tenant));
+      filiais = await this.repository.listByTenant(tenant.tenantId);
+    }
+    return tenant.branchIds.length === 0
+      ? filiais
+      : filiais.filter((filial) => tenant.branchIds.includes(filial.id));
   }
 
   async create(tenant: TenantContext, input: CreateBranchInput): Promise<Branch> {
@@ -39,6 +52,14 @@ export class BranchService {
   async update(tenant: TenantContext, branchId: string, input: UpdateBranchInput): Promise<Branch> {
     const branch = await this.repository.findById(tenant.tenantId, branchId);
     if (!branch) throw new NotFoundException('Filial nao encontrada');
+    if (branch.isHeadquarters && input.isHeadquarters === false)
+      throw new ConflictException('A empresa precisa de uma matriz');
+    if (!branch.isHeadquarters && input.isHeadquarters) {
+      const outraMatriz = (await this.repository.listByTenant(tenant.tenantId)).find(
+        (filial) => filial.isHeadquarters,
+      );
+      if (outraMatriz) throw new ConflictException('O tenant ja tem uma matriz cadastrada');
+    }
     const updated: Branch = {
       ...branch,
       name: input.name ?? branch.name,
@@ -55,6 +76,22 @@ export class BranchService {
     if (!branch) throw new NotFoundException('Filial nao encontrada');
     if (branch.isHeadquarters) throw new ConflictException('A matriz nao pode ser excluida');
     await this.repository.delete(tenant.tenantId, branchId);
+  }
+
+  private matrizPadrao(tenant: TenantContext): Branch {
+    const agora = new Date().toISOString();
+    const actor = this.actor(tenant);
+    return {
+      id: asBranchId(MATRIZ_PADRAO),
+      tenantId: tenant.tenantId as Branch['tenantId'],
+      name: 'Matriz',
+      isHeadquarters: true,
+      createdAt: agora,
+      createdBy: actor,
+      updatedAt: agora,
+      updatedBy: actor,
+      version: 1,
+    };
   }
 
   private actor(tenant: TenantContext): AuditActor {
