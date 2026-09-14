@@ -200,6 +200,10 @@ export class ProductService {
         : undefined) ??
       (await this.repository.findBySku(tenant.tenantId, limpo)) ??
       (await this.repository.findBySku(tenant.tenantId, limpo.toUpperCase())) ??
+      (await this.repository.findByInternalCode(tenant.tenantId, limpo)) ??
+      (/^0+\d/.test(limpo)
+        ? await this.repository.findByInternalCode(tenant.tenantId, limpo.replace(/^0+/, ''))
+        : undefined) ??
       (await this.repository.findById(tenant.tenantId, limpo))
     );
   }

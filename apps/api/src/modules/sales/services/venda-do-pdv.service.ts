@@ -131,7 +131,7 @@ export class VendaDoPdvService {
     });
     const nfceDocumentId =
       input.modo === 'NFCE'
-        ? await fiscal.issueNfce(context.tenantId, input.companyId, rascunho)
+        ? await fiscal.issueNfce(context.tenantId, input.companyId ?? context.tenantId, rascunho)
         : null;
     const venda = await this.repository.saveSale(context.tenantId, { ...rascunho, nfceDocumentId });
     await this.movimentarEstoque(context, venda, session.warehouseId ?? 'deposito-1', -1);

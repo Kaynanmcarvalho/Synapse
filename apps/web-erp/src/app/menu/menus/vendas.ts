@@ -4,8 +4,8 @@ import { item, montarMenu, SEPARADOR as SEP, submenu } from '../menu.utils';
  *  nenhum entrega Ctrl+N para a pagina — ele sempre abre uma janela nova. Os
  *  demais atalhos sao os mesmos. */
 export const VENDAS = montarMenu('Vendas', [
-  item('Venda Balcão', { atalho: 'Alt+N' }),
-  item('Venda PDV Balcão', { atalho: 'Ctrl+O' }),
+  item('Venda Balcão', { para: '/vendas/venda-balcao', atalho: 'Alt+N' }),
+  item('Venda PDV Balcão', { para: '/vendas/pdv-balcao', atalho: 'Ctrl+O' }),
   item('Venda PDV NFC-e', { para: '/vendas/pdv', atalho: 'Ctrl+D', feature: 'NFCE' }),
   item('Venda Tablet'),
   item('Negociação de Desconto'),

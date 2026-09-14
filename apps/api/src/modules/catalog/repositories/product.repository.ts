@@ -81,6 +81,16 @@ export class ProductRepository {
     return first ? doGravado(first.data()) : undefined;
   }
 
+  /** Codigo interno: o que vai na etiqueta da balanca e o balcao digita. */
+  async findByInternalCode(tenantId: string, codigo: string): Promise<Product | undefined> {
+    const result = await this.collection(tenantId)
+      .where('internalCode', '==', codigo)
+      .limit(1)
+      .get();
+    const [first] = result.docs;
+    return first ? doGravado(first.data()) : undefined;
+  }
+
   /** Codigo de barras lido no balcao ou no PDV. */
   async findByEan(tenantId: string, ean: string): Promise<Product | undefined> {
     const result = await this.collection(tenantId).where('ean', '==', ean).limit(1).get();

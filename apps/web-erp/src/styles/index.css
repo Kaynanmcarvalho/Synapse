@@ -16,3 +16,42 @@
     @apply bg-canvas-light text-ink antialiased;
   }
 }
+
+/* Impressão do pedido de venda (Ponto de Vendas e PDV Balcão): enquanto a
+   janela de impressão imprime, só a folha vai para o papel. */
+#area-de-impressao {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 8mm 8mm 12mm;
+
+    @bottom-right {
+      content: 'Página ' counter(page) ' de ' counter(pages);
+      font: 9px sans-serif;
+    }
+  }
+
+  body.imprimindo {
+    background: #fff;
+  }
+
+  body.imprimindo > *:not(#area-de-impressao) {
+    display: none !important;
+  }
+
+  body.imprimindo #area-de-impressao {
+    display: block;
+  }
+
+  #area-de-impressao .folha-do-pedido {
+    width: auto;
+    padding: 0;
+  }
+
+  #area-de-impressao .so-na-tela {
+    display: none;
+  }
+}

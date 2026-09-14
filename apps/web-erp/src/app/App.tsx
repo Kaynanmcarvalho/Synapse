@@ -6,7 +6,8 @@ import { TabelaAuxiliarScreen } from '../features/cadastros/tabelas/TabelaAuxili
 import { FornecedoresScreen } from '../features/fornecedores/FornecedoresScreen';
 import { FuncionariosScreen } from '../features/funcionarios/FuncionariosScreen';
 import { ProductsScreen } from '../features/products/ProductsScreen';
-import { PosScreen } from '../features/pos/PosScreen';
+import { VendaBalcaoScreen } from '../features/vendas/balcao/VendaBalcaoScreen';
+import { PdvScreen } from '../features/vendas/pdv/PdvScreen';
 import { InventoryScreen } from '../features/inventory/InventoryScreen';
 import { RolesScreen } from '../features/roles/RolesScreen';
 import { StockIntelligenceScreen } from '../features/stock-intelligence/StockIntelligenceScreen';
@@ -43,7 +44,9 @@ export function App() {
               <Route path={ROTAS.inteligenciaDeEstoque} element={<StockIntelligenceScreen />} />
               <Route path={ROTAS.compras} element={<PurchasingScreen />} />
               <Route path={ROTAS.boletos} element={<BoletosScreen />} />
-              <Route path={ROTAS.pdv} element={<PosScreen />} />
+              <Route path={ROTAS.vendaBalcao} element={<VendaBalcaoScreen />} />
+              <Route path={ROTAS.pdvBalcao} element={<PdvScreen key="balcao" modo="BALCAO" />} />
+              <Route path={ROTAS.pdv} element={<PdvScreen key="nfce" modo="NFCE" />} />
               <Route path={ROTAS.analiseDeCredito} element={<AnaliseDeCreditoScreen />} />
               <Route path={ROTAS.clientes} element={<ClientesScreen />} />
               <Route path={ROTAS.fornecedores} element={<FornecedoresScreen />} />

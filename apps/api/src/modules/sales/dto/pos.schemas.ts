@@ -20,7 +20,8 @@ export const completePosSaleSchema = z
   .object({
     /** NFC-e emite cupom fiscal; balcão emite o pedido sem valor fiscal. */
     modo: z.enum(['NFCE', 'BALCAO']).default('NFCE'),
-    companyId: z.string().min(1),
+    /** Empresa emissora; é sempre a do próprio tenant, então pode vir vazio. */
+    companyId: z.string().min(1).optional(),
     customerId: z.string().min(1).nullable().optional(),
     customerTaxId: z
       .string()

@@ -155,6 +155,22 @@ describe('ProductService — busca e paginacao por cursor', () => {
   });
 });
 
+describe('ProductService — codigo digitado no balcao', () => {
+  it('acha por codigo de barras, SKU e codigo interno, inclusive com zeros da etiqueta da balanca', async () => {
+    const service = new ProductService(
+      new ProductRepository(new FakeFirestore() as unknown as Firestore),
+    );
+    const criado = await service.create(tenant, {
+      ...baseInput('MUSS-KG'),
+      internalCode: '123',
+      ean: '7891000100103',
+    });
+    for (const codigo of ['7891000100103', 'MUSS-KG', 'muss-kg', '123', '00123'])
+      expect((await service.findByCode(tenant, codigo))?.id).toBe(criado.id);
+    expect(await service.findByCode(tenant, '999')).toBeUndefined();
+  });
+});
+
 describe('ProductService — importacao em massa (c8-5)', () => {
   it('importa linhas validas e reporta as invalidas sem parar a planilha', async () => {
     const service = new ProductService(

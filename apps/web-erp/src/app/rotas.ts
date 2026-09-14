@@ -10,6 +10,8 @@ export const ROTAS = {
   inteligenciaDeEstoque: '/estoque/inteligencia',
   compras: '/compras',
   boletos: '/financeiro/boletos',
+  vendaBalcao: '/vendas/venda-balcao',
+  pdvBalcao: '/vendas/pdv-balcao',
   pdv: '/vendas/pdv',
   analiseDeCredito: '/vendas/analise-de-credito',
   clientes: '/cadastros/clientes',
