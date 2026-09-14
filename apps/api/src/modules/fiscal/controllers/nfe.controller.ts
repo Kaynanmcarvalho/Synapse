@@ -30,38 +30,53 @@ export class NfeController {
   }
   @Get(':id/status')
   @RequirePermission('fiscal.visualizar')
-  consult(@Param('id') id: string) {
-    return this.service.consult(id);
+  consult(@CurrentTenant() tenant: TenantContext, @Param('id') id: string) {
+    return this.service.consult(tenant.tenantId, id);
   }
   @Post(':id/cancel')
   @RequirePermission('fiscal.cancelar')
   cancel(
+    @CurrentTenant() tenant: TenantContext,
     @Param('id') id: string,
     @Body(new ZodValidationPipe(fiscalEventSchema)) input: FiscalEventInput,
   ) {
-    return this.service.cancel(id, input);
+    return this.service.cancel(tenant.tenantId, id, input);
   }
   @Post(':id/correction')
   @RequirePermission('fiscal.emitir')
   correct(
+    @CurrentTenant() tenant: TenantContext,
     @Param('id') id: string,
     @Body(new ZodValidationPipe(fiscalEventSchema)) input: FiscalEventInput,
   ) {
-    return this.service.correct(id, input);
+    return this.service.correct(tenant.tenantId, id, input);
   }
   @Post('invalidation')
   @RequirePermission('fiscal.cancelar')
-  invalidate(@Body(new ZodValidationPipe(invalidateNfeSchema)) input: InvalidateNfeInput) {
-    return this.service.invalidate(input);
+  invalidate(
+    @CurrentTenant() tenant: TenantContext,
+    @Body(new ZodValidationPipe(invalidateNfeSchema)) input: InvalidateNfeInput,
+  ) {
+    return this.service.invalidate(tenant.tenantId, input);
   }
   @Get(':id/xml')
   @RequirePermission('fiscal.visualizar')
-  async xml(@Param('id') id: string, @Res() response: Response) {
-    response.type('application/xml').send(await this.service.xml(id));
+  async xml(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id') id: string,
+    @Res() response: Response,
+  ) {
+    response.type('application/xml').send(await this.service.xml(tenant.tenantId, id));
   }
   @Get(':id/danfe')
   @RequirePermission('fiscal.visualizar')
-  async danfe(@Param('id') id: string, @Res() response: Response) {
-    response.type('application/pdf').send(Buffer.from(await this.service.danfe(id)));
+  async danfe(
+    @CurrentTenant() tenant: TenantContext,
+    @Param('id') id: string,
+    @Res() response: Response,
+  ) {
+    response
+      .type('application/pdf')
+      .send(Buffer.from(await this.service.danfe(tenant.tenantId, id)));
   }
 }

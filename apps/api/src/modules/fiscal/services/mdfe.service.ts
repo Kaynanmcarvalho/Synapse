@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import type { FiscalDocument, FiscalProvider, FiscalProviderResult } from '@synapse/types';
+import type { FiscalProvider, FiscalProviderResult } from '@synapse/types';
 import { randomUUID } from 'node:crypto';
 import type { TenantContext } from '../../iam/iam.types';
 import type {
@@ -8,6 +8,7 @@ import type {
   MdfeEventInput,
   VehicleInput,
 } from '../dto/mdfe.schemas';
+import { assertOwnCompany } from '../entities/fiscal-company';
 import { FiscalRepository } from '../repositories/fiscal.repository';
 import { MdfeRepository, type Manifest } from '../repositories/mdfe.repository';
 import { FiscalProviderRegistry } from './fiscal-provider.registry';
@@ -38,12 +39,9 @@ export class MdfeService {
     });
   }
   async issue(tenant: TenantContext, input: IssueMdfeInput) {
-    const existing = this.fiscal.findByIdempotency(input.idempotencyKey);
-    if (existing) {
-      const repeated = this.repository.manifest(tenant.tenantId, existing.id);
-      if (!repeated) throw new NotFoundException('MDF-e idempotente não encontrado');
-      return repeated;
-    }
+    assertOwnCompany(tenant.tenantId, input.companyId);
+    const existing = await this.fiscal.findByIdempotency(tenant.tenantId, input.idempotencyKey);
+    if (existing) return this.repeated(tenant, existing.id);
     const driver = this.repository.driver(tenant.tenantId, input.driverId);
     const vehicle = this.repository.vehicle(tenant.tenantId, input.vehicleId);
     if (!driver || !vehicle) throw new NotFoundException('Motorista ou veículo não encontrado');
@@ -52,26 +50,28 @@ export class MdfeService {
     if (input.cargoWeightKg > vehicle.capacityKg)
       throw new BadRequestException('Peso excede a capacidade do veículo');
     const { config, provider } = await this.context(input.companyId);
-    const document: FiscalDocument = {
-      id: randomUUID(),
-      tenantId: tenant.tenantId,
-      companyId: input.companyId,
-      kind: 'MDFE',
-      environment: config.environment,
-      status: 'PROCESSING',
-      series: 1,
-      number: Date.now(),
-      accessKey: null,
-      protocol: null,
-      providerJobId: null,
-      xml: null,
-      sefazCode: null,
-      sefazMessage: null,
-      attempts: 0,
-      idempotencyKey: input.idempotencyKey,
-      issuedAt: null,
-    };
-    this.fiscal.saveDocument(document);
+    const { document, replayed } = await this.fiscal.reserveDocument(
+      {
+        id: randomUUID(),
+        tenantId: tenant.tenantId,
+        companyId: input.companyId,
+        kind: 'MDFE',
+        environment: config.environment,
+        status: 'PROCESSING',
+        series: 1,
+        accessKey: null,
+        protocol: null,
+        providerJobId: null,
+        xml: null,
+        sefazCode: null,
+        sefazMessage: null,
+        attempts: 0,
+        idempotencyKey: input.idempotencyKey,
+        issuedAt: null,
+      },
+      { fixedNumber: Date.now() },
+    );
+    if (replayed) return this.repeated(tenant, document.id);
     const created: Manifest = {
       document,
       driverId: driver.id,
@@ -146,6 +146,11 @@ export class MdfeService {
     if (!provider.getDamdfe) throw new BadRequestException('Provedor não suporta DAMDFE');
     return provider.getDamdfe(manifest.document.providerJobId ?? id);
   }
+  private repeated(tenant: TenantContext, documentId: string) {
+    const manifest = this.repository.manifest(tenant.tenantId, documentId);
+    if (!manifest) throw new NotFoundException('MDF-e idempotente não encontrado');
+    return manifest;
+  }
   private get(tenant: TenantContext, id: string) {
     const value = this.repository.manifest(tenant.tenantId, id);
     if (!value) throw new NotFoundException('MDF-e não encontrado');
@@ -161,9 +166,13 @@ export class MdfeService {
     if (!config) throw new NotFoundException('Configuração fiscal não encontrada');
     return { config, provider: (await this.providers.resolve(config)) as CapableProvider };
   }
-  private apply(manifest: Manifest, result: FiscalProviderResult, forced?: Manifest['status']) {
+  private async apply(
+    manifest: Manifest,
+    result: FiscalProviderResult,
+    forced?: Manifest['status'],
+  ) {
     const fiscalStatus = forced === 'CANCELLED' ? 'CANCELLED' : result.status;
-    const document = this.fiscal.saveDocument({
+    const document = await this.fiscal.saveDocument({
       ...manifest.document,
       status: fiscalStatus,
       accessKey: result.accessKey,

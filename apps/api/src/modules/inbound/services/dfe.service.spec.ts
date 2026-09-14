@@ -1,3 +1,4 @@
+import { ForbiddenException } from '@nestjs/common';
 import type { FiscalProvider, UserId } from '@synapse/types';
 import type { Firestore } from '@synapse/firebase/admin';
 import { FakeFirestore } from '../../../../test/fake-firestore';
@@ -33,7 +34,7 @@ async function setup() {
   const repository = new DfeRepository();
   const fiscalRepository = new FiscalRepository(new FakeFirestore() as unknown as Firestore);
   await fiscalRepository.saveConfig({
-    companyId: 'company',
+    companyId: 'tenant',
     environment: 'HOMOLOGACAO',
     provider: 'MOCK',
     crt: 1,
@@ -120,14 +121,14 @@ describe('DfeService', () => {
     service.importXml(tenant, { xml });
     await expect(
       service.manifest(tenant, ACCESS_KEY, {
-        companyId: 'company',
+        companyId: 'tenant',
         manifestacao: 'OPERACAO_NAO_REALIZADA',
         justificativa: 'curta',
       }),
     ).rejects.toThrow(/15 caracteres/);
     await expect(
       service.manifest(tenant, ACCESS_KEY, {
-        companyId: 'company',
+        companyId: 'tenant',
         manifestacao: 'CIENCIA_DA_OPERACAO',
         justificativa: null,
       }),
@@ -151,13 +152,22 @@ describe('DfeService', () => {
     ]);
 
     await expect(
-      service.poll(tenant, { companyId: 'company', cnpj: '12345678000199' }),
+      service.poll(tenant, { companyId: 'tenant', cnpj: '12345678000199' }),
     ).resolves.toMatchObject({ lastNsu: '42', found: 1 });
     await expect(
-      service.poll(tenant, { companyId: 'company', cnpj: '12345678000199' }),
+      service.poll(tenant, { companyId: 'tenant', cnpj: '12345678000199' }),
     ).resolves.toMatchObject({ lastNsu: '42' });
     expect(provider.queryDFe).toHaveBeenLastCalledWith(
       expect.objectContaining({ ultimoNsu: '42' }),
     );
+  });
+  it('recusa consultar DF-e com a empresa de outro tenant', async () => {
+    const { service, provider } = await setup();
+    provider.queryDFe = jest.fn();
+
+    await expect(
+      service.poll(tenant, { companyId: 'outro-tenant', cnpj: '12345678000199' }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    expect(provider.queryDFe).not.toHaveBeenCalled();
   });
 });

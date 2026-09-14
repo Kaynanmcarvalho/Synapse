@@ -23,7 +23,7 @@ describe('Venda -> NFC-e -> recebimento', () => {
   it('autoriza a NFC-e, persiste o pagamento e atualiza o caixa', async () => {
     const fiscalRepository = new FiscalRepository(new FakeFirestore() as unknown as Firestore);
     await fiscalRepository.saveConfig({
-      companyId: 'company',
+      companyId: 'tenant',
       environment: 'HOMOLOGACAO',
       provider: 'MOCK',
       crt: 1,
@@ -56,7 +56,7 @@ describe('Venda -> NFC-e -> recebimento', () => {
     const sale = await pos.completeSale(
       cash.id,
       {
-        companyId: 'company',
+        companyId: 'tenant',
         sellerId: 'seller',
         items: [
           {
@@ -75,10 +75,10 @@ describe('Venda -> NFC-e -> recebimento', () => {
     );
 
     expect(sale.payments).toEqual([expect.objectContaining({ method: 'CASH', amount: 15_000 })]);
-    expect(fiscalRepository.findDocument(sale.nfceDocumentId)).toMatchObject({
+    expect(await fiscalRepository.findDocument('tenant', sale.nfceDocumentId)).toMatchObject({
       kind: 'NFCE',
       status: 'AUTHORIZED',
-      companyId: 'company',
+      companyId: 'tenant',
     });
     expect(pos.closeCash(cash.id, 17_000)).toMatchObject({ difference: 0 });
   });

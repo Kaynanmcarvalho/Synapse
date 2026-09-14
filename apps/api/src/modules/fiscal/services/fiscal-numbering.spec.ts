@@ -7,7 +7,7 @@ import type { FiscalProviderRegistry } from './fiscal-provider.registry';
 import { NfeService } from './nfe.service';
 
 const config: FiscalCompanyConfig = {
-  companyId: 'company',
+  companyId: 'tenant',
   environment: 'HOMOLOGACAO',
   provider: 'MOCK',
   crt: 3,
@@ -43,7 +43,7 @@ describe('numeração vinda do assistente', () => {
     } as unknown as FiscalProviderRegistry);
     const issue = (key: string) =>
       service.issue('tenant', {
-        companyId: 'company',
+        companyId: 'tenant',
         referenceId: key,
         idempotencyKey: `issue-${key}`,
         payload: { naturezaOperacao: 'VENDA' },

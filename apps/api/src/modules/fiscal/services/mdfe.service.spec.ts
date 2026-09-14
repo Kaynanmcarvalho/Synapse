@@ -1,3 +1,4 @@
+import { ForbiddenException } from '@nestjs/common';
 import type { UserId } from '@synapse/types';
 import type { Firestore } from '@synapse/firebase/admin';
 import { FakeFirestore } from '../../../../test/fake-firestore';
@@ -15,7 +16,7 @@ const tenant = {
   warehouseIds: [],
 };
 const input = {
-  companyId: 'company',
+  companyId: 'tenant',
   referenceId: 'trip-1',
   idempotencyKey: 'mdfe-trip-1',
   vehicleId: '',
@@ -32,7 +33,7 @@ describe('MdfeService', () => {
   it('cadastra frota, autoriza, alerta e encerra o MDF-e', async () => {
     const fiscal = new FiscalRepository(new FakeFirestore() as unknown as Firestore);
     await fiscal.saveConfig({
-      companyId: 'company',
+      companyId: 'tenant',
       environment: 'HOMOLOGACAO',
       provider: 'MOCK',
       crt: 1,
@@ -81,7 +82,7 @@ describe('MdfeService', () => {
   it('recusa carga acima da capacidade do veículo', async () => {
     const fiscal = new FiscalRepository(new FakeFirestore() as unknown as Firestore);
     await fiscal.saveConfig({
-      companyId: 'company',
+      companyId: 'tenant',
       environment: 'MOCK',
       provider: 'MOCK',
       crt: 1,
@@ -114,5 +115,16 @@ describe('MdfeService', () => {
     await expect(
       service.issue(tenant, { ...input, driverId: driver.id, vehicleId: vehicle.id }),
     ).rejects.toThrow(/capacidade/);
+  });
+  it('recusa emitir o MDF-e com a empresa de outro tenant', async () => {
+    const service = new MdfeService(
+      new MdfeRepository(),
+      new FiscalRepository(new FakeFirestore() as unknown as Firestore),
+      { resolve: () => new MockFiscalProvider() } as unknown as FiscalProviderRegistry,
+    );
+
+    await expect(
+      service.issue(tenant, { ...input, companyId: 'outro-tenant' }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
   });
 });

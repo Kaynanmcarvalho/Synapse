@@ -8,6 +8,7 @@ import type {
 } from '@synapse/types';
 import { randomUUID } from 'node:crypto';
 import type { FiscalEventInput, RetryNfceInput } from '../dto/fiscal.schemas';
+import { assertOwnCompany } from '../entities/fiscal-company';
 import { assertFiscalTransition } from '../entities/fiscal-state-machine';
 import { FiscalRepository } from '../repositories/fiscal.repository';
 import { FiscalProviderRegistry } from './fiscal-provider.registry';
@@ -31,83 +32,65 @@ export class NfceService {
     companyId: string,
     sale: Omit<PosSale, 'nfceDocumentId'>,
   ): Promise<string> {
+    assertOwnCompany(tenantId, companyId);
     const idempotencyKey = `pos-nfce:${sale.id}`;
-    const existing = this.repository.findByIdempotency(idempotencyKey);
+    const existing = await this.repository.findByIdempotency(tenantId, idempotencyKey);
     if (existing) return existing.id;
     const { config, provider } = await this.context(companyId);
     if (config.provider !== 'MOCK' && (!config.cscId || !config.cscSecretRef))
       throw new BadRequestException('CSC e identificador do CSC são obrigatórios para NFC-e');
 
-    const number = this.repository.nextNumber(
-      companyId,
-      'NFCE',
-      config.nfceSeries,
-      config.nfce?.series.find((row) => row.series === config.nfceSeries)?.nextNumber,
+    const { document: draft, replayed } = await this.repository.reserveDocument(
+      {
+        id: randomUUID(),
+        tenantId,
+        companyId,
+        kind: 'NFCE',
+        environment: config.environment,
+        status: 'PROCESSING',
+        series: config.nfceSeries,
+        accessKey: null,
+        protocol: null,
+        providerJobId: null,
+        xml: null,
+        sefazCode: null,
+        sefazMessage: null,
+        attempts: 0,
+        idempotencyKey,
+        issuedAt: null,
+      },
+      {
+        companyId,
+        kind: 'NFCE',
+        series: config.nfceSeries,
+        initialNumber: config.nfce?.series.find((row) => row.series === config.nfceSeries)
+          ?.nextNumber,
+      },
     );
-    const payload = this.salePayload(sale, config.nfceSeries, number);
-    const draft: FiscalDocument = {
-      id: randomUUID(),
-      tenantId,
-      companyId,
-      kind: 'NFCE',
-      environment: config.environment,
-      status: 'PROCESSING',
-      series: config.nfceSeries,
-      number,
-      accessKey: null,
-      protocol: null,
-      providerJobId: null,
-      xml: null,
-      sefazCode: null,
-      sefazMessage: null,
-      attempts: 0,
-      idempotencyKey,
-      issuedAt: null,
-    };
-    this.repository.saveDocument(draft);
+    // A mesma venda fechada duas vezes ao mesmo tempo: fica a nota de quem chegou antes.
+    if (replayed) return draft.id;
+    const payload = this.salePayload(sale, draft.series, draft.number);
+    // So a falha do provedor leva para a contingencia. Falha ao gravar a resposta
+    // nao pode reenviar em contingencia uma nota que ja foi autorizada.
+    let result: FiscalProviderResult;
     try {
-      const result = await provider.issueNFCe({
+      result = await provider.issueNFCe({
         companyId,
         referenceId: sale.id,
-        number,
-        series: config.nfceSeries,
+        number: draft.number,
+        series: draft.series,
         payload,
         idempotencyKey,
       });
-      return this.apply(draft, result).id;
     } catch (error) {
       if (config.nfceContingencyEnabled === false) throw error;
-      const contingencyPayload = {
-        ...payload,
-        formaEmissao: 'contingencia_offline',
-        justificativaContingencia: 'Indisponibilidade de comunicação com a SEFAZ',
-        dataHoraContingencia: new Date().toISOString(),
-      };
-      const document = this.apply(
-        draft,
-        await provider.issueNFCe({
-          companyId,
-          referenceId: sale.id,
-          number,
-          series: config.nfceSeries,
-          payload: contingencyPayload,
-          idempotencyKey: `${idempotencyKey}:contingency`,
-        }),
-        'CONTINGENCY',
-      );
-      this.repository.enqueueNfce({
-        documentId: document.id,
-        companyId,
-        payload: contingencyPayload,
-        idempotencyKey: `${idempotencyKey}:contingency`,
-        queuedAt: new Date().toISOString(),
-      });
-      return document.id;
+      return this.issueInContingency(draft, sale.id, payload, provider);
     }
+    return (await this.apply(draft, result)).id;
   }
 
-  async consult(documentId: string) {
-    const { document, provider } = await this.documentContext(documentId);
+  async consult(tenantId: string, documentId: string) {
+    const { document, provider } = await this.documentContext(tenantId, documentId);
     if (document.providerJobId && provider.checkNFCeJob) {
       const result = await provider.checkNFCeJob(document.providerJobId);
       if (result) return this.finishQueued(document, result);
@@ -116,10 +99,10 @@ export class NfceService {
     return this.finishQueued(document, await provider.consultDocument(document.accessKey));
   }
 
-  async retryContingency(documentId: string, input: RetryNfceInput) {
-    const queued = this.repository.findQueuedNfce(documentId);
+  async retryContingency(tenantId: string, documentId: string, input: RetryNfceInput) {
+    const queued = await this.repository.findQueuedNfce(tenantId, documentId);
     if (!queued) throw new NotFoundException('NFC-e não está na fila de contingência');
-    const { document, provider } = await this.documentContext(documentId);
+    const { document, provider } = await this.documentContext(tenantId, documentId);
     if (document.providerJobId && provider.checkNFCeJob) {
       const result = await provider.checkNFCeJob(document.providerJobId);
       if (result) return this.finishQueued(document, result);
@@ -135,8 +118,8 @@ export class NfceService {
     return this.finishQueued(document, result);
   }
 
-  async cancel(documentId: string, input: FiscalEventInput) {
-    const { document, provider, config } = await this.documentContext(documentId);
+  async cancel(tenantId: string, documentId: string, input: FiscalEventInput) {
+    const { document, provider, config } = await this.documentContext(tenantId, documentId);
     if (!document.accessKey || !document.protocol || !document.issuedAt)
       throw new BadRequestException('NFC-e ainda não autorizada');
     const elapsedMinutes = (Date.now() - new Date(document.issuedAt).getTime()) / 60_000;
@@ -157,8 +140,8 @@ export class NfceService {
     );
   }
 
-  async xml(documentId: string) {
-    const { document, provider } = await this.documentContext(documentId);
+  async xml(tenantId: string, documentId: string) {
+    const { document, provider } = await this.documentContext(tenantId, documentId);
     if (document.xml) return document.xml;
     if (provider.downloadNFCeXml)
       return provider.downloadNFCeXml(
@@ -168,13 +151,49 @@ export class NfceService {
     return provider.downloadXml(document.providerJobId ?? document.id);
   }
 
-  async print(documentId: string) {
-    const { provider } = await this.documentContext(documentId);
-    const xml = await this.xml(documentId);
+  async print(tenantId: string, documentId: string) {
+    const { provider } = await this.documentContext(tenantId, documentId);
+    const xml = await this.xml(tenantId, documentId);
     const danfe = provider.getNFCeDanfe
       ? await provider.getNFCeDanfe(xml)
       : await provider.getDanfe(xml);
     return { danfe, qrCodeUrl: this.qrCode(xml) };
+  }
+
+  private async issueInContingency(
+    draft: FiscalDocument,
+    saleId: string,
+    payload: ReturnType<NfceService['salePayload']>,
+    provider: NfceProvider,
+  ): Promise<string> {
+    const idempotencyKey = `${draft.idempotencyKey}:contingency`;
+    const contingencyPayload = {
+      ...payload,
+      formaEmissao: 'contingencia_offline',
+      justificativaContingencia: 'Indisponibilidade de comunicação com a SEFAZ',
+      dataHoraContingencia: new Date().toISOString(),
+    };
+    const document = await this.apply(
+      draft,
+      await provider.issueNFCe({
+        companyId: draft.companyId,
+        referenceId: saleId,
+        number: draft.number,
+        series: draft.series,
+        payload: contingencyPayload,
+        idempotencyKey,
+      }),
+      'CONTINGENCY',
+    );
+    await this.repository.enqueueNfce({
+      documentId: document.id,
+      tenantId: document.tenantId,
+      companyId: document.companyId,
+      payload: contingencyPayload,
+      idempotencyKey,
+      queuedAt: new Date().toISOString(),
+    });
+    return document.id;
   }
 
   private salePayload(sale: Omit<PosSale, 'nfceDocumentId'>, series: number, number: number) {
@@ -208,16 +227,16 @@ export class NfceService {
     return { config, provider: (await this.providers.resolve(config)) as NfceProvider };
   }
 
-  private async documentContext(id: string) {
-    const document = this.repository.findDocument(id);
+  private async documentContext(tenantId: string, id: string) {
+    const document = await this.repository.findDocument(tenantId, id);
     if (!document || document.kind !== 'NFCE') throw new NotFoundException('NFC-e não encontrada');
     return { document, ...(await this.context(document.companyId)) };
   }
 
-  private finishQueued(document: FiscalDocument, result: FiscalProviderResult) {
-    const saved = this.apply(document, result);
+  private async finishQueued(document: FiscalDocument, result: FiscalProviderResult) {
+    const saved = await this.apply(document, result);
     if (saved.status === 'AUTHORIZED' || saved.status === 'REJECTED')
-      this.repository.dequeueNfce(saved.id);
+      await this.repository.dequeueNfce(saved.tenantId, saved.id);
     return saved;
   }
 

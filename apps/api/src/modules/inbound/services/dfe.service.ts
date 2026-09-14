@@ -4,6 +4,7 @@ import { randomUUID } from 'node:crypto';
 import type { TenantContext } from '../../iam/iam.types';
 import { InventoryService } from '../../inventory/services/inventory.service';
 import { LotService } from '../../inventory/services/lot.service';
+import { assertOwnCompany } from '../../fiscal/entities/fiscal-company';
 import { FiscalRepository } from '../../fiscal/repositories/fiscal.repository';
 import { FiscalProviderRegistry } from '../../fiscal/services/fiscal-provider.registry';
 import type {
@@ -40,7 +41,7 @@ export class DfeService {
   ) {}
 
   async poll(tenant: TenantContext, input: PollDfeInput) {
-    const provider = await this.provider(input.companyId);
+    const provider = await this.provider(tenant, input.companyId);
     const lastNsu =
       input.lastNsu ?? this.repository.lastNsu(tenant.tenantId, input.companyId) ?? '0';
     const documents = await provider.queryDFe({
@@ -140,7 +141,7 @@ export class DfeService {
       por: tenant.userId as UserId,
     };
     validarManifestacao(request);
-    const provider = await this.provider(input.companyId);
+    const provider = await this.provider(tenant, input.companyId);
     if (!provider.manifestDFe)
       throw new BadRequestException('Provedor fiscal não suporta manifestação de DF-e');
     await provider.manifestDFe({
@@ -259,7 +260,8 @@ export class DfeService {
     return entry;
   }
 
-  private async provider(companyId: string): Promise<DfeProvider> {
+  private async provider(tenant: TenantContext, companyId: string): Promise<DfeProvider> {
+    assertOwnCompany(tenant.tenantId, companyId);
     const config = await this.fiscalRepository.findConfig(companyId);
     if (!config) throw new NotFoundException('Configuração fiscal da empresa não encontrada');
     return (await this.providers.resolve(config)) as DfeProvider;

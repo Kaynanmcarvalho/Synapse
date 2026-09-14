@@ -51,7 +51,7 @@ export class SearchService {
     if (allowed('venda.criar'))
       items.push(...this.searchOrders(context, query, limit, branchAllowed));
     if (allowed('fiscal.visualizar'))
-      items.push(...this.searchFiscalDocuments(context, query, limit));
+      items.push(...(await this.searchFiscalDocuments(context, query, limit)));
     if (allowed('financeiro.visualizar'))
       items.push(...(await this.searchTitulos(context, query, limit, branchAllowed)));
     if (allowed('vendedor.gerenciar'))
@@ -120,12 +120,12 @@ export class SearchService {
       }));
   }
 
-  private searchFiscalDocuments(
+  private async searchFiscalDocuments(
     context: TenantContext,
     query: string,
     limit: number,
-  ): SearchResultItem[] {
-    return this.fiscal.searchIndex.search(context.tenantId, query, limit).map((d) => ({
+  ): Promise<SearchResultItem[]> {
+    return (await this.fiscal.search(context.tenantId, query, limit)).map((d) => ({
       type: 'fiscalDocument' as const,
       id: d.id,
       title: `${d.kind} nº ${d.number}`,

@@ -173,7 +173,7 @@ describe('IntegrationsService.runHomologationTest', () => {
     const payload = (nfe.issue.mock.calls[0]?.[1] as { payload: Record<string, unknown> }).payload;
     expect((payload.emitente as { cnpj: string }).cnpj).toBe('38242542000143');
     expect(payload.itens).toHaveLength(1);
-    expect(nfe.cancel).toHaveBeenCalledWith('doc-1', expect.any(Object));
+    expect(nfe.cancel).toHaveBeenCalledWith(tenantId, 'doc-1', expect.any(Object));
     expect(repository.recordHomologationTest).toHaveBeenCalledWith(tenantId, 'SEFAZ_NFE', result);
   });
 

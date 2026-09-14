@@ -1,3 +1,4 @@
+import { ForbiddenException } from '@nestjs/common';
 import type { Firestore } from '@synapse/firebase/admin';
 import { FakeFirestore } from '../../../../test/fake-firestore';
 import { FiscalRepository } from '../repositories/fiscal.repository';
@@ -9,7 +10,7 @@ describe('NfeService', () => {
   it('gera número no backend, autoriza e mantém idempotência', async () => {
     const repository = new FiscalRepository(new FakeFirestore() as unknown as Firestore);
     await repository.saveConfig({
-      companyId: 'company',
+      companyId: 'tenant',
       environment: 'HOMOLOGACAO',
       provider: 'MOCK',
       crt: 1,
@@ -30,7 +31,7 @@ describe('NfeService', () => {
       resolve: () => provider,
     } as unknown as FiscalProviderRegistry);
     const input = {
-      companyId: 'company',
+      companyId: 'tenant',
       referenceId: 'sale-1',
       idempotencyKey: 'issue-sale-1',
       payload: { naturezaOperacao: 'VENDA' },
@@ -40,24 +41,24 @@ describe('NfeService', () => {
     expect(first.status).toBe('AUTHORIZED');
     expect(first.number).toBe(1);
     expect(repeated.id).toBe(first.id);
-    expect((await service.consult(first.id)).protocol).toBeTruthy();
-    expect(await service.xml(first.id)).toContain('nfeProc');
-    expect((await service.danfe(first.id)).length).toBeGreaterThan(0);
+    expect((await service.consult('tenant', first.id)).protocol).toBeTruthy();
+    expect(await service.xml('tenant', first.id)).toContain('nfeProc');
+    expect((await service.danfe('tenant', first.id)).length).toBeGreaterThan(0);
     await expect(
-      service.correct(first.id, {
+      service.correct('tenant', first.id, {
         justification: 'Correção sem alteração de valor fiscal',
         idempotencyKey: 'correction-sale-1',
       }),
     ).resolves.toMatchObject({ id: first.id, status: 'AUTHORIZED' });
     await expect(
-      service.cancel(first.id, {
+      service.cancel('tenant', first.id, {
         justification: 'Operação cancelada por solicitação do cliente',
         idempotencyKey: 'cancel-sale-1',
       }),
     ).resolves.toMatchObject({ status: 'CANCELLED' });
     await expect(
-      service.invalidate({
-        companyId: 'company',
+      service.invalidate('tenant', {
+        companyId: 'tenant',
         series: 1,
         firstNumber: 20,
         lastNumber: 22,
@@ -70,5 +71,32 @@ describe('NfeService', () => {
       idempotencyKey: 'issue-sale-2',
     });
     expect(second.number).toBe(2);
+  });
+  it('recusa emitir ou inutilizar com a empresa de outro tenant', async () => {
+    const db = new FakeFirestore();
+    const repository = new FiscalRepository(db as unknown as Firestore);
+    const service = new NfeService(repository, {
+      resolve: () => new MockFiscalProvider(),
+    } as unknown as FiscalProviderRegistry);
+
+    await expect(
+      service.issue('tenant', {
+        companyId: 'outro-tenant',
+        referenceId: 'sale-1',
+        idempotencyKey: 'issue-sale-1',
+        payload: { naturezaOperacao: 'VENDA' },
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(
+      service.invalidate('tenant', {
+        companyId: 'outro-tenant',
+        series: 1,
+        firstNumber: 20,
+        lastNumber: 22,
+        justification: 'Falha de sistema durante a emissão da sequência',
+      }),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+    // Recusa antes de ler a config ou reservar número do outro tenant.
+    expect(db.caminhosTocados).toEqual([]);
   });
 });

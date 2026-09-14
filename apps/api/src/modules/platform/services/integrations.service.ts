@@ -203,7 +203,7 @@ export class IntegrationsService {
             `A NF-e de teste ficou ${document.status} no provedor e não foi autorizada.`,
         );
       }
-      await this.nfe.cancel(document.id, {
+      await this.nfe.cancel(tenantId, document.id, {
         justification: 'Cancelamento automático do teste de homologação da Central de Integrações',
         idempotencyKey: `homolog-cancel-${randomUUID()}`,
       });

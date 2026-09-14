@@ -1,3 +1,4 @@
+import { ForbiddenException } from '@nestjs/common';
 import type { FiscalProvider, FiscalProviderResult } from '@synapse/types';
 import type { Firestore } from '@synapse/firebase/admin';
 import { FakeFirestore } from '../../../../test/fake-firestore';
@@ -35,7 +36,7 @@ const sale = {
 async function configuredRepository() {
   const repository = new FiscalRepository(new FakeFirestore() as unknown as Firestore);
   await repository.saveConfig({
-    companyId: 'company',
+    companyId: 'tenant',
     environment: 'HOMOLOGACAO',
     provider: 'MOCK',
     crt: 1,
@@ -64,12 +65,15 @@ describe('NfceService', () => {
       resolve: () => provider,
     } as unknown as FiscalProviderRegistry);
 
-    const id = await service.issueNfce('tenant', 'company', sale);
-    expect(await service.issueNfce('tenant', 'company', sale)).toBe(id);
-    expect(await service.consult(id)).toMatchObject({ kind: 'NFCE', status: 'AUTHORIZED' });
-    expect((await service.print(id)).danfe.length).toBeGreaterThan(0);
+    const id = await service.issueNfce('tenant', 'tenant', sale);
+    expect(await service.issueNfce('tenant', 'tenant', sale)).toBe(id);
+    expect(await service.consult('tenant', id)).toMatchObject({
+      kind: 'NFCE',
+      status: 'AUTHORIZED',
+    });
+    expect((await service.print('tenant', id)).danfe.length).toBeGreaterThan(0);
     await expect(
-      service.cancel(id, {
+      service.cancel('tenant', id, {
         justification: 'Cancelamento solicitado pelo consumidor',
         idempotencyKey: 'cancel-nfce-sale-1',
       }),
@@ -113,11 +117,22 @@ describe('NfceService', () => {
       resolve: () => provider,
     } as unknown as FiscalProviderRegistry);
 
-    const id = await service.issueNfce('tenant', 'company', sale);
-    expect(repository.findDocument(id)?.status).toBe('CONTINGENCY');
-    expect(repository.listQueuedNfce()).toHaveLength(1);
-    await expect(service.consult(id)).resolves.toMatchObject({ status: 'AUTHORIZED' });
-    expect(repository.listQueuedNfce()).toHaveLength(0);
-    expect((await service.print(id)).qrCodeUrl).toBe('https://sefaz/qrcode?p=1&x=2');
+    const id = await service.issueNfce('tenant', 'tenant', sale);
+    expect((await repository.findDocument('tenant', id))?.status).toBe('CONTINGENCY');
+    expect(await repository.listQueuedNfce('tenant')).toHaveLength(1);
+    await expect(service.consult('tenant', id)).resolves.toMatchObject({ status: 'AUTHORIZED' });
+    expect(await repository.listQueuedNfce('tenant')).toHaveLength(0);
+    expect((await service.print('tenant', id)).qrCodeUrl).toBe('https://sefaz/qrcode?p=1&x=2');
+  });
+  it('recusa emitir a NFC-e com a empresa de outro tenant', async () => {
+    const repository = await configuredRepository();
+    const service = new NfceService(repository, {
+      resolve: () => new MockFiscalProvider(),
+    } as unknown as FiscalProviderRegistry);
+
+    await expect(service.issueNfce('outro-tenant', 'tenant', sale)).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
+    expect(await repository.listByTenant('outro-tenant')).toEqual([]);
   });
 });

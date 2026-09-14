@@ -5,7 +5,7 @@
  *  encosta no caminho de outro. */
 
 export interface RegistroDeAcesso {
-  readonly operacao: 'get' | 'set' | 'update' | 'query' | 'create';
+  readonly operacao: 'get' | 'set' | 'update' | 'query' | 'create' | 'delete';
   readonly path: string;
 }
 
@@ -14,6 +14,12 @@ type Documento = Record<string, unknown>;
 const combina = (valor: unknown, operador: string, comparado: unknown): boolean => {
   if (operador === '==') return valor === comparado || (valor == null && comparado == null);
   if (operador === 'in') return Array.isArray(comparado) && comparado.includes(valor);
+  if (operador === 'array-contains-any')
+    return (
+      Array.isArray(valor) &&
+      Array.isArray(comparado) &&
+      comparado.some((item: unknown) => valor.includes(item))
+    );
   throw new Error(`Operador nao suportado no fake: ${operador}`);
 };
 
@@ -78,16 +84,23 @@ export class FakeFirestore {
         documentos.set(path, { ...atual, ...campos });
         return Promise.resolve();
       },
+      delete: () => {
+        registrar('delete', path);
+        documentos.delete(path);
+        return Promise.resolve();
+      },
     };
   }
 
   collection(path: string) {
     const construirConsulta = (
       filtros: readonly { campo: string; operador: string; valor: unknown }[],
+      limite = Infinity,
     ) => ({
       where: (campo: string, operador: string, valor: unknown) =>
-        construirConsulta([...filtros, { campo, operador, valor }]),
-      orderBy: () => construirConsulta(filtros),
+        construirConsulta([...filtros, { campo, operador, valor }], limite),
+      orderBy: () => construirConsulta(filtros, limite),
+      limit: (quantidade: number) => construirConsulta(filtros, quantidade),
       get: () => {
         this.registrar('query', path);
         const docs = [...this.documentos.entries()]
@@ -104,6 +117,7 @@ export class FakeFirestore {
               ),
             ),
           )
+          .slice(0, limite)
           .map(([caminho, dados]) => ({
             id: caminho.split('/').pop(),
             ref: this.doc(caminho),
@@ -128,16 +142,34 @@ export class FakeFirestore {
     };
   }
 
-  runTransaction<T>(operation: (transaction: unknown) => Promise<T>): Promise<T> {
+  /** Como no Firestore: as escritas so valem no fim, e um `create` sobre
+   *  documento existente derruba a transacao em vez de sobrescrever. Nao simula
+   *  concorrencia — isso fica para os testes no emulador. */
+  async runTransaction<T>(operation: (transaction: unknown) => Promise<T>): Promise<T> {
+    const escritas: (() => Promise<unknown>)[] = [];
+    type Referencia = {
+      set: (data: Documento) => Promise<void>;
+      create: (data: Documento) => Promise<void>;
+      update: (data: Documento) => Promise<void>;
+      delete: () => Promise<void>;
+    };
     const transaction = {
       get: (reference: { get: () => Promise<unknown> }) => reference.get(),
-      set: (reference: { set: (data: Documento) => Promise<void> }, data: Documento) => {
-        void reference.set(data);
+      set: (reference: Referencia, data: Documento) => {
+        escritas.push(() => reference.set(data));
       },
-      update: (reference: { update: (data: Documento) => Promise<void> }, data: Documento) => {
-        void reference.update(data);
+      create: (reference: Referencia, data: Documento) => {
+        escritas.push(() => reference.create(data));
+      },
+      update: (reference: Referencia, data: Documento) => {
+        escritas.push(() => reference.update(data));
+      },
+      delete: (reference: Referencia) => {
+        escritas.push(() => reference.delete());
       },
     };
-    return operation(transaction);
+    const resultado = await operation(transaction);
+    for (const escrita of escritas) await escrita();
+    return resultado;
   }
 }
