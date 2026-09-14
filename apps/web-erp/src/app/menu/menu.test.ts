@@ -194,17 +194,11 @@ describe('fidelidade ao menu do Syndata', () => {
     [
       'Suporte',
       [
-        'Nós Ligamos para Você!',
+        'Mande-nos Mensagem ou Ligamos para Você!',
         'Chat Online',
-        'Boleto de Manutenção Disponível',
-        'AnyDesk',
-        'RustDesk',
         'Cópia de Segurança (Backup)',
-        'Instalador Certificado Digital',
-        'Consultar Disponibilidade SEFAZ',
-        'Verificar Atualização do Sistema',
-        'Notas da Versão',
-        'Dados de Instalação',
+        'Versão do Sistema',
+        'Boleto de Manutenção Disponível',
       ],
     ],
   ])('%s tem as mesmas opcoes do Syndata', (menu, esperados) => {

@@ -3,6 +3,7 @@ import type {
   Atalho,
   EntradaDeMenu,
   EsbocoDeEntrada,
+  IconeDoMenu,
   ItemDeMenu,
   MenuPrincipal,
 } from './menu.types';
@@ -11,6 +12,7 @@ type OpcoesDeItem = {
   readonly para?: string;
   readonly atalho?: string;
   readonly feature?: FeatureKey;
+  readonly icone?: IconeDoMenu;
 };
 
 export const item = (rotulo: string, opcoes: OpcoesDeItem = {}): EsbocoDeEntrada => ({
@@ -23,7 +25,14 @@ export const submenu = (
   rotulo: string,
   itens: readonly EsbocoDeEntrada[],
   feature?: FeatureKey,
-): EsbocoDeEntrada => ({ tipo: 'submenu', rotulo, itens, ...(feature ? { feature } : {}) });
+  icone?: IconeDoMenu,
+): EsbocoDeEntrada => ({
+  tipo: 'submenu',
+  rotulo,
+  itens,
+  ...(feature ? { feature } : {}),
+  ...(icone ? { icone } : {}),
+});
 
 export const SEPARADOR: EsbocoDeEntrada = { tipo: 'separador' };
 
@@ -64,6 +73,7 @@ const montarEntradas = (
         rotulo: esboco.rotulo,
         itens: montarEntradas(esboco.itens, id, [...trilha, esboco.rotulo]),
         ...(esboco.feature ? { feature: esboco.feature } : {}),
+        ...(esboco.icone ? { icone: esboco.icone } : {}),
       };
     }
     return {
@@ -76,6 +86,7 @@ const montarEntradas = (
       trilha: [...trilha, esboco.rotulo],
       ...(esboco.atalho ? { atalho: lerAtalho(esboco.atalho) } : {}),
       ...(esboco.feature ? { feature: esboco.feature } : {}),
+      ...(esboco.icone ? { icone: esboco.icone } : {}),
     };
   });
 

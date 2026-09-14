@@ -2,6 +2,7 @@ import { ChevronDown, LogOut, X } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { EntradaDeMenu, MenuPrincipal } from './menu.types';
+import { IconeDoMenuItem } from './IconeDoMenu';
 
 /** Uma barra de nove menus nao cabe no celular: aqui os mesmos menus, na mesma
  *  ordem, viram uma lista sanfonada. */
@@ -35,6 +36,7 @@ function ListaDeEntradas({
                 onClick={onNavegar}
                 className="text-body-sm text-body hover:bg-surface-soft flex min-h-11 items-center gap-2 rounded-xl px-3 py-2 transition"
               >
+                <IconeDoMenuItem icone={entrada.icone} />
                 <span className="flex-1">{entrada.rotulo}</span>
                 {entrada.situacao === 'em-breve' && (
                   <span className="border-hairline-light text-stone rounded-full border px-2 py-px text-[11px] font-medium">
@@ -56,6 +58,7 @@ function ListaDeEntradas({
                 aberto ? 'text-ink' : 'text-charcoal'
               }`}
             >
+              <IconeDoMenuItem icone={entrada.icone} />
               <span className="flex-1">{entrada.rotulo}</span>
               <ChevronDown
                 size={15}

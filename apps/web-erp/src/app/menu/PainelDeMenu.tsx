@@ -10,6 +10,7 @@ import {
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import type { EntradaDeMenu, ItemDeMenu } from './menu.types';
+import { IconeDoMenuItem } from './IconeDoMenu';
 import { proximoIndice } from './menu.utils';
 import { type LadoDoPainel, usePosicaoFlutuante } from './usePosicaoFlutuante';
 
@@ -37,6 +38,7 @@ const classeDaLinha = (destacado: boolean) =>
 function ConteudoDoItem({ item }: { readonly item: ItemDeMenu }) {
   return (
     <>
+      <IconeDoMenuItem icone={item.icone} />
       <span className="flex-1">{item.rotulo}</span>
       {item.situacao === 'em-breve' && (
         <span className="border-hairline-light bg-canvas-light text-stone rounded-full border px-2 py-px text-[11px] font-medium">
@@ -178,6 +180,7 @@ export function PainelDeMenu(props: PropsDoPainel) {
               }}
               className={classeDaLinha(destaque === indice || aberto)}
             >
+              <IconeDoMenuItem icone={entrada.icone} />
               <span className="flex-1">{entrada.rotulo}</span>
               <ChevronRight size={15} className="text-stone" aria-hidden="true" />
             </button>

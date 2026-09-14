@@ -4,6 +4,9 @@ import type { FeatureKey } from '../useTenantExperience';
  *  (para quem vem do Syndata achar tudo no mesmo lugar), mas a tela ainda nao. */
 export type SituacaoDoItem = 'disponivel' | 'em-breve';
 
+/** Ícone ao lado do rótulo. Só o menu Suporte usa. */
+export type IconeDoMenu = 'whatsapp-telefone' | 'chat' | 'backup' | 'versao' | 'boleto';
+
 export interface Atalho {
   readonly tecla: string;
   readonly ctrl: boolean;
@@ -24,6 +27,7 @@ export interface ItemDeMenu {
   readonly trilha: readonly string[];
   readonly atalho?: Atalho;
   readonly feature?: FeatureKey;
+  readonly icone?: IconeDoMenu;
 }
 
 export interface SubmenuDeMenu {
@@ -32,6 +36,7 @@ export interface SubmenuDeMenu {
   readonly rotulo: string;
   readonly itens: readonly EntradaDeMenu[];
   readonly feature?: FeatureKey;
+  readonly icone?: IconeDoMenu;
 }
 
 export interface SeparadorDeMenu {
@@ -56,10 +61,12 @@ export type EsbocoDeEntrada =
       readonly para?: string;
       readonly atalho?: string;
       readonly feature?: FeatureKey;
+      readonly icone?: IconeDoMenu;
     }
   | {
       readonly tipo: 'submenu';
       readonly rotulo: string;
       readonly itens: readonly EsbocoDeEntrada[];
       readonly feature?: FeatureKey;
+      readonly icone?: IconeDoMenu;
     };
