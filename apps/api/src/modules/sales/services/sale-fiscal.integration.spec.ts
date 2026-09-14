@@ -1,27 +1,18 @@
-import { CashSessionRepository } from '../repositories/cash-session.repository';
-import { PosService } from './pos.service';
-import { FiscalRepository } from '../../fiscal/repositories/fiscal.repository';
-import { MockFiscalProvider } from '../../fiscal/providers/mock-fiscal.provider';
 import type { FiscalProviderRegistry } from '../../fiscal/services/fiscal-provider.registry';
+import { MockFiscalProvider } from '../../fiscal/providers/mock-fiscal.provider';
+import { FiscalRepository } from '../../fiscal/repositories/fiscal.repository';
 import { NfceService } from '../../fiscal/services/nfce.service';
-import { PricingService } from '../../catalog/services/pricing.service';
-import { PricingRepository } from '../../catalog/repositories/pricing.repository';
-import { ProductRepository } from '../../catalog/repositories/product.repository';
-import type { Product } from '@synapse/types';
-import type { Firestore } from '@synapse/firebase/admin';
-import { FakeFirestore } from '../../../../test/fake-firestore';
+import {
+  CONTEXTO_DO_CAIXA as contexto,
+  montarPdv,
+  produtoDeTeste,
+  vendedorDeTeste,
+} from '../../../../test/pdv-de-teste';
 
-const context = {
-  tenantId: 'tenant',
-  userId: 'operator',
-  roleIds: [],
-  branchIds: ['branch'],
-  warehouseIds: [],
-};
-
-describe('Venda -> NFC-e -> recebimento', () => {
-  it('autoriza a NFC-e, persiste o pagamento e atualiza o caixa', async () => {
-    const fiscalRepository = new FiscalRepository(new FakeFirestore() as unknown as Firestore);
+describe('Venda PDV NFC-e -> NFC-e autorizada -> caixa', () => {
+  it('autoriza a NFC-e pelo serviço fiscal de verdade, grava a venda e fecha o caixa', async () => {
+    const pdv = montarPdv();
+    const fiscalRepository = new FiscalRepository(pdv.db);
     await fiscalRepository.saveConfig({
       companyId: 'tenant',
       environment: 'HOMOLOGACAO',
@@ -44,49 +35,27 @@ describe('Venda -> NFC-e -> recebimento', () => {
     const nfce = new NfceService(fiscalRepository, {
       resolve: () => new MockFiscalProvider(),
     } as unknown as FiscalProviderRegistry);
-    const cashRepository = new CashSessionRepository();
-    const products = new ProductRepository(new FakeFirestore() as unknown as Firestore);
-    await products.save({
-      id: 'product',
-      tenantId: 'tenant',
-      pricing: { salePrice: 150 },
-    } as Product);
-    // salePrice e em reais: o PricingService converte para centavos (x100).
-    const pricing = new PricingService(
-      new PricingRepository(new FakeFirestore() as unknown as Firestore),
-      products,
-    );
-    await pricing.setSellerDiscountLimit(context, context.userId, 1_000);
-    const pos = new PosService(cashRepository, pricing);
-    const cash = pos.openCash(context, 'branch', 2_000);
+    await pdv.produtos.save(produtoDeTeste('product', 150));
+    pdv.fake.semear('tenants/tenant/funcionarios/func-15', vendedorDeTeste() as never);
+    const caixa = await pdv.caixas.openCash(contexto, 'matriz', 2_000);
 
-    const sale = await pos.completeSale(
-      cash.id,
+    const venda = await pdv.vendas.concluir(
+      contexto,
+      caixa.id,
       {
+        modo: 'NFCE',
         companyId: 'tenant',
-        sellerId: 'seller',
-        items: [
-          {
-            productId: 'product',
-            description: 'Produto integrado',
-            quantity: 1_000,
-            unitPrice: 15_000,
-            discount: 0,
-            surcharge: 0,
-          },
-        ],
-        payments: [{ method: 'CASH', amount: 15_000 }],
+        funcionarioId: 'func-15',
+        items: [{ productId: 'product', quantity: 1_000, discount: 0, surcharge: 0 }],
+        payments: [{ formaCodigo: 1, amount: 15_000 }],
       },
       nfce,
-      context,
     );
 
-    expect(sale.payments).toEqual([expect.objectContaining({ method: 'CASH', amount: 15_000 })]);
-    expect(await fiscalRepository.findDocument('tenant', sale.nfceDocumentId)).toMatchObject({
-      kind: 'NFCE',
-      status: 'AUTHORIZED',
-      companyId: 'tenant',
-    });
-    expect(pos.closeCash(cash.id, 17_000)).toMatchObject({ difference: 0 });
+    expect(venda.payments).toEqual([expect.objectContaining({ method: 'CASH', amount: 15_000 })]);
+    expect(await fiscalRepository.findDocument('tenant', venda.nfceDocumentId ?? '')).toMatchObject(
+      { kind: 'NFCE', status: 'AUTHORIZED', companyId: 'tenant' },
+    );
+    expect(await pdv.caixas.closeCash(contexto, caixa.id, 17_000)).toMatchObject({ difference: 0 });
   });
 });

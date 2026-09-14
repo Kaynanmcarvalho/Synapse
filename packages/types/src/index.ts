@@ -7,6 +7,7 @@ export * from './catalog';
 export * from './cadastros';
 export * from './inventory';
 export * from './sales';
+export * from './vendas';
 export * from './fiscal';
 export * from './finance';
 export * from './credit';

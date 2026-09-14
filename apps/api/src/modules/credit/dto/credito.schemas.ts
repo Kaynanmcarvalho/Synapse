@@ -7,6 +7,10 @@ const itemSchema = z.object({
   quantidade: z.number().int().positive(),
   precoUnitarioCentavos: z.number().int().min(0),
   descontoCentavos: z.number().int().min(0).default(0),
+  codigo: z.string().max(64).nullable().optional(),
+  unidade: z.string().max(10).nullable().optional(),
+  pesoUnitarioKg: z.number().min(0).nullable().optional(),
+  lote: z.string().max(60).nullable().optional(),
 });
 
 export const registrarPedidoSchema = z.object({
@@ -22,6 +26,9 @@ export const registrarPedidoSchema = z.object({
   origem: z.enum(['DESKTOP', 'MOBILE', 'BALCAO', 'API']),
   vendedorId: z.string().nullable().default(null),
   vendedorNome: z.string().min(1).max(200),
+  /** Funcionário vendedor (Ponto de Vendas, PDV); o app do vendedor manda só o login. */
+  funcionarioId: z.string().max(128).nullable().optional(),
+  vendedorCodigo: z.number().int().positive().nullable().optional(),
   condicaoDePagamento: z.string().min(1).max(120),
   /** Vencimentos combinados, em dias: [28, 35, 42]. Vazio e a vista. */
   vencimentosEmDias: z.array(z.number().int().min(0).max(365)).max(24).default([]),

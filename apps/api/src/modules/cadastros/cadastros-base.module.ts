@@ -3,6 +3,7 @@ import { IamModule } from '../iam/iam.module';
 import { ConsultaController } from './consultas/consulta.controller';
 import { ConsultaService } from './consultas/consulta.service';
 import { FuncionarioRepository } from './funcionarios/funcionario.repository';
+import { EmpresaDaImpressaoService } from './impressao/empresa-da-impressao.service';
 import { TabelaController } from './tabelas/tabela.controller';
 import { TabelaRepository } from './tabelas/tabela.repository';
 import { TabelaService } from './tabelas/tabela.service';
@@ -14,7 +15,13 @@ import { TabelaService } from './tabelas/tabela.service';
 @Module({
   imports: [IamModule],
   controllers: [TabelaController, ConsultaController],
-  providers: [TabelaRepository, TabelaService, ConsultaService, FuncionarioRepository],
-  exports: [TabelaService, ConsultaService, FuncionarioRepository],
+  providers: [
+    TabelaRepository,
+    TabelaService,
+    ConsultaService,
+    FuncionarioRepository,
+    EmpresaDaImpressaoService,
+  ],
+  exports: [TabelaService, ConsultaService, FuncionarioRepository, EmpresaDaImpressaoService],
 })
 export class CadastrosBaseModule {}

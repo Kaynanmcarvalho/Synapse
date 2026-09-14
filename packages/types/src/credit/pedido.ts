@@ -89,6 +89,11 @@ export interface ItemDoPedido {
   readonly precoUnitarioCentavos: number;
   readonly descontoCentavos: number;
   readonly totalCentavos: number;
+  /** SKU, unidade e peso de uma unidade: o que a impressão do pedido mostra. */
+  readonly codigo?: string | null;
+  readonly unidade?: string | null;
+  readonly pesoUnitarioKg?: number | null;
+  readonly lote?: string | null;
 }
 
 export interface NotaDoPedido {

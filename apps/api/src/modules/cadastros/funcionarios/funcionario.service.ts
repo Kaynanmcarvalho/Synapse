@@ -23,7 +23,10 @@ import type { TenantContext } from '../../iam/iam.types';
 import { MembershipRepository } from '../../iam/repositories/membership.repository';
 import { TabelaService } from '../tabelas/tabela.service';
 import { FuncionarioRepository, funcionarioNaLista } from './funcionario.repository';
+import { podeVender } from './pode-vender';
 import { resumirVendedor } from './resumo-do-vendedor';
+
+export { podeVender } from './pode-vender';
 
 /** Tipos de imagem aceitos na foto e o maior arquivo: a foto mora num
  *  documento do Firestore (limite de 1 MiB) em base64, que cresce um terço. */
@@ -259,9 +262,9 @@ export class FuncionarioService {
     limite: number,
   ): Promise<PedidoDeVenda[]> {
     const [doFuncionario, doLogin] = await Promise.all([
-      this.pedidosDeVenda.doVendedor(tenantId, 'funcionarioId', funcionario.id, desde, limite),
+      this.pedidosDeVenda.porCampo(tenantId, 'funcionarioId', funcionario.id, desde, limite),
       funcionario.usuario
-        ? this.pedidosDeVenda.doVendedor(
+        ? this.pedidosDeVenda.porCampo(
             tenantId,
             'vendedorId',
             funcionario.usuario.uid,
@@ -302,9 +305,3 @@ export class FuncionarioService {
     };
   }
 }
-
-/** Vendedor liberado para uma venda de hoje. */
-export const podeVender = (funcionario: Funcionario): boolean =>
-  funcionario.comissao.vendedor &&
-  !funcionario.bloqueado &&
-  !(funcionario.demissao && funcionario.demissao <= hoje());

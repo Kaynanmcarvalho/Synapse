@@ -49,6 +49,24 @@ const agruparPorCliente = (titulos: readonly Titulo[]): Map<string, Titulo[]> =>
   return grupos;
 };
 
+/** O item como o pedido guarda: o total da linha e calculado aqui; SKU, unidade,
+ *  peso e lote so quando vieram (o app do vendedor nao manda). */
+const itemDoPedido = (item: RegistrarPedidoInput['itens'][number]): ItemDoPedido => ({
+  productId: item.productId as ProductId,
+  descricao: item.descricao,
+  quantidade: item.quantidade,
+  precoUnitarioCentavos: item.precoUnitarioCentavos,
+  descontoCentavos: item.descontoCentavos,
+  totalCentavos: Math.max(
+    0,
+    Math.round((item.quantidade * item.precoUnitarioCentavos) / 1000) - item.descontoCentavos,
+  ),
+  ...(item.codigo ? { codigo: item.codigo } : {}),
+  ...(item.unidade ? { unidade: item.unidade } : {}),
+  ...(item.pesoUnitarioKg != null ? { pesoUnitarioKg: item.pesoUnitarioKg } : {}),
+  ...(item.lote ? { lote: item.lote } : {}),
+});
+
 @Injectable()
 export class AnaliseDeCreditoService {
   constructor(
@@ -215,17 +233,7 @@ export class AnaliseDeCreditoService {
   ): Promise<PedidoDeVenda> {
     const agora = new Date();
     const em = agora.toISOString();
-    const itens: ItemDoPedido[] = input.itens.map((item) => ({
-      productId: item.productId as ProductId,
-      descricao: item.descricao,
-      quantidade: item.quantidade,
-      precoUnitarioCentavos: item.precoUnitarioCentavos,
-      descontoCentavos: item.descontoCentavos,
-      totalCentavos: Math.max(
-        0,
-        Math.round((item.quantidade * item.precoUnitarioCentavos) / 1000) - item.descontoCentavos,
-      ),
-    }));
+    const itens: ItemDoPedido[] = input.itens.map(itemDoPedido);
     const totalCentavos =
       itens.reduce((soma, item) => soma + item.totalCentavos, 0) +
       input.freteCentavos +
@@ -251,6 +259,8 @@ export class AnaliseDeCreditoService {
       origem: input.origem,
       vendedorId: (input.vendedorId ?? context.userId) as UserId,
       vendedorNome: input.vendedorNome,
+      ...(input.funcionarioId ? { funcionarioId: input.funcionarioId } : {}),
+      ...(input.vendedorCodigo ? { vendedorCodigo: input.vendedorCodigo } : {}),
       lancadoPor: { uid: ator.uid, nome: ator.nome },
       condicaoDePagamento: input.condicaoDePagamento,
       vencimentosEmDias: input.vencimentosEmDias,

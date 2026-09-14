@@ -308,11 +308,11 @@ export class PedidoDeVendaRepository {
     return resultados.flatMap((resultado) => this.dados(resultado));
   }
 
-  /** Pedidos de um vendedor: pelo funcionário (Ponto de Vendas, PDV) ou pelo
-   *  login (app do vendedor, desktop). */
-  async doVendedor(
+  /** Pedidos por vendedor (funcionário ou login) ou por origem (BALCAO), do
+   *  mais novo para o mais antigo. */
+  async porCampo(
     tenantId: string,
-    campo: 'funcionarioId' | 'vendedorId',
+    campo: 'funcionarioId' | 'vendedorId' | 'origem',
     valor: string,
     desde: string | null,
     limite: number,

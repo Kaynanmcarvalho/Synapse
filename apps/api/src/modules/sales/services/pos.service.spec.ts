@@ -1,107 +1,226 @@
-import type { Firestore } from '@synapse/firebase/admin';
-import { FakeFirestore } from '../../../../test/fake-firestore';
-import { BadRequestException } from '@nestjs/common';
-import { CashSessionRepository } from '../repositories/cash-session.repository';
-import { PosService } from './pos.service';
-import { PricingService } from '../../catalog/services/pricing.service';
-import { PricingRepository } from '../../catalog/repositories/pricing.repository';
-import { ProductRepository } from '../../catalog/repositories/product.repository';
-import type { Product } from '@synapse/types';
+import { BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  CONTEXTO_DO_CAIXA as contexto,
+  montarPdv,
+  produtoDeTeste,
+  vendedorDeTeste,
+} from '../../../../test/pdv-de-teste';
 
-function createService(price: number, limit: number, productId: string) {
-  const products = new ProductRepository(new FakeFirestore() as unknown as Firestore);
-  void products.save({
-    id: productId,
-    tenantId: 'tenant',
-    pricing: { salePrice: price },
-  } as Product);
-  const pricing = new PricingService(
-    new PricingRepository(new FakeFirestore() as unknown as Firestore),
-    products,
-  );
-  void pricing.setSellerDiscountLimit(context, context.userId, limit);
-  return new PosService(new CashSessionRepository(), pricing);
-}
+const semNfce = { issueNfce: async () => 'nao-deveria-emitir' };
 
-const context = {
-  tenantId: 'tenant',
-  userId: 'operator',
-  roleIds: [],
-  branchIds: ['branch'],
-  warehouseIds: [],
-};
+describe('PosService — o caixa', () => {
+  it('abre, recusa segundo caixa na mesma filial, movimenta e fecha com diferença', async () => {
+    const { caixas } = montarPdv();
+    expect(await caixas.getCurrentSession(contexto, 'matriz')).toBeNull();
+    const caixa = await caixas.openCash(contexto, 'matriz', 10_000);
+    await expect(caixas.openCash(contexto, 'matriz', 0)).rejects.toBeInstanceOf(ConflictException);
+    expect((await caixas.getCurrentSession(contexto, 'matriz'))?.id).toBe(caixa.id);
+    expect(await caixas.getCurrentSession(contexto, 'outra-filial')).toBeNull();
 
-describe('PosService', () => {
-  it('conclui pagamento misto, emite NFC-e e confere o caixa', async () => {
-    const service = createService(500, 10, 'product');
-    const cash = service.openCash(context, 'branch', 10_000);
-    const sale = await service.completeSale(
-      cash.id,
+    await caixas.addMovement(contexto, caixa.id, 'SUPPLY', {
+      amount: 5_000,
+      reason: 'Troco do dia',
+    });
+    await expect(
+      caixas.addMovement(contexto, caixa.id, 'WITHDRAWAL', {
+        amount: 50_000,
+        reason: 'Sangria grande',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    const fechado = await caixas.closeCash(contexto, caixa.id, 15_100);
+    expect(fechado).toMatchObject({ expectedCash: 15_000, difference: 100 });
+    expect(await caixas.getCurrentSession(contexto, 'matriz')).toBeNull();
+  });
+
+  it('caixa de outro operador não se mexe', async () => {
+    const { caixas } = montarPdv();
+    const caixa = await caixas.openCash(contexto, 'matriz', 0);
+    await expect(caixas.closeCash({ ...contexto, userId: 'outro' }, caixa.id, 0)).rejects.toThrow(
+      'Caixa não encontrado',
+    );
+  });
+});
+
+describe('VendaDoPdvService', () => {
+  const preparar = async () => {
+    const pdv = montarPdv();
+    await pdv.produtos.save(produtoDeTeste('racao', 150));
+    await pdv.produtos.save(produtoDeTeste('bloqueada', 10, { status: 'blocked' }));
+    pdv.fake.semear('tenants/tenant/funcionarios/func-15', vendedorDeTeste() as never);
+    pdv.fake.semear(
+      'tenants/tenant/funcionarios/func-bloq',
+      vendedorDeTeste({ id: 'func-bloq', codigo: 16, bloqueado: true }) as never,
+    );
+    const caixa = await pdv.caixas.openCash(contexto, 'matriz', 10_000);
+    return { ...pdv, caixa };
+  };
+
+  it('NFC-e: preço do catálogo, pagamento misto pelas formas da tabela e baixa de estoque', async () => {
+    const { vendas, caixa, movimentos, repository } = await preparar();
+    const emitidas: unknown[] = [];
+    const venda = await vendas.concluir(
+      contexto,
+      caixa.id,
       {
-        companyId: 'company',
-        sellerId: 'seller',
-        items: [
-          {
-            productId: 'product',
-            description: 'Ração',
-            quantity: 1_000,
-            unitPrice: 50_000,
-            discount: 0,
-            surcharge: 0,
-          },
-        ],
+        modo: 'NFCE',
+        companyId: 'tenant',
+        funcionarioId: 'func-15',
+        items: [{ productId: 'racao', quantity: 2_000, unitPrice: 1, discount: 0, surcharge: 0 }],
         payments: [
-          { method: 'PIX', amount: 30_000 },
-          { method: 'CREDIT_CARD', amount: 20_000 },
+          { formaCodigo: 2, amount: 20_000 },
+          { formaCodigo: 4, amount: 10_000 },
         ],
       },
-      { issueNfce: async () => 'nfce-1' },
-      context,
+      { issueNfce: async (_t, _c, rascunho) => (emitidas.push(rascunho), 'nfce-1') },
     );
-    expect(sale.nfceDocumentId).toBe('nfce-1');
-    expect(service.closeCash(cash.id, 10_100).difference).toBe(100);
-    expect(service.reprintSale(sale.id)).toEqual(sale);
+    expect(venda).toMatchObject({
+      numero: 1,
+      modo: 'NFCE',
+      nfceDocumentId: 'nfce-1',
+      total: 30_000,
+      vendedorCodigo: 15,
+      vendedorNome: 'RENIER PANTOJA',
+      trocoCentavos: 0,
+    });
+    expect(venda.items[0]).toMatchObject({
+      unitPrice: 15_000,
+      codigo: 'SKU-racao',
+      unidade: 'SC',
+      pesoUnitarioKg: 25,
+    });
+    expect(venda.payments).toEqual([
+      expect.objectContaining({ method: 'PIX', formaNome: 'PIX' }),
+      expect.objectContaining({ method: 'CREDIT_CARD', formaCodigo: 4 }),
+    ]);
+    expect(emitidas).toHaveLength(1);
+    expect(movimentos).toEqual([{ kind: 'SALE', productId: 'racao', delta: -2_000 }]);
+    expect((await repository.find('tenant', caixa.id))?.expectedCash).toBe(10_000);
   });
 
-  it('recusa desconto acima do limite', async () => {
-    const service = createService(100, 1, 'p');
-    const cash = service.openCash(context, 'branch', 0);
+  it('balcão: sem NFC-e, dinheiro com troco entra líquido na gaveta e imprime o pedido', async () => {
+    const { vendas, caixa, repository } = await preparar();
+    const venda = await vendas.concluir(
+      contexto,
+      caixa.id,
+      {
+        modo: 'BALCAO',
+        companyId: 'tenant',
+        funcionarioId: 'func-15',
+        clienteNome: 'CONSUMIDOR FINAL',
+        items: [{ productId: 'racao', quantity: 1_000, discount: 0, surcharge: 0 }],
+        payments: [{ formaCodigo: 1, amount: 20_000 }],
+      },
+      semNfce,
+    );
+    expect(venda).toMatchObject({ nfceDocumentId: null, total: 15_000, trocoCentavos: 5_000 });
+    expect(venda.payments).toEqual([expect.objectContaining({ method: 'CASH', amount: 15_000 })]);
+    expect((await repository.find('tenant', caixa.id))?.expectedCash).toBe(25_000);
+
+    const impressao = await vendas.impressao(contexto, venda.id);
+    expect(impressao).toMatchObject({
+      titulo: 'PEDIDO DE VENDA (SEM VALOR FISCAL)',
+      numero: 1,
+      vendedor: '15 - RENIER PANTOJA',
+      cliente: { nome: 'CONSUMIDOR FINAL' },
+      pagamentos: [{ descricao: '1 - DINHEIRO', valorCentavos: 15_000 }],
+      pesoTotalKg: 25,
+      totalLiquidoCentavos: 15_000,
+    });
+  });
+
+  it('recusa vendedor bloqueado, produto bloqueado, desconto acima do limite e pagamento a menos', async () => {
+    const { vendas, caixa } = await preparar();
+    const base = {
+      modo: 'BALCAO' as const,
+      companyId: 'tenant',
+      funcionarioId: 'func-15',
+      items: [{ productId: 'racao', quantity: 1_000, discount: 0, surcharge: 0 }],
+      payments: [{ formaCodigo: 1, amount: 15_000 }],
+    };
     await expect(
-      service.completeSale(
-        cash.id,
+      vendas.concluir(contexto, caixa.id, { ...base, funcionarioId: 'func-bloq' }, semNfce),
+    ).rejects.toThrow(/não pode vender/);
+    await expect(
+      vendas.concluir(
+        contexto,
+        caixa.id,
         {
-          companyId: 'company',
-          sellerId: 'seller',
-          items: [
-            {
-              productId: 'p',
-              description: 'Item',
-              quantity: 1_000,
-              unitPrice: 10_000,
-              discount: 500,
-              surcharge: 0,
-            },
-          ],
-          payments: [{ method: 'CASH', amount: 9_500 }],
+          ...base,
+          items: [{ productId: 'bloqueada', quantity: 1_000, discount: 0, surcharge: 0 }],
         },
-        { issueNfce: async () => 'nfce' },
-        context,
+        semNfce,
       ),
-    ).rejects.toBeInstanceOf(BadRequestException);
+    ).rejects.toThrow(/não pode ser vendido/);
+    await expect(
+      vendas.concluir(
+        contexto,
+        caixa.id,
+        {
+          ...base,
+          items: [{ productId: 'racao', quantity: 1_000, discount: 2_000, surcharge: 0 }],
+          payments: [{ formaCodigo: 1, amount: 13_000 }],
+        },
+        semNfce,
+      ),
+    ).rejects.toThrow(/limite de 10%/);
+    await expect(
+      vendas.concluir(
+        contexto,
+        caixa.id,
+        { ...base, payments: [{ formaCodigo: 1, amount: 10_000 }] },
+        semNfce,
+      ),
+    ).rejects.toThrow(/Faltam 50,00/);
+    await expect(
+      vendas.concluir(
+        contexto,
+        caixa.id,
+        { ...base, payments: [{ formaCodigo: 4, amount: 20_000 }] },
+        semNfce,
+      ),
+    ).rejects.toThrow(/troco/);
   });
 
-  it('nao acha caixa aberto antes de abrir, e acha depois de abrir', () => {
-    const service = createService(100, 10, 'p');
-    expect(service.getCurrentSession(context, 'branch')).toBeNull();
-    const cash = service.openCash(context, 'branch', 0);
-    expect(service.getCurrentSession(context, 'branch')?.id).toBe(cash.id);
-  });
-
-  it('nao acha caixa aberto de outra filial ou ja fechado', () => {
-    const service = createService(100, 10, 'p');
-    const cash = service.openCash(context, 'branch', 0);
-    expect(service.getCurrentSession(context, 'outra-filial')).toBeNull();
-    service.closeCash(cash.id, 0);
-    expect(service.getCurrentSession(context, 'branch')).toBeNull();
+  it('cancela a venda: cancela a NFC-e, devolve o estoque e tira o dinheiro da gaveta', async () => {
+    const { vendas, caixa, movimentos, repository } = await preparar();
+    const venda = await vendas.concluir(
+      contexto,
+      caixa.id,
+      {
+        modo: 'NFCE',
+        companyId: 'tenant',
+        funcionarioId: 'func-15',
+        items: [{ productId: 'racao', quantity: 1_000, discount: 0, surcharge: 0 }],
+        payments: [{ formaCodigo: 1, amount: 15_000 }],
+      },
+      { issueNfce: async () => 'nfce-9' },
+    );
+    const canceladas: string[] = [];
+    const cancelada = await vendas.cancelar(
+      contexto,
+      venda.id,
+      'Cliente desistiu da compra no caixa',
+      {
+        cancel: async (_tenant, documento) => {
+          canceladas.push(documento);
+          return {};
+        },
+      },
+    );
+    expect(cancelada).toMatchObject({
+      situacao: 'CANCELADA',
+      motivoDoCancelamento: 'Cliente desistiu da compra no caixa',
+    });
+    expect(canceladas).toEqual(['nfce-9']);
+    expect(movimentos.at(-1)).toEqual({ kind: 'RETURN', productId: 'racao', delta: 1_000 });
+    expect((await repository.find('tenant', caixa.id))?.expectedCash).toBe(10_000);
+    await expect(
+      vendas.cancelar(contexto, venda.id, 'Tentando cancelar de novo', {
+        cancel: async () => ({}),
+      }),
+    ).rejects.toThrow(/já está cancelada/);
+    expect((await vendas.historico(contexto, caixa.id)).map((item) => item.situacao)).toEqual([
+      'CANCELADA',
+    ]);
   });
 });

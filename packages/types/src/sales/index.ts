@@ -31,12 +31,25 @@ export interface PosItem {
   readonly discount: number;
   readonly surcharge: number;
   readonly total: number;
+  /** SKU do produto, como sai no cupom e no pedido. */
+  readonly codigo?: string | null;
+  readonly unidade?: string | null;
+  readonly pesoUnitarioKg?: number | null;
+  readonly lote?: string | null;
+  /** Número de série do item (botão Série do PDV). */
+  readonly serie?: string | null;
 }
+
+/** NFC-e emite cupom fiscal; balcão emite o pedido de venda sem valor fiscal. */
+export type ModoDoPdv = 'NFCE' | 'BALCAO';
 
 export interface PosPayment {
   readonly method: PaymentMethod;
   readonly amount: number;
   readonly reference: string | null;
+  /** A forma de pagamento da tabela ("7 - BONIFICAÇÃO"). */
+  readonly formaCodigo?: number | null;
+  readonly formaNome?: string | null;
 }
 
 export type CashMovementType = 'OPENING' | 'SUPPLY' | 'WITHDRAWAL' | 'SALE' | 'CLOSING';
@@ -62,6 +75,9 @@ export interface CashSession {
   readonly countedCash: number | null;
   readonly difference: number | null;
   readonly movements: readonly CashMovement[];
+  /** Depósito que a venda do caixa baixa. */
+  readonly warehouseId?: string;
+  readonly operatorNome?: string;
 }
 
 export interface PosSale {
@@ -76,6 +92,22 @@ export interface PosSale {
   readonly discount: number;
   readonly surcharge: number;
   readonly total: number;
-  readonly nfceDocumentId: string;
+  /** Nulo na venda de balcão, que não emite NFC-e. */
+  readonly nfceDocumentId: string | null;
   readonly completedAt: string;
+  /** Número sequencial da venda no tenant — o "Nº" do cupom e do pedido. */
+  readonly numero?: number;
+  readonly tenantId?: TenantId;
+  readonly branchId?: BranchId;
+  readonly modo?: ModoDoPdv;
+  readonly vendedorNome?: string | null;
+  readonly vendedorCodigo?: number | null;
+  readonly clienteNome?: string | null;
+  readonly mesaOuCartao?: string | null;
+  readonly trocoCentavos?: number;
+  readonly situacao?: 'CONCLUIDA' | 'CANCELADA';
+  readonly canceladaEm?: string | null;
+  readonly canceladaPor?: string | null;
+  readonly motivoDoCancelamento?: string | null;
+  readonly operadorId?: string;
 }

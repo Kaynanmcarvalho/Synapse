@@ -27,6 +27,7 @@ import { FieldSalesModule } from './modules/field-sales/field-sales.module';
 import { CreditModule } from './modules/credit/credit.module';
 import { CadastrosBaseModule } from './modules/cadastros/cadastros-base.module';
 import { CadastrosModule } from './modules/cadastros/cadastros.module';
+import { VendasModule } from './modules/vendas/vendas.module';
 
 @Module({
   imports: [
@@ -65,6 +66,7 @@ import { CadastrosModule } from './modules/cadastros/cadastros.module';
     CreditModule,
     CadastrosBaseModule,
     CadastrosModule,
+    VendasModule,
   ],
 })
 export class AppModule {}

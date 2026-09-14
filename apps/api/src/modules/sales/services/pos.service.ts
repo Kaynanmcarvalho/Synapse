@@ -4,18 +4,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  asProductId,
-  type CashMovement,
-  type CashSession,
-  type PosItem,
-  type PosSale,
-} from '@synapse/types';
+import type { CashMovement, CashSession, PosSale } from '@synapse/types';
 import { randomUUID } from 'node:crypto';
 import type { TenantContext } from '../../iam/iam.types';
-import type { CashMovementInput, CompletePosSaleInput } from '../dto/pos.schemas';
+import type { CashMovementInput } from '../dto/pos.schemas';
 import { CashSessionRepository } from '../repositories/cash-session.repository';
-import { PricingService } from '../../catalog/services/pricing.service';
 
 export interface PosFiscalIssuer {
   issueNfce(
@@ -25,18 +18,26 @@ export interface PosFiscalIssuer {
   ): Promise<string>;
 }
 
+/** O caixa do PDV: abrir, suprimento, sangria e fechamento. A venda em si mora
+ *  em `VendaDoPdvService`. Um operador tem um caixa aberto por filial. */
 @Injectable()
 export class PosService {
-  constructor(
-    private readonly repository: CashSessionRepository,
-    private readonly pricing: PricingService,
-  ) {}
+  constructor(private readonly repository: CashSessionRepository) {}
 
-  getCurrentSession(context: TenantContext, branchId: string): CashSession | null {
-    return this.repository.findOpenByOperator(context.tenantId, branchId, context.userId) ?? null;
+  async getCurrentSession(context: TenantContext, branchId: string): Promise<CashSession | null> {
+    return (
+      (await this.repository.findOpenByOperator(context.tenantId, branchId, context.userId)) ?? null
+    );
   }
 
-  openCash(context: TenantContext, branchId: string, openingAmount: number): CashSession {
+  async openCash(
+    context: TenantContext,
+    branchId: string,
+    openingAmount: number,
+    warehouseId = 'deposito-1',
+  ): Promise<CashSession> {
+    const aberto = await this.getCurrentSession(context, branchId);
+    if (aberto) throw new ConflictException('Você já tem um caixa aberto nesta filial');
     return this.repository.save({
       id: randomUUID(),
       tenantId: context.tenantId as CashSession['tenantId'],
@@ -48,24 +49,34 @@ export class PosService {
       expectedCash: openingAmount,
       countedCash: null,
       difference: null,
-      movements: [],
+      movements: [
+        {
+          id: randomUUID(),
+          type: 'OPENING',
+          amount: openingAmount,
+          reason: 'Abertura do caixa',
+          occurredAt: new Date().toISOString(),
+          operatorId: context.userId,
+        },
+      ],
+      warehouseId,
     });
   }
 
-  addMovement(
+  async addMovement(
+    context: TenantContext,
     sessionId: string,
     type: 'SUPPLY' | 'WITHDRAWAL',
     input: CashMovementInput,
-    operatorId: string,
-  ): CashSession {
-    const session = this.openSession(sessionId);
+  ): Promise<CashSession> {
+    const session = await this.openSession(context, sessionId);
     const movement: CashMovement = {
       id: randomUUID(),
       type,
       amount: input.amount,
       reason: input.reason,
       occurredAt: new Date().toISOString(),
-      operatorId,
+      operatorId: context.userId,
     };
     const expectedCash = session.expectedCash + (type === 'SUPPLY' ? input.amount : -input.amount);
     if (expectedCash < 0)
@@ -77,83 +88,32 @@ export class PosService {
     });
   }
 
-  async completeSale(
-    sessionId: string,
-    input: CompletePosSaleInput,
-    fiscal: PosFiscalIssuer,
-    context: TenantContext,
-  ): Promise<PosSale> {
-    const session = this.openSession(sessionId);
-    if (session.tenantId !== context.tenantId || session.operatorId !== context.userId) {
-      throw new NotFoundException('Caixa não encontrado');
-    }
-    const items: PosItem[] = await this.pricing.priceSaleItems(
-      context,
-      session.branchId,
-      input.customerId ?? null,
-      input.items.map((item) => ({
-        ...item,
-        productId: asProductId(item.productId),
-        barcode: item.barcode ?? null,
-        total: Math.round((item.quantity * item.unitPrice) / 1000) - item.discount + item.surcharge,
-      })),
-    );
-    const subtotal = items.reduce(
-      (sum, item) => sum + Math.round((item.quantity * item.unitPrice) / 1000),
-      0,
-    );
-    const discount = items.reduce((sum, item) => sum + item.discount, 0);
-    const surcharge = items.reduce((sum, item) => sum + item.surcharge, 0);
-    const total = subtotal - discount + surcharge;
-    const discountLimit = await this.pricing.getSellerDiscountLimit(context, context.userId);
-    if (discount * 100 > subtotal * discountLimit)
-      throw new BadRequestException('Desconto excede o limite do operador');
-    if (input.payments.reduce((sum, payment) => sum + payment.amount, 0) !== total)
-      throw new BadRequestException('A soma dos pagamentos deve ser igual ao total da venda');
-    const draft = {
-      id: randomUUID(),
-      cashSessionId: session.id,
-      customerId: (input.customerId ?? null) as PosSale['customerId'],
-      customerTaxId: input.customerTaxId ?? null,
-      sellerId: input.sellerId,
-      items,
-      payments: input.payments.map((p) => ({ ...p, reference: p.reference ?? null })),
-      subtotal,
-      discount,
-      surcharge,
-      total,
-      completedAt: new Date().toISOString(),
-    };
-    const sale = this.repository.saveSale({
-      ...draft,
-      nfceDocumentId: await fiscal.issueNfce(session.tenantId, input.companyId, draft),
-    });
-    const cashReceived = sale.payments
-      .filter((p) => p.method === 'CASH')
-      .reduce((sum, p) => sum + p.amount, 0);
-    this.repository.save({ ...session, expectedCash: session.expectedCash + cashReceived });
-    return sale;
-  }
-
-  closeCash(sessionId: string, countedCash: number): CashSession {
-    const session = this.openSession(sessionId);
+  async closeCash(context: TenantContext, sessionId: string, countedCash: number) {
+    const session = await this.openSession(context, sessionId);
     return this.repository.save({
       ...session,
       closedAt: new Date().toISOString(),
       countedCash,
       difference: countedCash - session.expectedCash,
+      movements: [
+        ...session.movements,
+        {
+          id: randomUUID(),
+          type: 'CLOSING',
+          amount: countedCash,
+          reason: 'Fechamento do caixa',
+          occurredAt: new Date().toISOString(),
+          operatorId: context.userId,
+        },
+      ],
     });
   }
 
-  reprintSale(saleId: string): PosSale {
-    const sale = this.repository.findSale(saleId);
-    if (!sale) throw new NotFoundException('Venda não encontrada');
-    return sale;
-  }
-
-  private openSession(id: string): CashSession {
-    const session = this.repository.find(id);
-    if (!session) throw new NotFoundException('Caixa não encontrado');
+  /** O caixa aberto do próprio operador — caixa de outro não se mexe. */
+  async openSession(context: TenantContext, id: string): Promise<CashSession> {
+    const session = await this.repository.find(context.tenantId, id);
+    if (!session || session.operatorId !== context.userId)
+      throw new NotFoundException('Caixa não encontrado');
     if (session.closedAt) throw new ConflictException('Caixa já fechado');
     return session;
   }
