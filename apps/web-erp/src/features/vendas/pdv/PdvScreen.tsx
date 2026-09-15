@@ -1,6 +1,8 @@
 /* eslint-disable max-lines-per-function */
 import type { PosSale, Product } from '@synapse/types';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ROTAS } from '../../../app/rotas';
 import type { VendedorNaLista } from '../../funcionarios/funcionarios.api';
 import { BarraDeAtalhos, PainelDeTotais } from '../comum/BarraDeAtalhos';
 import { BotoesDaGrade, type AcaoDaGrade } from '../comum/BotoesDaGrade';
@@ -11,13 +13,16 @@ import { daVenda, repetirItens } from '../comum/repetirItens';
 import { SemFilial } from '../comum/SemFilial';
 import { useAtalhosDaTela } from '../comum/useAtalhosDaTela';
 import { useFilial } from '../comum/useFilial';
+import { useGuardado } from '../comum/useGuardado';
 import { useVendaEmAndamento } from '../comum/useVendaEmAndamento';
 import { abrirDanfe } from '../comum/vendas.api';
 import { AberturaDeCaixa } from './AberturaDeCaixa';
 import { CabecalhoDoPdv } from './CabecalhoDoPdv';
 import { CONSUMIDOR_FINAL, type ClienteDoPdv } from './clienteDoPdv';
 import { JanelasDoPdv, type AcoesDasJanelas, type JanelaDoPdv } from './JanelasDoPdv';
+import { DetalheDoCaixa, MolduraDoPdv } from './MolduraDoPdv';
 import { linhaPesada } from './pesavel';
+import { ACOES_DA_GRADE, barraDoPdv, teclasDoPdv } from './teclasDoPdv';
 import { useCaixa } from './useCaixa';
 
 /** Vendas › Venda PDV NFC-e e Venda PDV Balcão: o PDV no desenho do Nutri
@@ -27,14 +32,29 @@ import { useCaixa } from './useCaixa';
 const TITULO = { NFCE: 'Venda PDV NFC-e', BALCAO: 'Venda PDV Balcão' } as const;
 const PRODUTOS: JanelaDoPdv = { tipo: 'produtos', lista: { tipo: 'busca', termo: '' } };
 
-export function PdvScreen({ modo }: { readonly modo: 'NFCE' | 'BALCAO' }) {
+export function PdvScreen({
+  modo,
+  emJanela = false,
+}: {
+  readonly modo: 'NFCE' | 'BALCAO';
+  /** Abre como janela por cima do sistema; Esc ou Sair volta para onde estava. */
+  readonly emJanela?: boolean;
+}) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const { filiais, filial, filialId, escolher: escolherFilial, erro: erroDaFilial } = useFilial();
   const { caixa, setCaixa, fechamento, recarregar, fechado, aberto } = useCaixa(filialId);
   const venda = useVendaEmAndamento(`synapse:pdv:${modo}:itens`);
   const lancamento = useRef<ControleDoLancamento>(null);
-  const [cliente, setCliente] = useState<ClienteDoPdv>(CONSUMIDOR_FINAL);
+  const [cliente, setCliente] = useGuardado<ClienteDoPdv>(
+    `synapse:pdv:${modo}:cliente`,
+    CONSUMIDOR_FINAL,
+  );
   const [vendedor, setVendedor] = useState<VendedorNaLista | null>(null);
-  const [mesaOuCartao, setMesaOuCartao] = useState<string | null>(null);
+  const [mesaOuCartao, setMesaOuCartao] = useGuardado<string | null>(
+    `synapse:pdv:${modo}:mesa`,
+    null,
+  );
   const [janela, setJanela] = useState<JanelaDoPdv | null>(null);
   const [ultima, setUltima] = useState<PosSale | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -175,45 +195,58 @@ export function PdvScreen({ modo }: { readonly modo: 'NFCE' | 'BALCAO' }) {
     return true;
   };
 
-  useAtalhosDaTela(
-    {
-      F3: finalizar,
-      'Ctrl+X': limparVenda,
-      'Ctrl+D': () => setJanela({ tipo: 'vendas', uso: 'cancelar' }),
-      F8: () => setJanela({ tipo: 'vendas', uso: 'nf' }),
-      'Ctrl+H': () => setJanela({ tipo: 'vendas', uso: 'historico' }),
-      F7: () => setJanela({ tipo: 'pesavel' }),
-      'Ctrl+A': () => setJanela({ tipo: 'outros' }),
-      'Alt+N': () => setJanela({ tipo: 'mesa' }),
-      F10: () => setJanela({ tipo: 'cliente' }),
-      F4: gaveta,
-      F2: () => lancamento.current?.focarQuantidade(),
-      F12: () => setJanela(PRODUTOS),
-    },
-    Boolean(caixa) && !janela,
-  );
+  const comandos = {
+    abrir: setJanela,
+    limparVenda,
+    finalizar,
+    gaveta,
+    focarQuantidade: () => lancamento.current?.focarQuantidade(),
+  };
+  const barra = barraDoPdv(comandos, venda.linhas.length > 0);
+  useAtalhosDaTela(teclasDoPdv(barra, comandos), Boolean(caixa) && !janela);
 
-  if (!filialId || !filial) return <SemFilial carregando={filiais === null} erro={erroDaFilial} />;
-  if (caixa === undefined) return <SemFilial carregando erro={null} />;
+  // A venda abre com o cursor no produto, pronta para o leitor.
+  const caixaId = caixa?.id;
+  useEffect(() => {
+    if (caixaId) lancamento.current?.focarProduto();
+  }, [caixaId]);
+
+  /** Sair da janela não perde nada: itens, cliente e mesa ficam guardados e o
+   *  caixa continua aberto. */
+  const sair = () => {
+    if (location.key === 'default') navigate(ROTAS.inicio);
+    else navigate(-1);
+  };
+  const moldura = { emJanela, titulo: TITULO[modo], aoFechar: sair };
+
+  if (!filialId || !filial || caixa === undefined) {
+    return (
+      <MolduraDoPdv {...moldura}>
+        <SemFilial
+          carregando={filiais === null || (Boolean(filialId) && caixa === undefined)}
+          erro={erroDaFilial}
+        />
+      </MolduraDoPdv>
+    );
+  }
   if (caixa === null) {
     return (
-      <AberturaDeCaixa
-        titulo={TITULO[modo]}
-        filiais={filiais ?? []}
-        filialId={filialId}
-        aoEscolherFilial={escolherFilial}
-        fechamento={fechamento}
-        aoAbrir={aberto}
-      />
+      <MolduraDoPdv {...moldura}>
+        <AberturaDeCaixa
+          titulo={TITULO[modo]}
+          filiais={filiais ?? []}
+          filialId={filialId}
+          aoEscolherFilial={escolherFilial}
+          fechamento={fechamento}
+          aoAbrir={aberto}
+        />
+      </MolduraDoPdv>
     );
   }
 
   return (
-    <main className="mx-auto flex min-h-[calc(100dvh-4rem)] w-full max-w-[1500px] flex-col gap-3 px-4 py-4">
+    <MolduraDoPdv {...moldura} detalhe={<DetalheDoCaixa filial={filial.name} caixa={caixa} />}>
       <CabecalhoDoPdv
-        titulo={TITULO[modo]}
-        filial={filial.name}
-        caixa={caixa}
         ultima={ultima}
         cliente={cliente}
         vendedor={vendedor}
@@ -236,17 +269,7 @@ export function PdvScreen({ modo }: { readonly modo: 'NFCE' | 'BALCAO' }) {
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <BotoesDaGrade
-          acoes={[
-            'alterar',
-            'excluir',
-            'copiar',
-            'desconto',
-            'produto',
-            'sugestao',
-            'similar',
-            'lote',
-            'serie',
-          ]}
+          acoes={ACOES_DA_GRADE}
           temLinha={Boolean(linha)}
           temItens={venda.linhas.length > 0}
           aoAcionar={(acao) => {
@@ -272,38 +295,7 @@ export function PdvScreen({ modo }: { readonly modo: 'NFCE' | 'BALCAO' }) {
 
       <PainelDeTotais totais={venda.totais} />
 
-      <BarraDeAtalhos
-        atalhos={[
-          { tecla: 'Ctrl+X', rotulo: 'Limpar Venda', acao: limparVenda },
-          {
-            tecla: 'Ctrl+D',
-            rotulo: 'Cancelar Venda',
-            acao: () => setJanela({ tipo: 'vendas', uso: 'cancelar' }),
-          },
-          {
-            tecla: 'F8',
-            rotulo: 'Consultar NF',
-            acao: () => setJanela({ tipo: 'vendas', uso: 'nf' }),
-          },
-          {
-            tecla: 'Ctrl+H',
-            rotulo: 'Histórico de Vendas',
-            acao: () => setJanela({ tipo: 'vendas', uso: 'historico' }),
-          },
-          { tecla: 'F7', rotulo: 'Produto Pesável', acao: () => setJanela({ tipo: 'pesavel' }) },
-          { tecla: 'Ctrl+A', rotulo: 'Outros Recursos', acao: () => setJanela({ tipo: 'outros' }) },
-          { tecla: 'Alt+N', rotulo: 'Mesa/Cartão', acao: () => setJanela({ tipo: 'mesa' }) },
-          { tecla: 'F10', rotulo: 'Informar Cliente', acao: () => setJanela({ tipo: 'cliente' }) },
-          { tecla: 'F4', rotulo: 'Acionar Gaveta', acao: gaveta },
-          {
-            tecla: 'F3',
-            rotulo: 'Finalizar Venda',
-            acao: finalizar,
-            principal: true,
-            desabilitado: venda.linhas.length === 0,
-          },
-        ]}
-      />
+      <BarraDeAtalhos atalhos={barra} />
 
       <JanelasDoPdv
         janela={janela}
@@ -317,6 +309,6 @@ export function PdvScreen({ modo }: { readonly modo: 'NFCE' | 'BALCAO' }) {
         ultima={ultima}
         acoes={acoes}
       />
-    </main>
+    </MolduraDoPdv>
   );
 }

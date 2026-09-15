@@ -51,6 +51,10 @@ Fechado o documento, o pedido entra na **Análise de Crédito** e abre a impress
 
 Abre pedindo o caixa: filial e fundo de troco. Um caixa aberto por operador por filial.
 
+A **Venda PDV Balcão** abre numa janela grande por cima do sistema; **Esc** ou **Sair** volta para a
+tela de onde veio sem perder nada — itens, cliente e mesa ficam guardados neste navegador e o caixa
+continua aberto. A **Venda PDV NFC-e** usa a mesma tela, na página.
+
 Produto/Serviço lê o código de barras e **já lança** com a quantidade do **(F2)**. Cliente começa
 como CONSUMIDOR FINAL; **F10** escolhe do cadastro (traz o endereço) ou põe só o CPF/CNPJ na nota.
 

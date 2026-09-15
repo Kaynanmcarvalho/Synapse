@@ -45,7 +45,10 @@ export function App() {
               <Route path={ROTAS.compras} element={<PurchasingScreen />} />
               <Route path={ROTAS.boletos} element={<BoletosScreen />} />
               <Route path={ROTAS.vendaBalcao} element={<VendaBalcaoScreen />} />
-              <Route path={ROTAS.pdvBalcao} element={<PdvScreen key="balcao" modo="BALCAO" />} />
+              <Route
+                path={ROTAS.pdvBalcao}
+                element={<PdvScreen key="balcao" modo="BALCAO" emJanela />}
+              />
               <Route path={ROTAS.pdv} element={<PdvScreen key="nfce" modo="NFCE" />} />
               <Route path={ROTAS.analiseDeCredito} element={<AnaliseDeCreditoScreen />} />
               <Route path={ROTAS.clientes} element={<ClientesScreen />} />

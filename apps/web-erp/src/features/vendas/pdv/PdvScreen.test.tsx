@@ -1,6 +1,6 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /** O PDV na tela, com a API trocada por dublês: abre o caixa, lê o código de
@@ -155,12 +155,18 @@ describe('PdvScreen', () => {
 
     act(() =>
       raiz.render(
-        <MemoryRouter>
-          <PdvScreen modo="BALCAO" />
+        <MemoryRouter initialEntries={['/inicio', '/vendas/pdv-balcao']} initialIndex={1}>
+          <Routes>
+            <Route path="/inicio" element={<p>Tela inicial</p>} />
+            <Route path="/vendas/pdv-balcao" element={<PdvScreen modo="BALCAO" emJanela />} />
+          </Routes>
         </MemoryRouter>,
       ),
     );
     await esperar();
+    expect(document.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe(
+      'Venda PDV Balcão',
+    );
     expect(document.body.textContent).toContain('Abrir caixa');
     const fundo = campo('Fundo de troco');
     digitar(fundo, '100,00');
@@ -229,5 +235,12 @@ describe('PdvScreen', () => {
     });
     await esperar();
     expect(api.cancelarVenda).toHaveBeenCalledWith('venda-1', 'Cliente desistiu da compra');
+
+    // Sair da janela volta para onde estava, e a venda em andamento fica guardada.
+    await esperar(400);
+    act(() => botao('(Esc) Sair').click());
+    await esperar(400);
+    expect(document.body.textContent).toContain('Tela inicial');
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
 });

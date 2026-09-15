@@ -10,7 +10,10 @@ import {
   Trash2,
   type LucideIcon,
 } from 'lucide-react';
-import { BOTAO_PEQUENO } from '../../cadastros/comum/estilos';
+/** Botão pequeno com borda: fica visível tanto na página clara quanto no fundo
+ *  cinza da janela do PDV. */
+const BOTAO =
+  'border-hairline-light text-caption text-ink hover:bg-surface-soft inline-flex h-8 items-center gap-1.5 rounded-full border bg-white px-3 font-medium transition disabled:cursor-not-allowed disabled:opacity-40';
 
 /** Alterar, Excluir, Copiar, Desc., Produto, Sugestão, Similar, Lote e Série:
  *  os botões que agem sobre o item escolhido na grade. */
@@ -62,7 +65,7 @@ export function BotoesDaGrade({
             type="button"
             disabled={desabilitado}
             onClick={() => aoAcionar(acao)}
-            className={BOTAO_PEQUENO}
+            className={BOTAO}
           >
             <Icone size={13} aria-hidden="true" />
             {rotulo}
