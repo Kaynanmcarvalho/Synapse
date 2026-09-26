@@ -4,10 +4,15 @@ import type { EntradaDeMenu } from './menu.types';
 import {
   atalhoCorresponde,
   encontrarPorCaminho,
+  familiaDoPainel,
   filtrarPorFeature,
+  indiceDoTypeAhead,
   item,
   lerAtalho,
+  moduloAtivoPara,
   montarMenu,
+  moveuDeVerdade,
+  normalizarTexto,
   proximoIndice,
   SEPARADOR,
   slug,
@@ -493,5 +498,88 @@ describe('utilitarios do menu', () => {
     expect(proximoIndice(itens, 0, 1)).toBe(2);
     expect(proximoIndice(itens, 2, 1)).toBe(0);
     expect(proximoIndice(itens, 0, -1)).toBe(2);
+  });
+});
+
+// Utilitarios que a Fase 3 do chrome introduziu: aparencia e interacao da
+// barra, sem tocar no contrato de navegacao (esse continua em
+// navegacao.contrato.test.ts).
+describe('normalizarTexto e type-ahead', () => {
+  it('tira acento e caixa', () => {
+    expect(normalizarTexto('Configurações')).toBe('configuracoes');
+    expect(normalizarTexto('CRÉDITO')).toBe('credito');
+  });
+
+  it('acha a primeira entrada cujo rotulo comeca com o texto digitado', () => {
+    const { itens } = montarMenu('X', [item('Alfa'), SEPARADOR, item('Alcateia'), item('Beta')]);
+    expect(indiceDoTypeAhead(itens, 'b')).toBe(3);
+    // sequencia rapida ("al") refina: ainda acha a primeira ("Alfa"), mas
+    // continuar digitando troca para a proxima que bate com o prefixo maior.
+    expect(indiceDoTypeAhead(itens, 'al')).toBe(0);
+    expect(indiceDoTypeAhead(itens, 'alc')).toBe(2);
+  });
+
+  it('ignora acento tanto no rotulo quanto no que foi digitado', () => {
+    const { itens } = montarMenu('X', [item('Créditos'), item('Boletos')]);
+    expect(indiceDoTypeAhead(itens, 'cre')).toBe(0);
+  });
+
+  it('nunca acha separador', () => {
+    const { itens } = montarMenu('X', [SEPARADOR, item('Alfa')]);
+    expect(indiceDoTypeAhead(itens, 'a')).toBe(1);
+  });
+
+  it('sem correspondencia devolve -1', () => {
+    const { itens } = montarMenu('X', [item('Alfa')]);
+    expect(indiceDoTypeAhead(itens, 'z')).toBe(-1);
+  });
+});
+
+describe('moveuDeVerdade', () => {
+  it('a primeira coordenada que ve nao tem base de comparacao: conta como movimento', () => {
+    expect(moveuDeVerdade({ clientX: 10, clientY: 10 })).toBe(true);
+  });
+
+  it('mesma coordenada da vez anterior (painel apareceu sob o cursor parado) nao conta', () => {
+    moveuDeVerdade({ clientX: 50, clientY: 60 });
+    expect(moveuDeVerdade({ clientX: 50, clientY: 60 })).toBe(false);
+  });
+
+  it('coordenada diferente em qualquer eixo conta como movimento real', () => {
+    moveuDeVerdade({ clientX: 50, clientY: 60 });
+    expect(moveuDeVerdade({ clientX: 51, clientY: 60 })).toBe(true);
+    expect(moveuDeVerdade({ clientX: 51, clientY: 61 })).toBe(true);
+  });
+});
+
+describe('familiaDoPainel', () => {
+  it('rotulos curtos formam um painel compacto', () => {
+    const { itens } = montarMenu('X', [item('Clientes'), item('Vendas')]);
+    expect(familiaDoPainel(itens)).toBe('compacto');
+  });
+
+  it('um rotulo muito comprido nao estica o painel: vira familia larga', () => {
+    const { itens } = montarMenu('X', [
+      item('Emissão de Nota Fiscal (Devolução / Remessa / Transferência / ...)'),
+    ]);
+    expect(familiaDoPainel(itens)).toBe('largo');
+  });
+
+  it('atalho conta no comprimento da linha', () => {
+    const { itens } = montarMenu('X', [item('Consulta Produtos', { atalho: 'Ctrl+F8' })]);
+    expect(familiaDoPainel(itens)).not.toBe('compacto');
+  });
+});
+
+describe('moduloAtivoPara', () => {
+  it('acha o modulo dono da rota atual', () => {
+    const cadastros = montarMenu('Cadastros', [item('Clientes', { para: '/cadastros/clientes' })]);
+    const vendas = montarMenu('Vendas', [item('Venda Balcão', { para: '/vendas/venda-balcao' })]);
+    expect(moduloAtivoPara([cadastros, vendas], '/vendas/venda-balcao')).toBe(vendas.id);
+  });
+
+  it('rota sem modulo dono devolve undefined', () => {
+    const cadastros = montarMenu('Cadastros', [item('Clientes', { para: '/cadastros/clientes' })]);
+    expect(moduloAtivoPara([cadastros], '/nao-existe')).toBeUndefined();
   });
 });
