@@ -96,6 +96,91 @@ ainda usa números crus; a migração é gradual.
 | `comando`      | 90    | diálogo do crédito (`z-[90]`)             |
 | `aviso`        | 100   | avisos que precisam vencer tudo           |
 
+## Primitives
+
+O vocabulário que as telas usam. Nome de componente em inglês, valor de
+propriedade no vocabulário dos tokens (`density="compacta"`, `tone="perigo"`) —
+é o mesmo idioma do `tokens/`.
+
+| Primitive     | Para que serve                                 | Variantes                                                                                                          |
+| ------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `Text`        | a escala tipográfica, por papel                | tituloTela · tituloSecao · tituloCartao · corpoGrande · corpo · corpoSecundario · rotulo · legenda · dado · codigo |
+| `Surface`     | o plano em que o conteúdo se apoia             | pagina · painel · elevada · afundada                                                                               |
+| `Divider`     | separar por linha                              | horizontal · vertical                                                                                              |
+| `Field`       | rótulo, controle, dica e erro amarrados        | densidade e `span` na grade                                                                                        |
+| `Input`       | texto                                          | densidade · `align` · `invalid`                                                                                    |
+| `Select`      | escolha, com `<select>` nativo                 | densidade · `invalid`                                                                                              |
+| `NumberInput` | quantidade e percentual                        | herda Input                                                                                                        |
+| `MoneyInput`  | valor em real (só apresentação)                | herda Input                                                                                                        |
+| `DocInput`    | CPF, CNPJ, CEP, telefone (máscara vem de fora) | herda Input                                                                                                        |
+| `Button`      | ação                                           | primary · secondary · quiet · danger                                                                               |
+| `IconButton`  | ação de glifo, com nome acessível obrigatório  | quiet · secondary · `shape`                                                                                        |
+| `Kbd`         | a tecla do atalho                              | —                                                                                                                  |
+| `Status`      | situação                                       | dot · text · chip, nos 8 tons                                                                                      |
+| `Spinner`     | espera                                         | decorativo ou anunciado                                                                                            |
+
+### Três regras que não se negociam
+
+**SURFACE IS NOT CARD.** `Surface` diz em que plano o conteúdo está, não que ele
+merece uma caixa. Não injeta padding: quem precisa de respiro decide o respiro.
+Quando todo agrupamento vira cartão com sombra, a tela deixa de ter hierarquia.
+
+**STATUS IS NOT ALWAYS A PILL.** O padrão é ponto + texto. Uma tela de ERP mostra
+situação em quase toda linha; se cada uma virar chip colorido, o olho perde a
+capacidade de achar o que importa. `chip` é exceção, para bloco denso.
+
+**ICON BUTTON IS NOT ALWAYS A CIRCLE.** A área de clique é quadrada e a
+superfície só aparece no hover. O círculo existe quando a semântica pede
+(`shape="circle"`), não como decoração padrão.
+
+### Densidade
+
+| Densidade     | Altura | Onde                                            |
+| ------------- | ------ | ----------------------------------------------- |
+| `compacta`    | 32px   | linha de tabela, barra de ferramentas           |
+| `padrao`      | 36px   | **o padrão do ERP de mesa** — formulário e ação |
+| `confortavel` | 44px   | formulário longo, toque                         |
+
+Não use 44px em tudo: o Synapse é software de mesa, não interface mobile
+ampliada.
+
+### Exemplo
+
+```tsx
+<Field label="Nome" error={erros.nome} hint="Como aparece na busca">
+  <Input value={nome} onChange={(e) => setNome(e.target.value)} />
+</Field>
+
+<Field label="Limite" span={2}>
+  <MoneyInput value={limite} onChange={(e) => setLimite(e.target.value)} />
+</Field>
+
+<Button variant="primary" loading={salvando}>Salvar</Button>
+<Button variant="quiet">Cancelar</Button>
+
+<Status tone={ativo ? 'ok' : 'neutro'}>{ativo ? 'Ativo' : 'Inativo'}</Status>
+```
+
+### Armadilha conhecida
+
+`corpo` e `corpoGrande` renderizam `<p>`. Em contexto de linha — dentro de
+`<button>`, de `<td>` ou de outro parágrafo — passe `as="span"`, senão o HTML
+fica inválido.
+
+## Migrando do que existe hoje
+
+| Legado                                   | Vai virar                  | Quando            |
+| ---------------------------------------- | -------------------------- | ----------------- |
+| `features/customers/campos.tsx`          | `Field` + `Input`/`Select` | fase de cadastros |
+| `features/cadastros/comum/CamposDaFicha` | adaptador fino sobre o SDL | fase de cadastros |
+| `features/fiscal/assistente/campos.tsx`  | `Field` + controles        | fase fiscal       |
+| `@synapse/ui` `Button`/`Input`/`Card`    | `Button`/`Input`/`Surface` | por tela          |
+| `BOTAO_*`, `SELO`, `TOM` em `estilos.ts` | `Button` e `Status`        | por tela          |
+
+Os componentes do `@synapse/ui` continuam funcionando e estão marcados como
+`@deprecated`: nenhum import quebra, e o editor avisa quem for escrever código
+novo. A remoção acontece quando o último consumidor migrar.
+
 ## O que **não** está aqui
 
 Primitives de componente (Button, Field, DataGrid…), migração de telas,

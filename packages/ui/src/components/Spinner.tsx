@@ -5,6 +5,9 @@ export interface SpinnerProps {
   readonly label?: string;
 }
 
+/**
+ * @deprecated Use `Spinner` de `@synapse/sdl`.
+ */
 export function Spinner({ className, label = 'Carregando' }: SpinnerProps) {
   return (
     <span

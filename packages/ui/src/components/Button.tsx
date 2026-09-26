@@ -25,6 +25,11 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   readonly children?: ReactNode;
 }
 
+/**
+ * @deprecated Use `Button` de `@synapse/sdl`: quatro hierarquias, densidade do
+ * sistema e o foco do Synapse. Este continua funcionando ate o ultimo
+ * consumidor migrar.
+ */
 export function Button({
   variant = 'primary',
   size = 'md',

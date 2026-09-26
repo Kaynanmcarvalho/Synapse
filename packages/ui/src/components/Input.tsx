@@ -5,6 +5,10 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   readonly invalid?: boolean;
 }
 
+/**
+ * @deprecated Use `Input` (com `Field`) de `@synapse/sdl`, que resolve rotulo,
+ * `aria-describedby` e estado de aviso.
+ */
 export function Input({ className, invalid = false, ...props }: InputProps) {
   return (
     <input

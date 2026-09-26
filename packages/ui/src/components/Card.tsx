@@ -3,6 +3,10 @@ import { cn } from '../lib/cn';
 
 export type CardProps = HTMLAttributes<HTMLDivElement>;
 
+/**
+ * @deprecated Use `Surface` de `@synapse/sdl`. Atencao: `Surface` nao e cartao —
+ * ela diz o plano, e o espacamento fica com quem compoe.
+ */
 export function Card({ className, ...props }: CardProps) {
   return (
     <div
