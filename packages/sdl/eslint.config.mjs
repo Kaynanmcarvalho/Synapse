@@ -1,3 +1,3 @@
-import base from '@synapse/config/eslint/base';
+import react from '@synapse/config/eslint/react';
 
-export default base;
+export default react;

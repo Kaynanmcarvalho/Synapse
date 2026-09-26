@@ -1,4 +1,4 @@
-import { canaisDoHex, MARCA } from '@synapse/sdl';
+import { canaisDoHex, MARCA } from '@synapse/sdl/tokens';
 import { useEffect, useState } from 'react';
 import { apiRequest } from '../lib/dev-auth';
 

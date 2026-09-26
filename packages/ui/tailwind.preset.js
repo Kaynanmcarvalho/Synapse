@@ -1,4 +1,4 @@
-import { primitivos } from '@synapse/sdl';
+import { primitivos } from '@synapse/sdl/tokens';
 
 /** Preset do web-admin e do web-vendedor.
  *

@@ -73,6 +73,7 @@ export default {
         canvas: { light: superficieCru.branco, dark: superficieCru.preto },
         surface: {
           soft: superficie.suave,
+          suave: superficie.suave,
           card: superficie.painel,
           deep: superficieCru.escuroProfundo,
           elevated: superficieCru.escuroElevado,

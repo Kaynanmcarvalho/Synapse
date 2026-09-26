@@ -13,5 +13,10 @@ const preset = presetModule.default ?? presetModule;
  *  decidido neste arquivo — se precisar de um, ele nasce token. */
 module.exports = {
   presets: [preset],
-  content: ['./index.html', './src/**/*.{ts,tsx}', '../../packages/ui/src/**/*.{ts,tsx}'],
+  content: [
+    './index.html',
+    './src/**/*.{ts,tsx}',
+    '../../packages/ui/src/**/*.{ts,tsx}',
+    '../../packages/sdl/src/**/*.{ts,tsx}',
+  ],
 };
