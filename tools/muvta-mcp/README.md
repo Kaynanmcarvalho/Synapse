@@ -29,9 +29,16 @@ workspace. Sem dependencia externa: roda com o Node do proprio repositorio
    nasce depois dela. Rode `/mcp`: o servidor `muvta` deve aparecer conectado,
    com 10 ferramentas.
 
-O `.mcp.json` na raiz ja aponta para este servidor. O caminho e absoluto, como a
-API exige, mas da para sobrescrever sem editar o arquivo versionado — util para
-quem tem o repositorio em outro lugar:
+O `.mcp.json` da raiz **nao e versionado**: ele carrega o caminho da maquina de
+quem usa, e um dia carregou a chave em texto claro. O modelo sem segredo fica em
+`.mcp.json.example` — copie e ajuste:
+
+```bash
+cp .mcp.json.example .mcp.json
+```
+
+O caminho do servidor e absoluto, como a API exige, mas da para sobrescrever sem
+editar o arquivo — util para quem tem o repositorio em outro lugar:
 
 ```powershell
 [Environment]::SetEnvironmentVariable('MUVTA_MCP_SERVER', 'D:/caminho/Synapse/tools/muvta-mcp/server.mjs', 'User')
