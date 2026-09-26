@@ -69,11 +69,11 @@ export function NotificationCenter() {
         type="button"
         aria-label="Notificações"
         onClick={() => setOpen((value) => !value)}
-        className="relative flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+        className="text-charcoal hover:bg-surface-soft hover:text-ink duration-rapido rounded-controle relative flex h-8 w-8 items-center justify-center transition-colors"
       >
         <Bell size={18} strokeWidth={1.8} />
         {unread ? (
-          <span className="absolute right-1.5 top-1 rounded-full bg-blue-600 px-1 text-[9px] font-bold text-white">
+          <span className="bg-primary absolute right-1 top-1 rounded-full px-1 text-[9px] font-bold text-white">
             {unread}
           </span>
         ) : null}

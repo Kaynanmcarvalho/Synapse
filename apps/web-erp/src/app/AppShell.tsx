@@ -1,5 +1,6 @@
 /* eslint-disable max-lines-per-function */
-import { CircleHelp, Menu, Search, Sparkles } from 'lucide-react';
+import { Kbd } from '@synapse/sdl';
+import { CircleHelp, Keyboard, Menu, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { NotificationCenter } from '../features/notifications/NotificationCenter';
@@ -7,7 +8,7 @@ import { CommandPalette } from '../features/search/CommandPalette';
 import { ShortcutsModal } from '../features/search/ShortcutsModal';
 import { useAuth, useUsuario } from './auth/AuthContext';
 import { MENUS } from './menu/menu.data';
-import { filtrarPorFeature } from './menu/menu.utils';
+import { filtrarPorFeature, ID_CONTEUDO_PRINCIPAL } from './menu/menu.utils';
 import { MenuBar } from './menu/MenuBar';
 import { MobileMenu } from './menu/MobileMenu';
 import { useMenuShortcuts } from './menu/useMenuShortcuts';
@@ -17,8 +18,10 @@ import { Marca } from './shell/Marca';
 import { ShellContext } from './shell/ShellContext';
 import { useTenantExperience } from './useTenantExperience';
 
+/** Botao de icone da chrome: sem caixa em repouso, a affordance so aparece no
+ *  hover/foco — nao e um circulo de avatar generico sempre visivel. */
 const BOTAO_DE_ICONE =
-  'flex h-10 w-10 items-center justify-center rounded-full text-charcoal transition hover:bg-surface-soft hover:text-ink';
+  'flex h-8 w-8 items-center justify-center rounded-controle text-charcoal transition-colors duration-rapido hover:bg-surface-soft hover:text-ink';
 
 const iniciais = (nome: string): string =>
   nome
@@ -28,13 +31,15 @@ const iniciais = (nome: string): string =>
     .map((parte) => parte.charAt(0).toUpperCase())
     .join('') || '?';
 
+/** Selo com as iniciais, nao um avatar redondo colorido: o Synapse guarda o
+ *  circulo cheio para a marca (Marca.tsx), nao para o usuario. */
 function Usuario() {
   const usuario = useUsuario();
   return (
-    <span className="ml-1 flex items-center gap-2.5" title={usuario.email}>
+    <span className="ml-1 flex items-center gap-2" title={usuario.email}>
       <span
         aria-hidden="true"
-        className="bg-ink flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-semibold text-white"
+        className="border-hairline-light bg-surface-soft text-ink rounded-controle flex h-7 w-7 items-center justify-center border text-[11px] font-semibold"
       >
         {iniciais(usuario.nome)}
       </span>
@@ -103,14 +108,17 @@ export function AppShell() {
     <ShellContext.Provider value={casca}>
       <div className="bg-canvas-light text-ink min-h-screen">
         <header className="border-hairline-light bg-canvas-light/95 sticky top-0 z-30 border-b backdrop-blur-xl">
-          <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
+          {/* Application Header — 48px. So a estrutura externa muda aqui: marca,
+           *  busca, atalhos, notificacoes e usuario. O conteudo da Command
+           *  Palette continua o mesmo. */}
+          <div className="flex h-12 items-center gap-3 px-4 sm:px-6 lg:px-8">
             <button
               type="button"
               aria-label="Abrir menu"
               onClick={() => setMobileOpen(true)}
-              className={`${BOTAO_DE_ICONE} -ml-2 lg:hidden`}
+              className={`${BOTAO_DE_ICONE} -ml-1.5 lg:hidden`}
             >
-              <Menu size={20} />
+              <Menu size={19} />
             </button>
             <Marca
               nome={experience.branding.systemName}
@@ -118,33 +126,38 @@ export function AppShell() {
               para={ROTAS.inicio}
             />
 
+            {/* Campo de busca integrado a chrome — nao e mais uma pilula de
+             *  destaque: borda fina, radius de controle, largura contida. */}
             <button
               type="button"
               onClick={() => setPaletteOpen(true)}
-              className="bg-surface-soft mx-auto hidden h-11 w-full max-w-[480px] items-center gap-3 rounded-full px-4 text-left transition hover:bg-[#ececee] sm:flex"
+              className="border-hairline-light bg-surface-soft hover:bg-surface-hover duration-rapido rounded-controle ml-2 hidden h-8 w-full max-w-[320px] items-center gap-2 border px-2.5 text-left transition-colors sm:flex"
             >
-              <Search size={17} className="text-stone" aria-hidden="true" />
-              <span className="text-body-sm text-stone flex-1">O que você precisa?</span>
-              <kbd className="bg-canvas-light text-ash rounded-full px-2 py-0.5 font-sans text-[11px] font-medium">
-                Ctrl K
-              </kbd>
+              <Search size={15} className="text-stone shrink-0" aria-hidden="true" />
+              <span className="text-body-sm text-stone flex-1 truncate">O que você precisa?</span>
+              <span className="flex shrink-0 items-center gap-0.5">
+                <Kbd className="h-5 min-w-5 px-1 text-[10px]">Ctrl</Kbd>
+                <Kbd className="h-5 min-w-5 px-1 text-[10px]">K</Kbd>
+              </span>
             </button>
 
-            <div className="ml-auto flex items-center gap-1 sm:ml-0">
+            <div className="ml-auto flex items-center gap-0.5 sm:ml-0">
               <button
                 type="button"
                 onClick={() => setPaletteOpen(true)}
                 aria-label="Abrir busca global"
                 className={`${BOTAO_DE_ICONE} sm:hidden`}
               >
-                <Search size={19} />
+                <Search size={18} />
               </button>
               <button
                 type="button"
                 onClick={() => setShortcutsOpen(true)}
-                className="bg-surface-soft text-button-sm text-ink mr-1 hidden h-9 items-center gap-2 rounded-full px-4 transition hover:bg-[#ececee] md:flex"
+                aria-label="Ver atalhos de teclado"
+                title="Atalhos de teclado"
+                className={`${BOTAO_DE_ICONE} hidden md:flex`}
               >
-                <Sparkles size={15} aria-hidden="true" /> Atalhos
+                <Keyboard size={18} strokeWidth={1.8} />
               </button>
               <NotificationCenter />
               <button
@@ -152,15 +165,16 @@ export function AppShell() {
                 aria-label="Ajuda"
                 className={`${BOTAO_DE_ICONE} hidden sm:flex`}
               >
-                <CircleHelp size={19} strokeWidth={1.8} />
+                <CircleHelp size={18} strokeWidth={1.8} />
               </button>
               <Usuario />
             </div>
           </div>
 
-          {/* Os paineis do menu abrem num portal: rolar esta faixa em tela estreita nao os corta. */}
-          <div className="border-hairline-light hidden h-12 items-center overflow-x-auto border-t px-4 [scrollbar-width:none] lg:flex lg:px-6">
-            <MenuBar menus={menus} onSair={() => void sair()} />
+          {/* Application Menubar — 40px. Os paineis do menu abrem num portal:
+           *  rolar esta faixa em tela estreita nao os corta. */}
+          <div className="border-hairline-light hidden h-10 items-center overflow-x-auto border-t px-4 [scrollbar-width:none] lg:flex lg:px-6">
+            <MenuBar menus={menus} caminhoAtual={location.pathname} onSair={() => void sair()} />
           </div>
         </header>
 
@@ -172,9 +186,12 @@ export function AppShell() {
           />
         )}
 
-        <LimiteDeFalha key={location.pathname}>
-          <Outlet />
-        </LimiteDeFalha>
+        {/* Alvo previsivel de foco quando Tab sai da barra de menus. */}
+        <div id={ID_CONTEUDO_PRINCIPAL} tabIndex={-1} className="outline-none">
+          <LimiteDeFalha key={location.pathname}>
+            <Outlet />
+          </LimiteDeFalha>
+        </div>
 
         <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
         {shortcutsOpen && <ShortcutsModal onClose={() => setShortcutsOpen(false)} />}
