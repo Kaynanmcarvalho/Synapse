@@ -1,0 +1,316 @@
+Cadastros  id=cadastros
+  > Parâmetros da Empresa  id=cadastros/parametros-da-empresa
+    - Dados da Empresa  id=cadastros/parametros-da-empresa/dados-da-empresa caminho=/modulo/cadastros/parametros-da-empresa/dados-da-empresa situacao=em-breve trilha=Cadastros > Parâmetros da Empresa > Dados da Empresa
+    - Configuração por Filial  id=cadastros/parametros-da-empresa/configuracao-por-filial caminho=/configuracoes/filiais situacao=disponivel trilha=Cadastros > Parâmetros da Empresa > Configuração por Filial
+    - Parâmetros Gerais  id=cadastros/parametros-da-empresa/parametros-gerais caminho=/modulo/cadastros/parametros-da-empresa/parametros-gerais situacao=em-breve trilha=Cadastros > Parâmetros da Empresa > Parâmetros Gerais
+  > Financeiro  id=cadastros/financeiro
+    - Plano de Contas  id=cadastros/financeiro/plano-de-contas caminho=/modulo/cadastros/financeiro/plano-de-contas situacao=em-breve trilha=Cadastros > Financeiro > Plano de Contas
+    - Centro de Custos  id=cadastros/financeiro/centro-de-custos caminho=/modulo/cadastros/financeiro/centro-de-custos situacao=em-breve trilha=Cadastros > Financeiro > Centro de Custos
+    --- cadastros/financeiro/sep-2
+    - Contas  id=cadastros/financeiro/contas caminho=/modulo/cadastros/financeiro/contas situacao=em-breve trilha=Cadastros > Financeiro > Contas
+    --- cadastros/financeiro/sep-4
+    - Portadores  id=cadastros/financeiro/portadores caminho=/modulo/cadastros/financeiro/portadores situacao=em-breve trilha=Cadastros > Financeiro > Portadores
+    > Bancos  id=cadastros/financeiro/bancos
+      - Bancos  id=cadastros/financeiro/bancos/bancos caminho=/modulo/cadastros/financeiro/bancos/bancos situacao=em-breve trilha=Cadastros > Financeiro > Bancos > Bancos
+      - Agências  id=cadastros/financeiro/bancos/agencias caminho=/modulo/cadastros/financeiro/bancos/agencias situacao=em-breve trilha=Cadastros > Financeiro > Bancos > Agências
+    --- cadastros/financeiro/sep-7
+    - Tipos de Documentos  id=cadastros/financeiro/tipos-de-documentos caminho=/modulo/cadastros/financeiro/tipos-de-documentos situacao=em-breve trilha=Cadastros > Financeiro > Tipos de Documentos
+    - Convênios  id=cadastros/financeiro/convenios caminho=/modulo/cadastros/financeiro/convenios situacao=em-breve trilha=Cadastros > Financeiro > Convênios
+    --- cadastros/financeiro/sep-10
+    - Condições de Pagamento  id=cadastros/financeiro/condicoes-de-pagamento caminho=/modulo/cadastros/financeiro/condicoes-de-pagamento situacao=em-breve trilha=Cadastros > Financeiro > Condições de Pagamento
+    - Grupo de Condições de Pagamento  id=cadastros/financeiro/grupo-de-condicoes-de-pagamento caminho=/modulo/cadastros/financeiro/grupo-de-condicoes-de-pagamento situacao=em-breve trilha=Cadastros > Financeiro > Grupo de Condições de Pagamento
+    --- cadastros/financeiro/sep-13
+    - Tipo de Lançamento em Títulos a Receber  id=cadastros/financeiro/tipo-de-lancamento-em-titulos-a-receber caminho=/modulo/cadastros/financeiro/tipo-de-lancamento-em-titulos-a-receber situacao=em-breve trilha=Cadastros > Financeiro > Tipo de Lançamento em Títulos a Receber
+    - Tipo de Lançamento em Títulos a Pagar  id=cadastros/financeiro/tipo-de-lancamento-em-titulos-a-pagar caminho=/modulo/cadastros/financeiro/tipo-de-lancamento-em-titulos-a-pagar situacao=em-breve trilha=Cadastros > Financeiro > Tipo de Lançamento em Títulos a Pagar
+  > Fiscais  id=cadastros/fiscais
+    - Séries de Notas Fiscais  id=cadastros/fiscais/series-de-notas-fiscais caminho=/modulo/cadastros/fiscais/series-de-notas-fiscais situacao=em-breve trilha=Cadastros > Fiscais > Séries de Notas Fiscais
+    --- cadastros/fiscais/sep-1
+    - Contabilista  id=cadastros/fiscais/contabilista caminho=/modulo/cadastros/fiscais/contabilista situacao=em-breve trilha=Cadastros > Fiscais > Contabilista
+    - Intermediador da Transação (Marketplace)  id=cadastros/fiscais/intermediador-da-transacao-marketplace caminho=/modulo/cadastros/fiscais/intermediador-da-transacao-marketplace situacao=em-breve trilha=Cadastros > Fiscais > Intermediador da Transação (Marketplace)
+  --- cadastros/sep-3
+  - Transportadoras  id=cadastros/transportadoras caminho=/modulo/cadastros/transportadoras situacao=em-breve trilha=Cadastros > Transportadoras
+  - Praças e Regiões  id=cadastros/pracas-e-regioes caminho=/cadastros/pracas-e-regioes situacao=disponivel trilha=Cadastros > Praças e Regiões
+  - Assessores de Venda  id=cadastros/assessores-de-venda caminho=/modulo/cadastros/assessores-de-venda situacao=em-breve trilha=Cadastros > Assessores de Venda
+  - Mesas / Cartões  id=cadastros/mesas-cartoes caminho=/modulo/cadastros/mesas-cartoes situacao=em-breve trilha=Cadastros > Mesas / Cartões
+  --- cadastros/sep-8
+  > Clientes  id=cadastros/clientes
+    - Clientes  id=cadastros/clientes/clientes caminho=/cadastros/clientes situacao=disponivel trilha=Cadastros > Clientes > Clientes
+    --- cadastros/clientes/sep-1
+    - Grupo de Clientes  id=cadastros/clientes/grupo-de-clientes caminho=/modulo/cadastros/clientes/grupo-de-clientes situacao=em-breve trilha=Cadastros > Clientes > Grupo de Clientes
+    - Sub-Grupo de Clientes  id=cadastros/clientes/sub-grupo-de-clientes caminho=/modulo/cadastros/clientes/sub-grupo-de-clientes situacao=em-breve trilha=Cadastros > Clientes > Sub-Grupo de Clientes
+    - Grupo Econômico  id=cadastros/clientes/grupo-economico caminho=/modulo/cadastros/clientes/grupo-economico situacao=em-breve trilha=Cadastros > Clientes > Grupo Econômico
+    - Prospecção  id=cadastros/clientes/prospeccao caminho=/modulo/cadastros/clientes/prospeccao situacao=em-breve trilha=Cadastros > Clientes > Prospecção
+    - Segmento Empresarial  id=cadastros/clientes/segmento-empresarial caminho=/modulo/cadastros/clientes/segmento-empresarial situacao=em-breve trilha=Cadastros > Clientes > Segmento Empresarial
+    - Lote de Cobrança  id=cadastros/clientes/lote-de-cobranca caminho=/modulo/cadastros/clientes/lote-de-cobranca situacao=em-breve trilha=Cadastros > Clientes > Lote de Cobrança
+    --- cadastros/clientes/sep-8
+    - Configuração de Clientes em Lote  id=cadastros/clientes/configuracao-de-clientes-em-lote caminho=/modulo/cadastros/clientes/configuracao-de-clientes-em-lote situacao=em-breve trilha=Cadastros > Clientes > Configuração de Clientes em Lote
+  > Fornecedores  id=cadastros/fornecedores
+    - Fornecedores  id=cadastros/fornecedores/fornecedores caminho=/cadastros/fornecedores situacao=disponivel trilha=Cadastros > Fornecedores > Fornecedores
+    --- cadastros/fornecedores/sep-1
+    - Grupo de Fornecedores  id=cadastros/fornecedores/grupo-de-fornecedores caminho=/cadastros/fornecedores/grupos situacao=disponivel trilha=Cadastros > Fornecedores > Grupo de Fornecedores
+    - Sub-Grupo de Fornecedores  id=cadastros/fornecedores/sub-grupo-de-fornecedores caminho=/cadastros/fornecedores/sub-grupos situacao=disponivel trilha=Cadastros > Fornecedores > Sub-Grupo de Fornecedores
+  > Funcionários  id=cadastros/funcionarios
+    - Funcionários  id=cadastros/funcionarios/funcionarios caminho=/cadastros/funcionarios situacao=disponivel trilha=Cadastros > Funcionários > Funcionários
+    --- cadastros/funcionarios/sep-1
+    - Cargos  id=cadastros/funcionarios/cargos caminho=/cadastros/funcionarios/cargos situacao=disponivel trilha=Cadastros > Funcionários > Cargos
+    - Departamentos  id=cadastros/funcionarios/departamentos caminho=/cadastros/funcionarios/departamentos situacao=disponivel trilha=Cadastros > Funcionários > Departamentos
+  > Produtos / Serviços  id=cadastros/produtos-servicos
+    - Produtos / Serviços  id=cadastros/produtos-servicos/produtos-servicos caminho=/cadastros/produtos situacao=disponivel trilha=Cadastros > Produtos / Serviços > Produtos / Serviços
+    - Cotação da Moeda Estrangeira  id=cadastros/produtos-servicos/cotacao-da-moeda-estrangeira caminho=/modulo/cadastros/produtos-servicos/cotacao-da-moeda-estrangeira situacao=em-breve trilha=Cadastros > Produtos / Serviços > Cotação da Moeda Estrangeira
+    --- cadastros/produtos-servicos/sep-2
+    - Unidades de Medidas  id=cadastros/produtos-servicos/unidades-de-medidas caminho=/modulo/cadastros/produtos-servicos/unidades-de-medidas situacao=em-breve trilha=Cadastros > Produtos / Serviços > Unidades de Medidas
+    - Grupos de Produtos  id=cadastros/produtos-servicos/grupos-de-produtos caminho=/modulo/cadastros/produtos-servicos/grupos-de-produtos situacao=em-breve trilha=Cadastros > Produtos / Serviços > Grupos de Produtos
+    - Sub-Grupo de Produtos  id=cadastros/produtos-servicos/sub-grupo-de-produtos caminho=/modulo/cadastros/produtos-servicos/sub-grupo-de-produtos situacao=em-breve trilha=Cadastros > Produtos / Serviços > Sub-Grupo de Produtos
+    - Linha de Produtos  id=cadastros/produtos-servicos/linha-de-produtos caminho=/modulo/cadastros/produtos-servicos/linha-de-produtos situacao=em-breve trilha=Cadastros > Produtos / Serviços > Linha de Produtos
+    - Marcas  id=cadastros/produtos-servicos/marcas caminho=/modulo/cadastros/produtos-servicos/marcas situacao=em-breve trilha=Cadastros > Produtos / Serviços > Marcas
+    - Similares  id=cadastros/produtos-servicos/similares caminho=/modulo/cadastros/produtos-servicos/similares situacao=em-breve trilha=Cadastros > Produtos / Serviços > Similares
+    - Localização do Produto  id=cadastros/produtos-servicos/localizacao-do-produto caminho=/modulo/cadastros/produtos-servicos/localizacao-do-produto situacao=em-breve trilha=Cadastros > Produtos / Serviços > Localização do Produto
+    - Grupo de Promoção  id=cadastros/produtos-servicos/grupo-de-promocao caminho=/modulo/cadastros/produtos-servicos/grupo-de-promocao situacao=em-breve trilha=Cadastros > Produtos / Serviços > Grupo de Promoção
+    --- cadastros/produtos-servicos/sep-11
+    - Cores  id=cadastros/produtos-servicos/cores caminho=/modulo/cadastros/produtos-servicos/cores situacao=em-breve trilha=Cadastros > Produtos / Serviços > Cores
+    - Tamanhos  id=cadastros/produtos-servicos/tamanhos caminho=/modulo/cadastros/produtos-servicos/tamanhos situacao=em-breve trilha=Cadastros > Produtos / Serviços > Tamanhos
+    --- cadastros/produtos-servicos/sep-14
+    - Departamentos do Produto  id=cadastros/produtos-servicos/departamentos-do-produto caminho=/modulo/cadastros/produtos-servicos/departamentos-do-produto situacao=em-breve trilha=Cadastros > Produtos / Serviços > Departamentos do Produto
+    - Configuração de Produtos para Autoatendimento  id=cadastros/produtos-servicos/configuracao-de-produtos-para-autoatendimento caminho=/modulo/cadastros/produtos-servicos/configuracao-de-produtos-para-autoatendimento situacao=em-breve trilha=Cadastros > Produtos / Serviços > Configuração de Produtos para Autoatendimento
+    --- cadastros/produtos-servicos/sep-17
+    - Ajuste de Preço dos Produtos  id=cadastros/produtos-servicos/ajuste-de-preco-dos-produtos caminho=/modulo/cadastros/produtos-servicos/ajuste-de-preco-dos-produtos situacao=em-breve trilha=Cadastros > Produtos / Serviços > Ajuste de Preço dos Produtos
+    - Aplicar Tabela de ICMS/ICMS ST  id=cadastros/produtos-servicos/aplicar-tabela-de-icms-icms-st caminho=/modulo/cadastros/produtos-servicos/aplicar-tabela-de-icms-icms-st situacao=em-breve trilha=Cadastros > Produtos / Serviços > Aplicar Tabela de ICMS/ICMS ST
+    - Atualização de Tabelas da SEFAZ  id=cadastros/produtos-servicos/atualizacao-de-tabelas-da-sefaz caminho=/modulo/cadastros/produtos-servicos/atualizacao-de-tabelas-da-sefaz situacao=em-breve trilha=Cadastros > Produtos / Serviços > Atualização de Tabelas da SEFAZ
+    - Produtos Favoritos  id=cadastros/produtos-servicos/produtos-favoritos caminho=/modulo/cadastros/produtos-servicos/produtos-favoritos situacao=em-breve trilha=Cadastros > Produtos / Serviços > Produtos Favoritos
+    --- cadastros/produtos-servicos/sep-22
+    - Configuração de Produtos em Lote  id=cadastros/produtos-servicos/configuracao-de-produtos-em-lote caminho=/modulo/cadastros/produtos-servicos/configuracao-de-produtos-em-lote situacao=em-breve trilha=Cadastros > Produtos / Serviços > Configuração de Produtos em Lote
+    - Importar Códigos de Benefícios Fiscais  id=cadastros/produtos-servicos/importar-codigos-de-beneficios-fiscais caminho=/modulo/cadastros/produtos-servicos/importar-codigos-de-beneficios-fiscais situacao=em-breve trilha=Cadastros > Produtos / Serviços > Importar Códigos de Benefícios Fiscais
+  --- cadastros/sep-13
+  > Relatórios  id=cadastros/relatorios
+    - Clientes  id=cadastros/relatorios/clientes caminho=/modulo/cadastros/relatorios/clientes situacao=em-breve trilha=Cadastros > Relatórios > Clientes
+    - Fornecedores  id=cadastros/relatorios/fornecedores caminho=/modulo/cadastros/relatorios/fornecedores situacao=em-breve trilha=Cadastros > Relatórios > Fornecedores
+    - Funcionários  id=cadastros/relatorios/funcionarios caminho=/modulo/cadastros/relatorios/funcionarios situacao=em-breve trilha=Cadastros > Relatórios > Funcionários
+    - Assessores de Venda  id=cadastros/relatorios/assessores-de-venda caminho=/modulo/cadastros/relatorios/assessores-de-venda situacao=em-breve trilha=Cadastros > Relatórios > Assessores de Venda
+    --- cadastros/relatorios/sep-4
+    - Etiqueta de Produtos  id=cadastros/relatorios/etiqueta-de-produtos caminho=/modulo/cadastros/relatorios/etiqueta-de-produtos situacao=em-breve trilha=Cadastros > Relatórios > Etiqueta de Produtos
+    - Etiqueta de Clientes  id=cadastros/relatorios/etiqueta-de-clientes caminho=/modulo/cadastros/relatorios/etiqueta-de-clientes situacao=em-breve trilha=Cadastros > Relatórios > Etiqueta de Clientes
+    - Etiqueta de Produto Pesado em Balança  id=cadastros/relatorios/etiqueta-de-produto-pesado-em-balanca caminho=/modulo/cadastros/relatorios/etiqueta-de-produto-pesado-em-balanca situacao=em-breve trilha=Cadastros > Relatórios > Etiqueta de Produto Pesado em Balança
+Vendas  id=vendas
+  - Venda Balcão  id=vendas/venda-balcao caminho=/vendas/venda-balcao situacao=disponivel atalho=Alt+N trilha=Vendas > Venda Balcão
+  - Venda PDV Balcão  id=vendas/venda-pdv-balcao caminho=/vendas/pdv-balcao situacao=disponivel atalho=Ctrl+O trilha=Vendas > Venda PDV Balcão
+  - Venda PDV NFC-e  id=vendas/venda-pdv-nfc-e caminho=/vendas/pdv situacao=disponivel atalho=Ctrl+D feature=NFCE trilha=Vendas > Venda PDV NFC-e
+  - Venda Tablet  id=vendas/venda-tablet caminho=/modulo/vendas/venda-tablet situacao=em-breve trilha=Vendas > Venda Tablet
+  - Negociação de Desconto  id=vendas/negociacao-de-desconto caminho=/modulo/vendas/negociacao-de-desconto situacao=em-breve trilha=Vendas > Negociação de Desconto
+  - Consulta Preço  id=vendas/consulta-preco caminho=/modulo/vendas/consulta-preco situacao=em-breve trilha=Vendas > Consulta Preço
+  --- vendas/sep-6
+  - Venda Posto  id=vendas/venda-posto caminho=/modulo/vendas/venda-posto situacao=em-breve trilha=Vendas > Venda Posto
+  > Restaurante  id=vendas/restaurante
+    - Consumo Mesa  id=vendas/restaurante/consumo-mesa caminho=/modulo/vendas/restaurante/consumo-mesa situacao=em-breve trilha=Vendas > Restaurante > Consumo Mesa
+    - Venda Restaurante  id=vendas/restaurante/venda-restaurante caminho=/modulo/vendas/restaurante/venda-restaurante situacao=em-breve trilha=Vendas > Restaurante > Venda Restaurante
+    - Venda Touch  id=vendas/restaurante/venda-touch caminho=/modulo/vendas/restaurante/venda-touch situacao=em-breve trilha=Vendas > Restaurante > Venda Touch
+    - Controle de Entrega de Comanda  id=vendas/restaurante/controle-de-entrega-de-comanda caminho=/modulo/vendas/restaurante/controle-de-entrega-de-comanda situacao=em-breve trilha=Vendas > Restaurante > Controle de Entrega de Comanda
+    - Autoatendimento  id=vendas/restaurante/autoatendimento caminho=/modulo/vendas/restaurante/autoatendimento situacao=em-breve trilha=Vendas > Restaurante > Autoatendimento
+  - Venda Conveniada  id=vendas/venda-conveniada caminho=/modulo/vendas/venda-conveniada situacao=em-breve trilha=Vendas > Venda Conveniada
+  > Proposta de Venda  id=vendas/proposta-de-venda
+    - Controle de Proposta de Venda  id=vendas/proposta-de-venda/controle-de-proposta-de-venda caminho=/modulo/vendas/proposta-de-venda/controle-de-proposta-de-venda situacao=em-breve trilha=Vendas > Proposta de Venda > Controle de Proposta de Venda
+    - Proposta de Venda  id=vendas/proposta-de-venda/proposta-de-venda caminho=/modulo/vendas/proposta-de-venda/proposta-de-venda situacao=em-breve trilha=Vendas > Proposta de Venda > Proposta de Venda
+    - Cancelamento de Proposta  id=vendas/proposta-de-venda/cancelamento-de-proposta caminho=/modulo/vendas/proposta-de-venda/cancelamento-de-proposta situacao=em-breve trilha=Vendas > Proposta de Venda > Cancelamento de Proposta
+  > Ordem de Serviços  id=vendas/ordem-de-servicos
+    - Controle de Ordens de Serviço  id=vendas/ordem-de-servicos/controle-de-ordens-de-servico caminho=/modulo/vendas/ordem-de-servicos/controle-de-ordens-de-servico situacao=em-breve trilha=Vendas > Ordem de Serviços > Controle de Ordens de Serviço
+    - Nova Ordem de Serviço  id=vendas/ordem-de-servicos/nova-ordem-de-servico caminho=/modulo/vendas/ordem-de-servicos/nova-ordem-de-servico situacao=em-breve trilha=Vendas > Ordem de Serviços > Nova Ordem de Serviço
+  --- vendas/sep-12
+  - Análise de Crédito  id=vendas/analise-de-credito caminho=/vendas/analise-de-credito situacao=disponivel atalho=Ctrl+I trilha=Vendas > Análise de Crédito
+  --- vendas/sep-14
+  - Impressão de Documento Avulso  id=vendas/impressao-de-documento-avulso caminho=/modulo/vendas/impressao-de-documento-avulso situacao=em-breve trilha=Vendas > Impressão de Documento Avulso
+  --- vendas/sep-16
+  - Cancelamento de Venda  id=vendas/cancelamento-de-venda caminho=/modulo/vendas/cancelamento-de-venda situacao=em-breve atalho=Ctrl+L trilha=Vendas > Cancelamento de Venda
+  --- vendas/sep-18
+  > Remessa de Entrega  id=vendas/remessa-de-entrega
+    - Controle de Entrega  id=vendas/remessa-de-entrega/controle-de-entrega caminho=/modulo/vendas/remessa-de-entrega/controle-de-entrega situacao=em-breve trilha=Vendas > Remessa de Entrega > Controle de Entrega
+    --- vendas/remessa-de-entrega/sep-1
+    - Controle Remessa Entrega de Mercadoria  id=vendas/remessa-de-entrega/controle-remessa-entrega-de-mercadoria caminho=/modulo/vendas/remessa-de-entrega/controle-remessa-entrega-de-mercadoria situacao=em-breve trilha=Vendas > Remessa de Entrega > Controle Remessa Entrega de Mercadoria
+    - Nova Remessa Entrega de Mercadoria  id=vendas/remessa-de-entrega/nova-remessa-entrega-de-mercadoria caminho=/modulo/vendas/remessa-de-entrega/nova-remessa-entrega-de-mercadoria situacao=em-breve trilha=Vendas > Remessa de Entrega > Nova Remessa Entrega de Mercadoria
+    --- vendas/remessa-de-entrega/sep-4
+    - Controle de Remessa de Cargas  id=vendas/remessa-de-entrega/controle-de-remessa-de-cargas caminho=/modulo/vendas/remessa-de-entrega/controle-de-remessa-de-cargas situacao=em-breve trilha=Vendas > Remessa de Entrega > Controle de Remessa de Cargas
+  --- vendas/sep-20
+  - Consulta de Pedidos  id=vendas/consulta-de-pedidos caminho=/modulo/vendas/consulta-de-pedidos situacao=em-breve trilha=Vendas > Consulta de Pedidos
+  - Controle de Pedidos Multiloja  id=vendas/controle-de-pedidos-multiloja caminho=/modulo/vendas/controle-de-pedidos-multiloja situacao=em-breve trilha=Vendas > Controle de Pedidos Multiloja
+  - Consulta Produtos  id=vendas/consulta-produtos caminho=/modulo/vendas/consulta-produtos situacao=em-breve atalho=Ctrl+F8 trilha=Vendas > Consulta Produtos
+  - Histórico de Vendas  id=vendas/historico-de-vendas caminho=/modulo/vendas/historico-de-vendas situacao=em-breve trilha=Vendas > Histórico de Vendas
+  --- vendas/sep-25
+  - Controle de Comissão  id=vendas/controle-de-comissao caminho=/modulo/vendas/controle-de-comissao situacao=em-breve trilha=Vendas > Controle de Comissão
+  --- vendas/sep-27
+  > Relatórios  id=vendas/relatorios
+    - Vendas  id=vendas/relatorios/vendas caminho=/modulo/vendas/relatorios/vendas situacao=em-breve trilha=Vendas > Relatórios > Vendas
+    - Vendas Restaurante  id=vendas/relatorios/vendas-restaurante caminho=/modulo/vendas/relatorios/vendas-restaurante situacao=em-breve trilha=Vendas > Relatórios > Vendas Restaurante
+    - Curva ABC de Produtos e Serviços  id=vendas/relatorios/curva-abc-de-produtos-e-servicos caminho=/estoque/inteligencia situacao=disponivel trilha=Vendas > Relatórios > Curva ABC de Produtos e Serviços
+    - Curva ABC de Clientes  id=vendas/relatorios/curva-abc-de-clientes caminho=/modulo/vendas/relatorios/curva-abc-de-clientes situacao=em-breve trilha=Vendas > Relatórios > Curva ABC de Clientes
+    - Curva ABC de Marcas  id=vendas/relatorios/curva-abc-de-marcas caminho=/modulo/vendas/relatorios/curva-abc-de-marcas situacao=em-breve trilha=Vendas > Relatórios > Curva ABC de Marcas
+    --- vendas/relatorios/sep-5
+    - Gerenciador de Comissão de Vendas  id=vendas/relatorios/gerenciador-de-comissao-de-vendas caminho=/modulo/vendas/relatorios/gerenciador-de-comissao-de-vendas situacao=em-breve trilha=Vendas > Relatórios > Gerenciador de Comissão de Vendas
+    - Comissão de Vendas  id=vendas/relatorios/comissao-de-vendas caminho=/modulo/vendas/relatorios/comissao-de-vendas situacao=em-breve trilha=Vendas > Relatórios > Comissão de Vendas
+    - Comissão Assessor de Venda  id=vendas/relatorios/comissao-assessor-de-venda caminho=/modulo/vendas/relatorios/comissao-assessor-de-venda situacao=em-breve trilha=Vendas > Relatórios > Comissão Assessor de Venda
+    --- vendas/relatorios/sep-9
+    - Ordem de Serviços  id=vendas/relatorios/ordem-de-servicos caminho=/modulo/vendas/relatorios/ordem-de-servicos situacao=em-breve trilha=Vendas > Relatórios > Ordem de Serviços
+    --- vendas/relatorios/sep-11
+    - Remessa de Entrega  id=vendas/relatorios/remessa-de-entrega caminho=/modulo/vendas/relatorios/remessa-de-entrega situacao=em-breve trilha=Vendas > Relatórios > Remessa de Entrega
+    - Remessa Entrega de Mercadorias  id=vendas/relatorios/remessa-entrega-de-mercadorias caminho=/modulo/vendas/relatorios/remessa-entrega-de-mercadorias situacao=em-breve trilha=Vendas > Relatórios > Remessa Entrega de Mercadorias
+    - Remessa de Carga  id=vendas/relatorios/remessa-de-carga caminho=/modulo/vendas/relatorios/remessa-de-carga situacao=em-breve trilha=Vendas > Relatórios > Remessa de Carga
+    - Notas Fiscais Emitidas  id=vendas/relatorios/notas-fiscais-emitidas caminho=/modulo/vendas/relatorios/notas-fiscais-emitidas situacao=em-breve trilha=Vendas > Relatórios > Notas Fiscais Emitidas
+    - Docs. Fiscais Emitidos por CST de PIS/COFINS  id=vendas/relatorios/docs-fiscais-emitidos-por-cst-de-pis-cofins caminho=/modulo/vendas/relatorios/docs-fiscais-emitidos-por-cst-de-pis-cofins situacao=em-breve trilha=Vendas > Relatórios > Docs. Fiscais Emitidos por CST de PIS/COFINS
+    - Emissão de Recibo Avulso  id=vendas/relatorios/emissao-de-recibo-avulso caminho=/modulo/vendas/relatorios/emissao-de-recibo-avulso situacao=em-breve trilha=Vendas > Relatórios > Emissão de Recibo Avulso
+Estoque  id=estoque
+  - Lançamento de Nota Fiscal de Entrada  id=estoque/lancamento-de-nota-fiscal-de-entrada caminho=/compras situacao=disponivel trilha=Estoque > Lançamento de Nota Fiscal de Entrada
+  - Estorno de Entrada de Nota Fiscal  id=estoque/estorno-de-entrada-de-nota-fiscal caminho=/modulo/estoque/estorno-de-entrada-de-nota-fiscal situacao=em-breve trilha=Estoque > Estorno de Entrada de Nota Fiscal
+  - Controle de Notas Fiscais Emitidas para meu CNPJ  id=estoque/controle-de-notas-fiscais-emitidas-para-meu-cnpj caminho=/estoque/entradas-xml situacao=disponivel feature=DFE trilha=Estoque > Controle de Notas Fiscais Emitidas para meu CNPJ
+  --- estoque/sep-3
+  - Emissão de Nota Fiscal (Devolução / Remessa / Transferência / ...)  id=estoque/emissao-de-nota-fiscal-devolucao-remessa-transferencia caminho=/modulo/estoque/emissao-de-nota-fiscal-devolucao-remessa-transferencia situacao=em-breve feature=NFE trilha=Estoque > Emissão de Nota Fiscal (Devolução / Remessa / Transferência / ...)
+  - Emissão de Nota Fiscal de Importação  id=estoque/emissao-de-nota-fiscal-de-importacao caminho=/modulo/estoque/emissao-de-nota-fiscal-de-importacao situacao=em-breve feature=NFE trilha=Estoque > Emissão de Nota Fiscal de Importação
+  - Emissão de Nota Fiscal Complementar  id=estoque/emissao-de-nota-fiscal-complementar caminho=/modulo/estoque/emissao-de-nota-fiscal-complementar situacao=em-breve feature=NFE trilha=Estoque > Emissão de Nota Fiscal Complementar
+  - Cancelamento de Nota Fiscal Emitida  id=estoque/cancelamento-de-nota-fiscal-emitida caminho=/modulo/estoque/cancelamento-de-nota-fiscal-emitida situacao=em-breve feature=NFE trilha=Estoque > Cancelamento de Nota Fiscal Emitida
+  --- estoque/sep-8
+  > Troca de Mercadorias  id=estoque/troca-de-mercadorias
+    - Controle de Troca de Mercadorias  id=estoque/troca-de-mercadorias/controle-de-troca-de-mercadorias caminho=/modulo/estoque/troca-de-mercadorias/controle-de-troca-de-mercadorias situacao=em-breve trilha=Estoque > Troca de Mercadorias > Controle de Troca de Mercadorias
+    - Nova Troca de Mercadorias  id=estoque/troca-de-mercadorias/nova-troca-de-mercadorias caminho=/modulo/estoque/troca-de-mercadorias/nova-troca-de-mercadorias situacao=em-breve trilha=Estoque > Troca de Mercadorias > Nova Troca de Mercadorias
+  - Transferência de Estoque  id=estoque/transferencia-de-estoque caminho=/modulo/estoque/transferencia-de-estoque situacao=em-breve trilha=Estoque > Transferência de Estoque
+  - Controle de Produtos em Consignação  id=estoque/controle-de-produtos-em-consignacao caminho=/modulo/estoque/controle-de-produtos-em-consignacao situacao=em-breve trilha=Estoque > Controle de Produtos em Consignação
+  - Balanço de Estoque  id=estoque/balanco-de-estoque caminho=/estoque/inventarios situacao=disponivel feature=INVENTORY trilha=Estoque > Balanço de Estoque
+  > Balanço de Estoque/Contagens  id=estoque/balanco-de-estoque-contagens
+    - Contagens em Andamento  id=estoque/balanco-de-estoque-contagens/contagens-em-andamento caminho=/estoque/inventarios situacao=disponivel feature=INVENTORY trilha=Estoque > Balanço de Estoque/Contagens > Contagens em Andamento
+    - Importar Contagem do Coletor  id=estoque/balanco-de-estoque-contagens/importar-contagem-do-coletor caminho=/modulo/estoque/balanco-de-estoque-contagens/importar-contagem-do-coletor situacao=em-breve trilha=Estoque > Balanço de Estoque/Contagens > Importar Contagem do Coletor
+  --- estoque/sep-14
+  > Gestão de Projetos  id=estoque/gestao-de-projetos
+    - Projetos  id=estoque/gestao-de-projetos/projetos caminho=/modulo/estoque/gestao-de-projetos/projetos situacao=em-breve trilha=Estoque > Gestão de Projetos > Projetos
+    - Apontamento de Materiais  id=estoque/gestao-de-projetos/apontamento-de-materiais caminho=/modulo/estoque/gestao-de-projetos/apontamento-de-materiais situacao=em-breve trilha=Estoque > Gestão de Projetos > Apontamento de Materiais
+  - Desmembramento de Produtos  id=estoque/desmembramento-de-produtos caminho=/modulo/estoque/desmembramento-de-produtos situacao=em-breve trilha=Estoque > Desmembramento de Produtos
+  --- estoque/sep-17
+  - Consulta Movimentação de Produtos  id=estoque/consulta-movimentacao-de-produtos caminho=/estoque situacao=disponivel feature=INVENTORY trilha=Estoque > Consulta Movimentação de Produtos
+  --- estoque/sep-19
+  > Relatórios  id=estoque/relatorios
+    - Posição de estoque  id=estoque/relatorios/posicao-de-estoque caminho=/modulo/estoque/relatorios/posicao-de-estoque situacao=em-breve trilha=Estoque > Relatórios > Posição de estoque
+    - Posição de Venda / Estoque  id=estoque/relatorios/posicao-de-venda-estoque caminho=/modulo/estoque/relatorios/posicao-de-venda-estoque situacao=em-breve trilha=Estoque > Relatórios > Posição de Venda / Estoque
+    - Produtos com Estoque Mínimo  id=estoque/relatorios/produtos-com-estoque-minimo caminho=/modulo/estoque/relatorios/produtos-com-estoque-minimo situacao=em-breve trilha=Estoque > Relatórios > Produtos com Estoque Mínimo
+    - Curva ABC de Fornecedores  id=estoque/relatorios/curva-abc-de-fornecedores caminho=/modulo/estoque/relatorios/curva-abc-de-fornecedores situacao=em-breve trilha=Estoque > Relatórios > Curva ABC de Fornecedores
+    - Relatório Produtos por NCM  id=estoque/relatorios/relatorio-produtos-por-ncm caminho=/modulo/estoque/relatorios/relatorio-produtos-por-ncm situacao=em-breve trilha=Estoque > Relatórios > Relatório Produtos por NCM
+    --- estoque/relatorios/sep-5
+    - Markup de Produtos  id=estoque/relatorios/markup-de-produtos caminho=/modulo/estoque/relatorios/markup-de-produtos situacao=em-breve trilha=Estoque > Relatórios > Markup de Produtos
+    - Lista de Preços  id=estoque/relatorios/lista-de-precos caminho=/modulo/estoque/relatorios/lista-de-precos situacao=em-breve trilha=Estoque > Relatórios > Lista de Preços
+    --- estoque/relatorios/sep-8
+    - Transferência de Estoque  id=estoque/relatorios/transferencia-de-estoque caminho=/modulo/estoque/relatorios/transferencia-de-estoque situacao=em-breve trilha=Estoque > Relatórios > Transferência de Estoque
+    --- estoque/relatorios/sep-10
+    - Balanço de Estoque  id=estoque/relatorios/balanco-de-estoque caminho=/modulo/estoque/relatorios/balanco-de-estoque situacao=em-breve trilha=Estoque > Relatórios > Balanço de Estoque
+    - Registro de Inventário  id=estoque/relatorios/registro-de-inventario caminho=/modulo/estoque/relatorios/registro-de-inventario situacao=em-breve trilha=Estoque > Relatórios > Registro de Inventário
+    - Gestão de Projetos  id=estoque/relatorios/gestao-de-projetos caminho=/modulo/estoque/relatorios/gestao-de-projetos situacao=em-breve trilha=Estoque > Relatórios > Gestão de Projetos
+    --- estoque/relatorios/sep-14
+    - Espelho Nota Fiscal de Entrada  id=estoque/relatorios/espelho-nota-fiscal-de-entrada caminho=/modulo/estoque/relatorios/espelho-nota-fiscal-de-entrada situacao=em-breve trilha=Estoque > Relatórios > Espelho Nota Fiscal de Entrada
+    --- estoque/relatorios/sep-16
+    - Notas Fiscais de Entrada  id=estoque/relatorios/notas-fiscais-de-entrada caminho=/modulo/estoque/relatorios/notas-fiscais-de-entrada situacao=em-breve trilha=Estoque > Relatórios > Notas Fiscais de Entrada
+    - Notas Fiscais Totalizadas por CFOP  id=estoque/relatorios/notas-fiscais-totalizadas-por-cfop caminho=/modulo/estoque/relatorios/notas-fiscais-totalizadas-por-cfop situacao=em-breve trilha=Estoque > Relatórios > Notas Fiscais Totalizadas por CFOP
+Financeiro  id=financeiro
+  > Contas a Pagar  id=financeiro/contas-a-pagar
+    - Controle de Títulos  id=financeiro/contas-a-pagar/controle-de-titulos caminho=/modulo/financeiro/contas-a-pagar/controle-de-titulos situacao=em-breve trilha=Financeiro > Contas a Pagar > Controle de Títulos
+    - Lançamento de Títulos  id=financeiro/contas-a-pagar/lancamento-de-titulos caminho=/modulo/financeiro/contas-a-pagar/lancamento-de-titulos situacao=em-breve trilha=Financeiro > Contas a Pagar > Lançamento de Títulos
+    - Baixa de Títulos  id=financeiro/contas-a-pagar/baixa-de-titulos caminho=/modulo/financeiro/contas-a-pagar/baixa-de-titulos situacao=em-breve trilha=Financeiro > Contas a Pagar > Baixa de Títulos
+  > Contas a Receber  id=financeiro/contas-a-receber
+    - Controle de Títulos  id=financeiro/contas-a-receber/controle-de-titulos caminho=/modulo/financeiro/contas-a-receber/controle-de-titulos situacao=em-breve trilha=Financeiro > Contas a Receber > Controle de Títulos
+    - Lançamento de Títulos  id=financeiro/contas-a-receber/lancamento-de-titulos caminho=/modulo/financeiro/contas-a-receber/lancamento-de-titulos situacao=em-breve trilha=Financeiro > Contas a Receber > Lançamento de Títulos
+    - Baixa de Títulos  id=financeiro/contas-a-receber/baixa-de-titulos caminho=/modulo/financeiro/contas-a-receber/baixa-de-titulos situacao=em-breve trilha=Financeiro > Contas a Receber > Baixa de Títulos
+    - Gerenciamento de Cobrança Bancária  id=financeiro/contas-a-receber/gerenciamento-de-cobranca-bancaria caminho=/financeiro/boletos situacao=disponivel feature=BANKS trilha=Financeiro > Contas a Receber > Gerenciamento de Cobrança Bancária
+    - Ajuste de Valor de Título  id=financeiro/contas-a-receber/ajuste-de-valor-de-titulo caminho=/modulo/financeiro/contas-a-receber/ajuste-de-valor-de-titulo situacao=em-breve trilha=Financeiro > Contas a Receber > Ajuste de Valor de Título
+    --- financeiro/contas-a-receber/sep-5
+    - Faturamento  id=financeiro/contas-a-receber/faturamento caminho=/modulo/financeiro/contas-a-receber/faturamento situacao=em-breve trilha=Financeiro > Contas a Receber > Faturamento
+  - Crédito do Cliente  id=financeiro/credito-do-cliente caminho=/modulo/financeiro/credito-do-cliente situacao=em-breve trilha=Financeiro > Crédito do Cliente
+  - Controle de Recibos Emitidos  id=financeiro/controle-de-recibos-emitidos caminho=/modulo/financeiro/controle-de-recibos-emitidos situacao=em-breve trilha=Financeiro > Controle de Recibos Emitidos
+  --- financeiro/sep-4
+  > Controle de Contas (Caixa e Bancos)  id=financeiro/controle-de-contas-caixa-e-bancos
+    - Controle de Contas (Caixa e Bancos)  id=financeiro/controle-de-contas-caixa-e-bancos/controle-de-contas-caixa-e-bancos caminho=/modulo/financeiro/controle-de-contas-caixa-e-bancos/controle-de-contas-caixa-e-bancos situacao=em-breve trilha=Financeiro > Controle de Contas (Caixa e Bancos) > Controle de Contas (Caixa e Bancos)
+    - Fechar Caixa  id=financeiro/controle-de-contas-caixa-e-bancos/fechar-caixa caminho=/modulo/financeiro/controle-de-contas-caixa-e-bancos/fechar-caixa situacao=em-breve trilha=Financeiro > Controle de Contas (Caixa e Bancos) > Fechar Caixa
+  - Registrar Sangria / Suprimentos  id=financeiro/registrar-sangria-suprimentos caminho=/vendas/pdv situacao=disponivel trilha=Financeiro > Registrar Sangria / Suprimentos
+  - Fluxo de Caixa  id=financeiro/fluxo-de-caixa caminho=/modulo/financeiro/fluxo-de-caixa situacao=em-breve trilha=Financeiro > Fluxo de Caixa
+  --- financeiro/sep-8
+  - Emissão do Plano de Contas  id=financeiro/emissao-do-plano-de-contas caminho=/modulo/financeiro/emissao-do-plano-de-contas situacao=em-breve trilha=Financeiro > Emissão do Plano de Contas
+  - Livro Caixa  id=financeiro/livro-caixa caminho=/modulo/financeiro/livro-caixa situacao=em-breve trilha=Financeiro > Livro Caixa
+  --- financeiro/sep-11
+  > Relatórios  id=financeiro/relatorios
+    - Resumo Financeiro Simplificado  id=financeiro/relatorios/resumo-financeiro-simplificado caminho=/modulo/financeiro/relatorios/resumo-financeiro-simplificado situacao=em-breve trilha=Financeiro > Relatórios > Resumo Financeiro Simplificado
+    --- financeiro/relatorios/sep-1
+    - Contas a Pagar  id=financeiro/relatorios/contas-a-pagar caminho=/modulo/financeiro/relatorios/contas-a-pagar situacao=em-breve trilha=Financeiro > Relatórios > Contas a Pagar
+    - Contas a Receber  id=financeiro/relatorios/contas-a-receber caminho=/modulo/financeiro/relatorios/contas-a-receber situacao=em-breve trilha=Financeiro > Relatórios > Contas a Receber
+    - Crédito do Cliente  id=financeiro/relatorios/credito-do-cliente caminho=/modulo/financeiro/relatorios/credito-do-cliente situacao=em-breve trilha=Financeiro > Relatórios > Crédito do Cliente
+    - Fluxo de Caixa  id=financeiro/relatorios/fluxo-de-caixa caminho=/modulo/financeiro/relatorios/fluxo-de-caixa situacao=em-breve trilha=Financeiro > Relatórios > Fluxo de Caixa
+    - Centro de Custo  id=financeiro/relatorios/centro-de-custo caminho=/modulo/financeiro/relatorios/centro-de-custo situacao=em-breve trilha=Financeiro > Relatórios > Centro de Custo
+    - Demonstração do Resultado do Exercício (DRE)  id=financeiro/relatorios/demonstracao-do-resultado-do-exercicio-dre caminho=/modulo/financeiro/relatorios/demonstracao-do-resultado-do-exercicio-dre situacao=em-breve trilha=Financeiro > Relatórios > Demonstração do Resultado do Exercício (DRE)
+Produtividade  id=produtividade
+  > Agendamentos  id=produtividade/agendamentos
+    - Agenda  id=produtividade/agendamentos/agenda caminho=/modulo/produtividade/agendamentos/agenda situacao=em-breve trilha=Produtividade > Agendamentos > Agenda
+    - Novo Agendamento  id=produtividade/agendamentos/novo-agendamento caminho=/modulo/produtividade/agendamentos/novo-agendamento situacao=em-breve trilha=Produtividade > Agendamentos > Novo Agendamento
+  --- produtividade/sep-1
+  - Checklist  id=produtividade/checklist caminho=/modulo/produtividade/checklist situacao=em-breve trilha=Produtividade > Checklist
+  - Mala Direta por Email  id=produtividade/mala-direta-por-email caminho=/modulo/produtividade/mala-direta-por-email situacao=em-breve trilha=Produtividade > Mala Direta por Email
+  - Mensagem por WhatsApp  id=produtividade/mensagem-por-whatsapp caminho=/modulo/produtividade/mensagem-por-whatsapp situacao=em-breve trilha=Produtividade > Mensagem por WhatsApp
+  - Plano Fidelidade  id=produtividade/plano-fidelidade caminho=/modulo/produtividade/plano-fidelidade situacao=em-breve trilha=Produtividade > Plano Fidelidade
+  - Lista de Presentes  id=produtividade/lista-de-presentes caminho=/modulo/produtividade/lista-de-presentes situacao=em-breve trilha=Produtividade > Lista de Presentes
+  - Controle de Cardápio / Catálogo Virtual  id=produtividade/controle-de-cardapio-catalogo-virtual caminho=/modulo/produtividade/controle-de-cardapio-catalogo-virtual situacao=em-breve trilha=Produtividade > Controle de Cardápio / Catálogo Virtual
+  --- produtividade/sep-8
+  > Relatórios  id=produtividade/relatorios
+    - Clientes do Plano Fidelidade  id=produtividade/relatorios/clientes-do-plano-fidelidade caminho=/modulo/produtividade/relatorios/clientes-do-plano-fidelidade situacao=em-breve trilha=Produtividade > Relatórios > Clientes do Plano Fidelidade
+    - Mensagens Enviadas  id=produtividade/relatorios/mensagens-enviadas caminho=/modulo/produtividade/relatorios/mensagens-enviadas situacao=em-breve trilha=Produtividade > Relatórios > Mensagens Enviadas
+Rotinas Fiscais  id=rotinas-fiscais
+  > L.M.C  id=rotinas-fiscais/l-m-c
+    - Lançamento do LMC  id=rotinas-fiscais/l-m-c/lancamento-do-lmc caminho=/modulo/rotinas-fiscais/l-m-c/lancamento-do-lmc situacao=em-breve trilha=Rotinas Fiscais > L.M.C > Lançamento do LMC
+    - Livro de Movimentação de Combustíveis  id=rotinas-fiscais/l-m-c/livro-de-movimentacao-de-combustiveis caminho=/modulo/rotinas-fiscais/l-m-c/livro-de-movimentacao-de-combustiveis situacao=em-breve trilha=Rotinas Fiscais > L.M.C > Livro de Movimentação de Combustíveis
+  --- rotinas-fiscais/sep-1
+  - Geração do arquivo Sintegra  id=rotinas-fiscais/geracao-do-arquivo-sintegra caminho=/modulo/rotinas-fiscais/geracao-do-arquivo-sintegra situacao=em-breve trilha=Rotinas Fiscais > Geração do arquivo Sintegra
+  --- rotinas-fiscais/sep-3
+  > SPED - Sistema Público de Escrituração Digital  id=rotinas-fiscais/sped-sistema-publico-de-escrituracao-digital
+    - EFD ICMS/IPI  id=rotinas-fiscais/sped-sistema-publico-de-escrituracao-digital/efd-icms-ipi caminho=/modulo/rotinas-fiscais/sped-sistema-publico-de-escrituracao-digital/efd-icms-ipi situacao=em-breve trilha=Rotinas Fiscais > SPED - Sistema Público de Escrituração Digital > EFD ICMS/IPI
+    - EFD Contribuições  id=rotinas-fiscais/sped-sistema-publico-de-escrituracao-digital/efd-contribuicoes caminho=/modulo/rotinas-fiscais/sped-sistema-publico-de-escrituracao-digital/efd-contribuicoes situacao=em-breve trilha=Rotinas Fiscais > SPED - Sistema Público de Escrituração Digital > EFD Contribuições
+  --- rotinas-fiscais/sep-5
+  - Emissor CT-e / MDF-e  id=rotinas-fiscais/emissor-ct-e-mdf-e caminho=/modulo/rotinas-fiscais/emissor-ct-e-mdf-e situacao=em-breve feature=MDFE trilha=Rotinas Fiscais > Emissor CT-e / MDF-e
+  - Envio de XML para Contabilidade  id=rotinas-fiscais/envio-de-xml-para-contabilidade caminho=/modulo/rotinas-fiscais/envio-de-xml-para-contabilidade situacao=em-breve trilha=Rotinas Fiscais > Envio de XML para Contabilidade
+Configurações  id=configuracoes
+  - Mini Impressora  id=configuracoes/mini-impressora caminho=/modulo/configuracoes/mini-impressora situacao=em-breve trilha=Configurações > Mini Impressora
+  --- configuracoes/sep-1
+  - TEF - Modo Administrativo  id=configuracoes/tef-modo-administrativo caminho=/modulo/configuracoes/tef-modo-administrativo situacao=em-breve trilha=Configurações > TEF - Modo Administrativo
+  - TEF - Cancelamento  id=configuracoes/tef-cancelamento caminho=/modulo/configuracoes/tef-cancelamento situacao=em-breve trilha=Configurações > TEF - Cancelamento
+  --- configuracoes/sep-4
+  - Processar Lote Pendente  id=configuracoes/processar-lote-pendente caminho=/modulo/configuracoes/processar-lote-pendente situacao=em-breve trilha=Configurações > Processar Lote Pendente
+  - Notas Fiscais Emitidas Em Contingência  id=configuracoes/notas-fiscais-emitidas-em-contingencia caminho=/modulo/configuracoes/notas-fiscais-emitidas-em-contingencia situacao=em-breve feature=NFE trilha=Configurações > Notas Fiscais Emitidas Em Contingência
+  - Serviços de Nota Fiscal Eletrônica da SEFAZ  id=configuracoes/servicos-de-nota-fiscal-eletronica-da-sefaz caminho=/modulo/configuracoes/servicos-de-nota-fiscal-eletronica-da-sefaz situacao=em-breve feature=NFE trilha=Configurações > Serviços de Nota Fiscal Eletrônica da SEFAZ
+  - Controle de Notas Fiscais Eletrônicas de Produtos (NF-e)  id=configuracoes/controle-de-notas-fiscais-eletronicas-de-produtos-nf-e caminho=/modulo/configuracoes/controle-de-notas-fiscais-eletronicas-de-produtos-nf-e situacao=em-breve feature=NFE trilha=Configurações > Controle de Notas Fiscais Eletrônicas de Produtos (NF-e)
+  - Notas Fiscais Emitidas Em Duplicidade  id=configuracoes/notas-fiscais-emitidas-em-duplicidade caminho=/modulo/configuracoes/notas-fiscais-emitidas-em-duplicidade situacao=em-breve feature=NFE trilha=Configurações > Notas Fiscais Emitidas Em Duplicidade
+  - Assistente de Configuração de NF-e  id=configuracoes/assistente-de-configuracao-de-nf-e caminho=/configuracoes/fiscal situacao=disponivel feature=NFE trilha=Configurações > Assistente de Configuração de NF-e
+  --- configuracoes/sep-11
+  - Controle de Notas Fiscais Eletrônicas de Serviços (NFS-e)  id=configuracoes/controle-de-notas-fiscais-eletronicas-de-servicos-nfs-e caminho=/modulo/configuracoes/controle-de-notas-fiscais-eletronicas-de-servicos-nfs-e situacao=em-breve trilha=Configurações > Controle de Notas Fiscais Eletrônicas de Serviços (NFS-e)
+  - Configuração de NFS-e  id=configuracoes/configuracao-de-nfs-e caminho=/modulo/configuracoes/configuracao-de-nfs-e situacao=em-breve trilha=Configurações > Configuração de NFS-e
+  --- configuracoes/sep-14
+  - Exportar Tab. de Preços Balança Integrada  id=configuracoes/exportar-tab-de-precos-balanca-integrada caminho=/modulo/configuracoes/exportar-tab-de-precos-balanca-integrada situacao=em-breve trilha=Configurações > Exportar Tab. de Preços Balança Integrada
+  - Exportar Tab. de Preços para o Leitor de Consulta  id=configuracoes/exportar-tab-de-precos-para-o-leitor-de-consulta caminho=/modulo/configuracoes/exportar-tab-de-precos-para-o-leitor-de-consulta situacao=em-breve trilha=Configurações > Exportar Tab. de Preços para o Leitor de Consulta
+  --- configuracoes/sep-17
+  - Sistema Unificado  id=configuracoes/sistema-unificado caminho=/modulo/configuracoes/sistema-unificado situacao=em-breve trilha=Configurações > Sistema Unificado
+  - Sistema  id=configuracoes/sistema caminho=/configuracoes/integracoes situacao=disponivel trilha=Configurações > Sistema
+Ferramentas  id=ferramentas
+  - Manutenção de Usuários  id=ferramentas/manutencao-de-usuarios caminho=/configuracoes/cargos situacao=disponivel trilha=Ferramentas > Manutenção de Usuários
+  --- ferramentas/sep-1
+  - Gerar Carga Inicial para o PDV Offline  id=ferramentas/gerar-carga-inicial-para-o-pdv-offline caminho=/modulo/ferramentas/gerar-carga-inicial-para-o-pdv-offline situacao=em-breve trilha=Ferramentas > Gerar Carga Inicial para o PDV Offline
+  - Painel Sincronizador PDV Offline  id=ferramentas/painel-sincronizador-pdv-offline caminho=/modulo/ferramentas/painel-sincronizador-pdv-offline situacao=em-breve trilha=Ferramentas > Painel Sincronizador PDV Offline
+  --- ferramentas/sep-4
+  - Histórico de Logs  id=ferramentas/historico-de-logs caminho=/ferramentas/historico-de-logs situacao=disponivel trilha=Ferramentas > Histórico de Logs
+  --- ferramentas/sep-6
+  - Autenticar Licença de Uso  id=ferramentas/autenticar-licenca-de-uso caminho=/modulo/ferramentas/autenticar-licenca-de-uso situacao=em-breve trilha=Ferramentas > Autenticar Licença de Uso
+  --- ferramentas/sep-8
+  - Boas Vindas  id=ferramentas/boas-vindas caminho=/modulo/ferramentas/boas-vindas situacao=em-breve trilha=Ferramentas > Boas Vindas
+  - Informativo  id=ferramentas/informativo caminho=/modulo/ferramentas/informativo situacao=em-breve trilha=Ferramentas > Informativo
+  - Atualizar Notificações  id=ferramentas/atualizar-notificacoes caminho=/modulo/ferramentas/atualizar-notificacoes situacao=em-breve trilha=Ferramentas > Atualizar Notificações
+  --- ferramentas/sep-12
+  - Autenticação de Usuário  id=ferramentas/autenticacao-de-usuario caminho=/modulo/ferramentas/autenticacao-de-usuario situacao=em-breve atalho=Ctrl+F12 trilha=Ferramentas > Autenticação de Usuário
+  --- ferramentas/sep-14
+  - Calculadora  id=ferramentas/calculadora caminho=/modulo/ferramentas/calculadora situacao=em-breve trilha=Ferramentas > Calculadora
+  - Controle de Impressoras  id=ferramentas/controle-de-impressoras caminho=/modulo/ferramentas/controle-de-impressoras situacao=em-breve trilha=Ferramentas > Controle de Impressoras
+  --- ferramentas/sep-17
+  - Sobre  id=ferramentas/sobre caminho=/modulo/ferramentas/sobre situacao=em-breve atalho=Ctrl+F1 trilha=Ferramentas > Sobre
+Suporte  id=suporte
+  - Mande-nos Mensagem ou Ligamos para Você!  id=suporte/mande-nos-mensagem-ou-ligamos-para-voce caminho=/modulo/suporte/mande-nos-mensagem-ou-ligamos-para-voce situacao=em-breve icone=whatsapp-telefone trilha=Suporte > Mande-nos Mensagem ou Ligamos para Você!
+  - Chat Online  id=suporte/chat-online caminho=/modulo/suporte/chat-online situacao=em-breve icone=chat trilha=Suporte > Chat Online
+  --- suporte/sep-2
+  > Cópia de Segurança (Backup)  id=suporte/copia-de-seguranca-backup icone=backup
+    - Fazer Backup Agora  id=suporte/copia-de-seguranca-backup/fazer-backup-agora caminho=/modulo/suporte/copia-de-seguranca-backup/fazer-backup-agora situacao=em-breve trilha=Suporte > Cópia de Segurança (Backup) > Fazer Backup Agora
+    - Restaurar Backup  id=suporte/copia-de-seguranca-backup/restaurar-backup caminho=/modulo/suporte/copia-de-seguranca-backup/restaurar-backup situacao=em-breve trilha=Suporte > Cópia de Segurança (Backup) > Restaurar Backup
+  --- suporte/sep-4
+  - Versão do Sistema  id=suporte/versao-do-sistema caminho=/modulo/suporte/versao-do-sistema situacao=em-breve icone=versao trilha=Suporte > Versão do Sistema
+  - Boleto de Manutenção Disponível  id=suporte/boleto-de-manutencao-disponivel caminho=/modulo/suporte/boleto-de-manutencao-disponivel situacao=em-breve icone=boleto trilha=Suporte > Boleto de Manutenção Disponível
