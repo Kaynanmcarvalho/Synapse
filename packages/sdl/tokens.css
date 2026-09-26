@@ -1,0 +1,16 @@
+/** Synapse Design Language — o que precisa existir como custom property.
+ *
+ *  O tema inteiro vive em `tokens/` e chega a tela pelo Tailwind: repetir cor,
+ *  espaco e raio aqui criaria uma segunda fonte de verdade, que um dia
+ *  discordaria da primeira.
+ *
+ *  Aqui fica so o que muda em tempo de execucao: a cor da marca, que cada tenant
+ *  pode ter a sua. Em canais RGB porque o Tailwind precisa aplicar opacidade
+ *  (`bg-primary/10`). O mesmo valor esta no token `MARCA.padraoCanais`, e o
+ *  `rgb()` do tema ja leva este fallback — sem este arquivo, a marca continua
+ *  cobalto. */
+
+:root {
+  /* cobalto #494fdf */
+  --sdl-marca: 73 79 223;
+}
