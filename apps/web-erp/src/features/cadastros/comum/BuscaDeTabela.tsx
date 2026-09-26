@@ -1,13 +1,66 @@
-/* eslint-disable max-lines-per-function */
+import { Button, Field, Input, Select, Spinner, Text } from '@synapse/sdl';
 import type { ItemDeTabela, MeioDePagamento, TipoDeTabela } from '@synapse/types';
 import { MEIOS_DE_PAGAMENTO, ROTULO_DA_TABELA, ROTULO_DO_MEIO } from '@synapse/types';
 import { Modal } from '@synapse/ui';
-import { FilePlus2, LoaderCircle } from 'lucide-react';
+import { FilePlus2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { criarItemDeTabela, listarTabela } from './cadastros.api';
-import { BOTAO_CLARO, BOTAO_ESCURO, INPUT_DE_BUSCA } from './estilos';
 
 /** A lista da lupa e o cadastro rápido de item de tabela auxiliar. */
+
+function ListaDeItens({
+  itens,
+  erro,
+  aoEscolher,
+}: {
+  readonly itens: readonly ItemDeTabela[] | null;
+  readonly erro: string | null;
+  readonly aoEscolher: (item: ItemDeTabela) => void;
+}) {
+  return (
+    <div className="border-line-fina rounded-controle mt-3 max-h-[50vh] overflow-y-auto border">
+      {erro ? (
+        <Text variant="corpo" tone="perigo" className="p-4">
+          {erro}
+        </Text>
+      ) : null}
+      {!erro && itens === null ? (
+        <div className="flex items-center gap-2 p-4">
+          <Spinner label="Carregando a tabela" />
+          <Text variant="corpo" tone="sutil" as="span">
+            Carregando…
+          </Text>
+        </div>
+      ) : null}
+      {itens?.length === 0 ? (
+        <Text variant="corpo" tone="sutil" className="p-4">
+          Nada encontrado.
+        </Text>
+      ) : null}
+      <ul>
+        {itens?.map((item) => (
+          <li key={item.codigo}>
+            <button
+              type="button"
+              onClick={() => aoEscolher(item)}
+              disabled={!item.ativo}
+              className="border-line-fina hover:bg-surface-suave flex w-full items-center gap-3 border-b px-4 py-2.5 text-left transition-colors last:border-0 disabled:opacity-50"
+            >
+              <Text variant="dado" tone="sutil" className="w-12 text-right">
+                {item.codigo}
+              </Text>
+              <Text variant="corpo" as="span" className="flex-1 font-medium">
+                {item.nome}
+              </Text>
+              {item.meio ? <Text variant="legenda">{ROTULO_DO_MEIO[item.meio]}</Text> : null}
+              {!item.ativo ? <Text variant="legenda">inativo</Text> : null}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export function BuscaDeTabela({
   tipo,
@@ -46,49 +99,20 @@ export function BuscaDeTabela({
 
   return (
     <Modal onClose={aoFechar} title={ROTULO_DA_TABELA[tipo]} size="md">
-      <input
+      <Input
         ref={campo}
         value={termo}
         onChange={(evento) => setTermo(evento.target.value)}
         placeholder="Código ou nome"
         aria-label="Procurar na tabela"
-        className={INPUT_DE_BUSCA}
       />
-      <div className="border-hairline-light mt-3 max-h-[50vh] overflow-y-auto rounded-xl border">
-        {erro ? <p className="text-body-sm p-4 text-[#b3242f]">{erro}</p> : null}
-        {!erro && itens === null ? (
-          <p className="text-body-sm text-stone flex items-center gap-2 p-4">
-            <LoaderCircle size={15} className="animate-spin" aria-hidden="true" /> Carregando…
-          </p>
-        ) : null}
-        {itens?.length === 0 ? (
-          <p className="text-body-sm text-stone p-4">Nada encontrado.</p>
-        ) : null}
-        <ul>
-          {itens?.map((item) => (
-            <li key={item.codigo}>
-              <button
-                type="button"
-                onClick={() => aoEscolher(item)}
-                disabled={!item.ativo}
-                className="border-hairline-light hover:bg-surface-soft text-body-sm flex w-full items-center gap-3 border-b px-4 py-2.5 text-left last:border-0 disabled:opacity-50"
-              >
-                <span className="text-stone w-12 text-right tabular-nums">{item.codigo}</span>
-                <span className="text-ink flex-1 font-medium">{item.nome}</span>
-                {item.meio ? (
-                  <span className="text-caption text-stone">{ROTULO_DO_MEIO[item.meio]}</span>
-                ) : null}
-                {!item.ativo ? <span className="text-caption text-stone">inativo</span> : null}
-              </button>
-            </li>
-          ))}
-        </ul>
-      </div>
+      <ListaDeItens itens={itens} erro={erro} aoEscolher={aoEscolher} />
+
       {aoCadastrar ? (
         <div className="mt-3 flex justify-end">
-          <button type="button" onClick={aoCadastrar} className={BOTAO_CLARO}>
-            <FilePlus2 size={15} aria-hidden="true" /> Cadastrar novo
-          </button>
+          <Button variant="secondary" onClick={aoCadastrar}>
+            <FilePlus2 size={16} aria-hidden="true" /> Cadastrar novo
+          </Button>
         </div>
       ) : null}
     </Modal>
@@ -135,58 +159,38 @@ export function NovoItemDeTabela({
 
   return (
     <Modal onClose={aoFechar} title={`Novo item: ${ROTULO_DA_TABELA[tipo]}`} size="sm">
-      <label
-        className="text-caption text-charcoal mb-1.5 block font-medium"
-        htmlFor="novo-item-nome"
-      >
-        Nome
-      </label>
-      <input
-        id="novo-item-nome"
-        ref={campo}
-        value={nome}
-        maxLength={60}
-        onChange={(evento) => setNome(evento.target.value.toLocaleUpperCase('pt-BR'))}
-        onKeyDown={(evento) => {
-          if (evento.key === 'Enter') void salvar();
-        }}
-        className={INPUT_DE_BUSCA}
-      />
+      <Field label="Nome" error={erro}>
+        <Input
+          ref={campo}
+          value={nome}
+          maxLength={60}
+          onChange={(evento) => setNome(evento.target.value.toLocaleUpperCase('pt-BR'))}
+          onKeyDown={(evento) => {
+            if (evento.key === 'Enter') void salvar();
+          }}
+        />
+      </Field>
       {tipo === 'formas-de-pagamento' ? (
-        <>
-          <label
-            className="text-caption text-charcoal mb-1.5 mt-3 block font-medium"
-            htmlFor="novo-item-meio"
-          >
-            Como funciona no caixa
-          </label>
-          <select
-            id="novo-item-meio"
+        <Field label="Como funciona no caixa" className="mt-3">
+          <Select
             value={meio}
             onChange={(evento) => setMeio(evento.target.value as MeioDePagamento)}
-            className={INPUT_DE_BUSCA}
           >
             {MEIOS_DE_PAGAMENTO.map((opcao) => (
               <option key={opcao} value={opcao}>
                 {ROTULO_DO_MEIO[opcao]}
               </option>
             ))}
-          </select>
-        </>
+          </Select>
+        </Field>
       ) : null}
-      {erro ? <p className="text-caption mt-2 text-[#b3242f]">{erro}</p> : null}
       <div className="mt-4 flex justify-end gap-2">
-        <button type="button" onClick={aoFechar} className={BOTAO_CLARO}>
+        <Button variant="quiet" onClick={aoFechar}>
           Cancelar
-        </button>
-        <button
-          type="button"
-          onClick={() => void salvar()}
-          disabled={salvando}
-          className={BOTAO_ESCURO}
-        >
+        </Button>
+        <Button variant="primary" loading={salvando} onClick={() => void salvar()}>
           {salvando ? 'Salvando…' : 'Cadastrar'}
-        </button>
+        </Button>
       </div>
     </Modal>
   );
