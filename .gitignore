@@ -33,6 +33,9 @@ logs/
 npm-debug.log*
 pnpm-debug.log*
 
+# artefatos de execucao do Playwright MCP (snapshots ARIA, console, paginas)
+.playwright-mcp/
+
 # cobertura e testes
 coverage/
 .nyc_output/
