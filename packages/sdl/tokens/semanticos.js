@@ -181,11 +181,11 @@ export const largura = {
  *  escrever `titulo.tela` continua certo se a escala mudar. */
 export const tipografia = {
   display: 'display-lg',
-  tituloTela: 'heading-lg',
-  tituloSecao: 'heading-md',
-  tituloCartao: 'heading-sm',
-  corpoGrande: 'body-lg',
-  corpo: 'body-md',
+  tituloTela: 'heading-md',
+  tituloSecao: 'heading-sm',
+  tituloCartao: 'body-md',
+  corpoGrande: 'body-md',
+  corpo: 'body-sm',
   corpoCompacto: 'body-sm',
   acao: 'button-sm',
   rotulo: 'caption',

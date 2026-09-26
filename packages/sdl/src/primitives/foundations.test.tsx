@@ -39,7 +39,7 @@ describe('Text', () => {
       </Text>,
     );
     expect(caixa.querySelector('h1')).toBeNull();
-    expect(caixa.querySelector('h2')?.className).toContain('text-heading-lg');
+    expect(caixa.querySelector('h2')?.className).toContain('text-heading-md');
   });
 
   it('dado usa a família de números', () => {

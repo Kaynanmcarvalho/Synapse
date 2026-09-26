@@ -11,6 +11,7 @@ export type PapelDeTexto =
   | 'tituloTela'
   | 'tituloSecao'
   | 'tituloCartao'
+  | 'corpoGrande'
   | 'corpo'
   | 'corpoSecundario'
   | 'rotulo'
@@ -21,11 +22,16 @@ export type PapelDeTexto =
 export type TomDeTexto =
   'padrao' | 'apoio' | 'sutil' | 'marca' | 'ok' | 'atencao' | 'perigo' | 'inverso';
 
+/** A escala do trabalho, e nao a de uma pagina de marketing: o titulo de tela
+ *  tem 24px porque e o que todas as telas do ERP ja usam, e o corpo tem 14px
+ *  porque e nele que a operacao passa o dia. 16px (`corpoGrande`) fica para
+ *  introducao; 32px, para a excecao que precisar. */
 const PAPEL: Readonly<Record<PapelDeTexto, string>> = {
-  tituloTela: 'font-display text-heading-lg text-ink',
-  tituloSecao: 'font-display text-heading-md text-ink',
-  tituloCartao: 'font-display text-heading-sm text-ink',
-  corpo: 'text-body-md text-ink-padrao',
+  tituloTela: 'font-display text-heading-md text-ink',
+  tituloSecao: 'font-display text-heading-sm text-ink',
+  tituloCartao: 'text-body-md font-semibold text-ink',
+  corpoGrande: 'text-body-md text-ink-padrao',
+  corpo: 'text-body-sm text-ink-padrao',
   corpoSecundario: 'text-body-sm text-ink-apoio',
   rotulo: 'text-caption font-medium text-ink-medio',
   legenda: 'text-caption text-ink-sutil',
@@ -50,6 +56,7 @@ const ELEMENTO: Readonly<Record<PapelDeTexto, ElementType>> = {
   tituloTela: 'h1',
   tituloSecao: 'h2',
   tituloCartao: 'h3',
+  corpoGrande: 'p',
   corpo: 'p',
   corpoSecundario: 'p',
   rotulo: 'span',
@@ -61,8 +68,12 @@ const ELEMENTO: Readonly<Record<PapelDeTexto, ElementType>> = {
 export interface TextProps extends Omit<HTMLAttributes<HTMLElement>, 'color'> {
   readonly variant?: PapelDeTexto;
   readonly tone?: TomDeTexto;
-  /** Troca o elemento sem mudar o papel: um titulo de secao que, naquele
-   *  lugar, precisa ser `<h3>` por causa da hierarquia da pagina. */
+  /** Troca o elemento sem mudar o papel: um titulo de secao que, naquele lugar,
+   *  precisa ser `<h3>` por causa da hierarquia da pagina.
+   *
+   *  Use `as="span"` em contexto de linha — dentro de `<button>`, de `<td>` ou
+   *  de outro paragrafo. `corpo` renderiza `<p>`, e paragrafo dentro de
+   *  paragrafo ou de botao e HTML invalido. */
   readonly as?: ElementType;
   readonly children?: ReactNode;
 }
