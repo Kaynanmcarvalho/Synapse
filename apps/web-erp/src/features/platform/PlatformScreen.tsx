@@ -52,24 +52,22 @@ function LoginPanel({ onSignedIn }: { readonly onSignedIn: () => void }) {
   };
 
   return (
-    <main className="bg-canvas-light flex min-h-screen items-center justify-center p-8 dark:bg-slate-950">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-        <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-          Entrar (emulador local)
-        </h2>
+    <main className="bg-canvas-light flex min-h-screen items-center justify-center p-8">
+      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-sm font-bold text-slate-900">Entrar (emulador local)</h2>
         <div className="mt-4 flex flex-col gap-3">
           <input
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="e-mail"
-            className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700"
+            className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
           />
           <input
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             placeholder="senha"
-            className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700"
+            className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
           />
           {error && <p className="text-xs text-red-600">{error}</p>}
           <button
@@ -131,16 +129,14 @@ function IntegrationCard({ integration }: { readonly integration: IntegrationSta
   };
 
   return (
-    <article className="border-hairline-light bg-canvas-light rounded-2xl border p-5 dark:bg-slate-900">
+    <article className="border-hairline-light bg-canvas-light rounded-2xl border p-5">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-500">
             <Icon size={18} />
           </span>
           <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-              {integration.label}
-            </h3>
+            <h3 className="text-sm font-bold text-slate-900">{integration.label}</h3>
             <p className="text-[11px] text-slate-400">Ambiente: {integration.environment}</p>
           </div>
         </div>
@@ -181,7 +177,7 @@ function IntegrationCard({ integration }: { readonly integration: IntegrationSta
           type="button"
           onClick={runTest}
           disabled={busy !== null}
-          className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300"
+          className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-600 transition hover:bg-slate-50 disabled:opacity-50"
         >
           {busy === 'test' && <Loader2 size={12} className="animate-spin" />} Testar conexão
         </button>
@@ -225,12 +221,10 @@ function OnboardingWizard({
   const alreadyActive = status.productionActivatedAt !== null;
 
   return (
-    <section className="border-hairline-light bg-canvas-light mt-8 overflow-hidden rounded-3xl border dark:bg-slate-900">
+    <section className="border-hairline-light bg-canvas-light mt-8 overflow-hidden rounded-3xl border">
       <div className="border-b border-slate-100 p-6">
-        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-          Assistente de ativação
-        </h2>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        <h2 className="text-lg font-bold text-slate-900">Assistente de ativação</h2>
+        <p className="mt-1 text-xs text-slate-500">
           As dez etapas do §65 — produção só libera quando as nove primeiras estão completas.
         </p>
       </div>
@@ -243,7 +237,7 @@ function OnboardingWizard({
               <CircleDashed size={18} className="shrink-0 text-slate-300" />
             )}
             <span className="flex-1">
-              <span className="block text-sm font-semibold text-slate-800 dark:text-slate-200">
+              <span className="block text-sm font-semibold text-slate-800">
                 {index + 1}. {step.label}
                 {!step.required && (
                   <span className="ml-2 text-[10px] font-bold uppercase text-slate-400">meta</span>
@@ -274,7 +268,7 @@ function OnboardingWizard({
                 onChange={(event) => setConfirmation(event.target.value)}
                 placeholder="ATIVAR PRODUCAO"
                 disabled={!status.readyForProduction}
-                className="h-10 flex-1 rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 disabled:bg-slate-100 dark:border-slate-700"
+                className="h-10 flex-1 rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 disabled:bg-slate-100"
               />
               <button
                 type="button"
@@ -328,16 +322,16 @@ export function PlatformScreen() {
   if (!signedIn) return <LoginPanel onSignedIn={() => setSignedIn(true)} />;
 
   return (
-    <main className="bg-canvas-light relative min-h-screen overflow-hidden text-slate-950 dark:bg-slate-950 dark:text-slate-100">
+    <main className="bg-canvas-light relative min-h-screen overflow-hidden text-slate-950">
       <div className="relative mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">
         <header>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
             <span className="h-1.5 w-1.5 rounded-full bg-blue-600" /> Plataforma
           </div>
-          <h1 className="mt-3 text-3xl font-bold tracking-[-0.035em] text-slate-950 sm:text-4xl dark:text-slate-100">
+          <h1 className="mt-3 text-3xl font-bold tracking-[-0.035em] text-slate-950 sm:text-4xl">
             Central de Integrações e onboarding
           </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
             Veja se cada integração fiscal e bancária está de pé, e siga o assistente de ativação
             antes de liberar produção.
           </p>

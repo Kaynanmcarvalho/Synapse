@@ -25,7 +25,7 @@ const STATUS_LABEL: Record<PurchaseOrder['status'], string> = {
 };
 
 const STATUS_STYLE: Record<PurchaseOrder['status'], string> = {
-  RASCUNHO: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300',
+  RASCUNHO: 'bg-slate-100 text-slate-600',
   EM_COTACAO: 'bg-amber-50 text-amber-700',
   APROVADO: 'bg-blue-50 text-blue-700',
   RECEBIDO_PARCIAL: 'bg-violet-50 text-violet-700',
@@ -53,24 +53,22 @@ function LoginPanel({ onSignedIn }: { readonly onSignedIn: () => void }) {
   };
 
   return (
-    <main className="bg-canvas-light flex min-h-screen items-center justify-center p-8 dark:bg-slate-950">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-        <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-          Entrar (emulador local)
-        </h2>
+    <main className="bg-canvas-light flex min-h-screen items-center justify-center p-8">
+      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-sm font-bold text-slate-900">Entrar (emulador local)</h2>
         <div className="mt-4 flex flex-col gap-3">
           <input
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="e-mail"
-            className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700"
+            className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
           />
           <input
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             placeholder="senha"
-            className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700"
+            className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
           />
           {error && <p className="text-xs text-red-600">{error}</p>}
           <button
@@ -132,16 +130,14 @@ function NewOrderForm({
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
-      <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-        Novo pedido de compra
-      </h3>
+    <div className="rounded-2xl border border-slate-200 bg-white p-5">
+      <h3 className="text-sm font-bold text-slate-900">Novo pedido de compra</h3>
       <div className="mt-3 flex items-center gap-2">
-        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Depósito</span>
+        <span className="text-xs font-semibold text-slate-500">Depósito</span>
         <input
           value={warehouseId}
           onChange={(event) => setWarehouseId(event.target.value)}
-          className="h-9 flex-1 rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 dark:border-slate-700"
+          className="h-9 flex-1 rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-500"
         />
       </div>
       <div className="mt-3 space-y-2">
@@ -151,7 +147,7 @@ function NewOrderForm({
               value={row.productId}
               onChange={(event) => setRow(index, { productId: event.target.value })}
               placeholder="id do produto"
-              className="h-9 flex-1 rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 dark:border-slate-700"
+              className="h-9 flex-1 rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-500"
             />
             <input
               value={row.quantityOrdered}
@@ -159,7 +155,7 @@ function NewOrderForm({
               placeholder="quantidade"
               type="number"
               min={1}
-              className="h-9 w-32 rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 dark:border-slate-700"
+              className="h-9 w-32 rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-500"
             />
           </div>
         ))}
@@ -311,11 +307,9 @@ function OrderDetail({
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-900">
+    <div className="rounded-2xl border border-slate-200 bg-white p-5">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-          Pedido {order.id.slice(0, 8)}
-        </h3>
+        <h3 className="text-sm font-bold text-slate-900">Pedido {order.id.slice(0, 8)}</h3>
         <span
           className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${STATUS_STYLE[order.status]}`}
         >
@@ -335,16 +329,10 @@ function OrderDetail({
         <tbody>
           {order.items.map((item) => (
             <tr key={item.productId} className="border-t border-slate-100">
-              <td className="py-1.5 font-medium text-slate-700 dark:text-slate-300">
-                {item.productId}
-              </td>
-              <td className="py-1.5 text-right text-slate-600 dark:text-slate-300">
-                {item.quantityOrdered}
-              </td>
-              <td className="py-1.5 text-right text-slate-600 dark:text-slate-300">
-                {item.quantityReceived}
-              </td>
-              <td className="py-1.5 text-right text-slate-600 dark:text-slate-300">
+              <td className="py-1.5 font-medium text-slate-700">{item.productId}</td>
+              <td className="py-1.5 text-right text-slate-600">{item.quantityOrdered}</td>
+              <td className="py-1.5 text-right text-slate-600">{item.quantityReceived}</td>
+              <td className="py-1.5 text-right text-slate-600">
                 {item.unitCostCentavos > 0 ? money(item.unitCostCentavos) : '—'}
               </td>
             </tr>
@@ -353,8 +341,8 @@ function OrderDetail({
       </table>
 
       {(order.status === 'RASCUNHO' || order.status === 'EM_COTACAO') && (
-        <div className="mt-5 rounded-xl bg-slate-50 p-4 dark:bg-slate-950">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        <div className="mt-5 rounded-xl bg-slate-50 p-4">
+          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
             Cotações ({order.quotes.length})
           </p>
           {totals.length > 0 && (
@@ -364,15 +352,13 @@ function OrderDetail({
                 .map((quote) => (
                   <li
                     key={quote.supplierId}
-                    className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-xs dark:bg-slate-900"
+                    className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-xs"
                   >
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">
+                    <span className="font-semibold text-slate-700">
                       {quote.supplierId} · {quote.leadDays}d
                     </span>
                     <span className="flex items-center gap-2">
-                      <strong className="text-slate-900 dark:text-slate-100">
-                        {money(quote.total)}
-                      </strong>
+                      <strong className="text-slate-900">{money(quote.total)}</strong>
                       <button
                         type="button"
                         disabled={busy || order.quotes.length < 2}
@@ -397,22 +383,20 @@ function OrderDetail({
               value={supplierId}
               onChange={(event) => setSupplierId(event.target.value)}
               placeholder="id do fornecedor"
-              className="h-9 rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-blue-500 dark:border-slate-700"
+              className="h-9 rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-blue-500"
             />
             <input
               value={leadDays}
               onChange={(event) => setLeadDays(event.target.value)}
               placeholder="lead time (dias)"
               type="number"
-              className="h-9 rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-blue-500 dark:border-slate-700"
+              className="h-9 rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-blue-500"
             />
           </div>
           <div className="mt-2 space-y-1.5">
             {quoteRows.map((row, index) => (
               <div key={row.productId} className="flex items-center gap-2">
-                <span className="w-32 truncate text-[11px] text-slate-500 dark:text-slate-400">
-                  {row.productId}
-                </span>
+                <span className="w-32 truncate text-[11px] text-slate-500">{row.productId}</span>
                 <input
                   value={row.unitCost}
                   onChange={(event) =>
@@ -424,7 +408,7 @@ function OrderDetail({
                   }
                   placeholder="preço unitário (R$)"
                   type="number"
-                  className="h-8 flex-1 rounded-lg border border-slate-200 px-2 text-xs outline-none focus:border-blue-500 dark:border-slate-700"
+                  className="h-8 flex-1 rounded-lg border border-slate-200 px-2 text-xs outline-none focus:border-blue-500"
                 />
               </div>
             ))}
@@ -433,7 +417,7 @@ function OrderDetail({
             type="button"
             onClick={submitQuote}
             disabled={busy}
-            className="mt-3 h-9 w-full rounded-lg bg-white text-xs font-bold text-blue-600 ring-1 ring-inset ring-blue-200 transition hover:bg-blue-50 disabled:opacity-50 dark:bg-slate-900"
+            className="mt-3 h-9 w-full rounded-lg bg-white text-xs font-bold text-blue-600 ring-1 ring-inset ring-blue-200 transition hover:bg-blue-50 disabled:opacity-50"
           >
             Enviar cotação
           </button>
@@ -441,19 +425,19 @@ function OrderDetail({
       )}
 
       {(order.status === 'APROVADO' || order.status === 'RECEBIDO_PARCIAL') && (
-        <div className="mt-5 rounded-xl bg-slate-50 p-4 dark:bg-slate-950">
+        <div className="mt-5 rounded-xl bg-slate-50 p-4">
           <div className="flex gap-1.5 text-[11px] font-bold">
             <button
               type="button"
               onClick={() => setTab('manual')}
-              className={`rounded-full px-3 py-1 ${tab === 'manual' ? 'bg-slate-950 text-white' : 'bg-white text-slate-500 dark:bg-slate-900 dark:text-slate-400'}`}
+              className={`rounded-full px-3 py-1 ${tab === 'manual' ? 'bg-slate-950 text-white' : 'bg-white text-slate-500'}`}
             >
               Conferência manual
             </button>
             <button
               type="button"
               onClick={() => setTab('xml')}
-              className={`rounded-full px-3 py-1 ${tab === 'xml' ? 'bg-slate-950 text-white' : 'bg-white text-slate-500 dark:bg-slate-900 dark:text-slate-400'}`}
+              className={`rounded-full px-3 py-1 ${tab === 'xml' ? 'bg-slate-950 text-white' : 'bg-white text-slate-500'}`}
             >
               Entrada por XML (DF-e)
             </button>
@@ -465,7 +449,7 @@ function OrderDetail({
                 .filter((item) => item.quantityReceived < item.quantityOrdered)
                 .map((item) => (
                   <div key={item.productId} className="flex items-center gap-2">
-                    <span className="w-32 truncate text-[11px] text-slate-500 dark:text-slate-400">
+                    <span className="w-32 truncate text-[11px] text-slate-500">
                       {item.productId}
                     </span>
                     <input
@@ -482,7 +466,7 @@ function OrderDetail({
                       }
                       placeholder="qtd recebida"
                       type="number"
-                      className="h-8 w-28 rounded-lg border border-slate-200 px-2 text-xs outline-none focus:border-blue-500 dark:border-slate-700"
+                      className="h-8 w-28 rounded-lg border border-slate-200 px-2 text-xs outline-none focus:border-blue-500"
                     />
                     <input
                       value={receivingLines[item.productId]?.cost ?? ''}
@@ -498,7 +482,7 @@ function OrderDetail({
                       }
                       placeholder="custo unit. (R$)"
                       type="number"
-                      className="h-8 w-32 rounded-lg border border-slate-200 px-2 text-xs outline-none focus:border-blue-500 dark:border-slate-700"
+                      className="h-8 w-32 rounded-lg border border-slate-200 px-2 text-xs outline-none focus:border-blue-500"
                     />
                   </div>
                 ))}
@@ -518,7 +502,7 @@ function OrderDetail({
                 onChange={(event) => setXml(event.target.value)}
                 rows={6}
                 placeholder="Cole aqui o XML da NF-e do fornecedor"
-                className="w-full rounded-lg border border-slate-200 p-3 font-mono text-[11px] outline-none focus:border-blue-500 dark:border-slate-700"
+                className="w-full rounded-lg border border-slate-200 p-3 font-mono text-[11px] outline-none focus:border-blue-500"
               />
               <button
                 type="button"
@@ -576,17 +560,17 @@ export function PurchasingScreen() {
   if (!signedIn) return <LoginPanel onSignedIn={() => setSignedIn(true)} />;
 
   return (
-    <main className="bg-canvas-light relative min-h-screen overflow-hidden text-slate-950 dark:bg-slate-950 dark:text-slate-100">
+    <main className="bg-canvas-light relative min-h-screen overflow-hidden text-slate-950">
       <div className="relative mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">
         <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
               <span className="h-1.5 w-1.5 rounded-full bg-blue-600" /> Compras
             </div>
-            <h1 className="mt-3 text-3xl font-bold tracking-[-0.035em] text-slate-950 sm:text-4xl dark:text-slate-100">
+            <h1 className="mt-3 text-3xl font-bold tracking-[-0.035em] text-slate-950 sm:text-4xl">
               Compras e recebimento
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
               Da cotação com mais de um fornecedor até a conferência do que chegou — manual ou por
               XML da NF-e — com custo médio e contas a pagar atualizados automaticamente.
             </p>
@@ -595,7 +579,7 @@ export function PurchasingScreen() {
             value={branchId}
             onChange={(event) => setBranchId(event.target.value)}
             placeholder="id da filial"
-            className="h-12 w-40 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+            className="h-12 w-40 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
           />
         </header>
 
@@ -618,10 +602,8 @@ export function PurchasingScreen() {
               key={tile.label}
               className="border-hairline-light bg-canvas-light rounded-2xl border p-5"
             >
-              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                {tile.label}
-              </p>
-              <strong className="mt-2 block text-2xl font-bold tracking-tight text-slate-950 dark:text-slate-100">
+              <p className="text-xs font-semibold text-slate-500">{tile.label}</p>
+              <strong className="mt-2 block text-2xl font-bold tracking-tight text-slate-950">
                 {tile.value}
               </strong>
             </article>
@@ -631,9 +613,9 @@ export function PurchasingScreen() {
         <div className="mt-6 grid gap-5 lg:grid-cols-[380px_1fr]">
           <div className="space-y-4">
             <NewOrderForm branchId={branchId.trim()} onCreated={refresh} />
-            <div className="border-hairline-light bg-canvas-light rounded-2xl border dark:bg-slate-900">
+            <div className="border-hairline-light bg-canvas-light rounded-2xl border">
               <div className="border-b border-slate-100 p-4">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">Pedidos</h3>
+                <h3 className="text-sm font-bold text-slate-900">Pedidos</h3>
               </div>
               <div className="max-h-[560px] divide-y divide-slate-100 overflow-y-auto">
                 {loading && <p className="p-4 text-xs text-slate-400">Carregando…</p>}
@@ -650,7 +632,7 @@ export function PurchasingScreen() {
                     }`}
                   >
                     <span>
-                      <span className="block text-xs font-bold text-slate-800 dark:text-slate-200">
+                      <span className="block text-xs font-bold text-slate-800">
                         {order.id.slice(0, 8)}
                       </span>
                       <span className="mt-0.5 block text-[11px] text-slate-400">

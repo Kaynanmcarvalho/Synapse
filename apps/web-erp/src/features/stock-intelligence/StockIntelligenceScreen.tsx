@@ -75,7 +75,7 @@ const icons = {
 const ABC_STYLE: Record<AbcClass, string> = {
   A: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
   B: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
-  C: 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 ring-1 ring-slate-200',
+  C: 'bg-slate-100 text-slate-500 ring-1 ring-slate-200',
 };
 
 function AbcBadge({ value }: { readonly value: AbcClass }) {
@@ -137,24 +137,22 @@ function LoginPanel({ onSignedIn }: { readonly onSignedIn: () => void }) {
   };
 
   return (
-    <main className="bg-canvas-light flex min-h-screen items-center justify-center p-8 dark:bg-slate-950">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-900">
-        <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-          Entrar (emulador local)
-        </h2>
+    <main className="bg-canvas-light flex min-h-screen items-center justify-center p-8">
+      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-sm font-bold text-slate-900">Entrar (emulador local)</h2>
         <div className="mt-4 flex flex-col gap-3">
           <input
             value={email}
             onChange={(event) => setEmail(event.target.value)}
             placeholder="e-mail"
-            className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700"
+            className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
           />
           <input
             type="password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             placeholder="senha"
-            className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700"
+            className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
           />
           {error && <p className="text-xs text-red-600">{error}</p>}
           <button
@@ -205,10 +203,7 @@ function SuggestionCell({
   return (
     <div className="flex items-center justify-end gap-1.5">
       <span className="text-[11px] text-slate-400">
-        sugerido{' '}
-        <strong className="text-slate-600 dark:text-slate-300">
-          {metric.suggestedPurchaseQty}
-        </strong>
+        sugerido <strong className="text-slate-600">{metric.suggestedPurchaseQty}</strong>
       </span>
       <input
         type="number"
@@ -216,9 +211,7 @@ function SuggestionCell({
         value={value}
         onChange={(event) => setValue(event.target.value)}
         className={`h-8 w-20 rounded-lg border px-2 text-right text-xs font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 ${
-          adjusted
-            ? 'border-blue-200 bg-blue-50 text-blue-700'
-            : 'border-slate-200 text-slate-800 dark:border-slate-700 dark:text-slate-200'
+          adjusted ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-800'
         }`}
       />
       <button
@@ -245,18 +238,16 @@ function stockIntelligenceColumns(
       sortValue: (metric) => metric.productName,
       render: (metric) => (
         <>
-          <span className="block font-semibold text-slate-800 dark:text-slate-100 dark:text-slate-200">
-            {metric.productName}
-          </span>
+          <span className="block font-semibold text-slate-800">{metric.productName}</span>
           <span className="mt-0.5 flex items-center gap-2 text-[11px] text-slate-400">
             SKU {metric.sku}
             {metric.isDeadStock && (
-              <span className="rounded-full bg-rose-50 px-1.5 py-0.5 font-bold text-rose-600 dark:bg-rose-500/10">
+              <span className="rounded-full bg-rose-50 px-1.5 py-0.5 font-bold text-rose-600">
                 parado
               </span>
             )}
             {metric.isExcess && (
-              <span className="rounded-full bg-amber-50 px-1.5 py-0.5 font-bold text-amber-700 dark:bg-amber-500/10">
+              <span className="rounded-full bg-amber-50 px-1.5 py-0.5 font-bold text-amber-700">
                 excesso
               </span>
             )}
@@ -276,9 +267,7 @@ function stockIntelligenceColumns(
       header: 'Estoque',
       align: 'right',
       sortValue: (metric) => metric.stockOnHand,
-      render: (metric) => (
-        <span className="font-medium text-slate-600 dark:text-slate-300">{metric.stockOnHand}</span>
-      ),
+      render: (metric) => <span className="font-medium text-slate-600">{metric.stockOnHand}</span>,
     },
     {
       key: 'turnover',
@@ -286,9 +275,7 @@ function stockIntelligenceColumns(
       align: 'right',
       sortValue: (metric) => metric.turnoverRate,
       render: (metric) => (
-        <span className="font-medium text-slate-600 dark:text-slate-300">
-          {metric.turnoverRate.toFixed(1)}×
-        </span>
+        <span className="font-medium text-slate-600">{metric.turnoverRate.toFixed(1)}×</span>
       ),
     },
     {
@@ -297,7 +284,7 @@ function stockIntelligenceColumns(
       align: 'right',
       sortValue: (metric) => metric.coverageDays ?? Number.POSITIVE_INFINITY,
       render: (metric) => (
-        <span className="font-medium text-slate-600 dark:text-slate-300">
+        <span className="font-medium text-slate-600">
           {metric.coverageDays === null ? '—' : `${Math.round(metric.coverageDays)}d`}
         </span>
       ),
@@ -390,17 +377,17 @@ export function StockIntelligenceScreen() {
   if (!signedIn) return <LoginPanel onSignedIn={() => setSignedIn(true)} />;
 
   return (
-    <main className="bg-canvas-light relative min-h-screen overflow-hidden text-slate-950 dark:bg-slate-950 dark:text-slate-100">
+    <main className="bg-canvas-light relative min-h-screen overflow-hidden text-slate-950">
       <div className="relative mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">
         <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
               <span className="h-1.5 w-1.5 rounded-full bg-blue-600" /> Inteligência de estoque
             </div>
-            <h1 className="mt-3 text-3xl font-bold tracking-[-0.035em] text-slate-950 sm:text-4xl dark:text-slate-100">
+            <h1 className="mt-3 text-3xl font-bold tracking-[-0.035em] text-slate-950 sm:text-4xl">
               Curva ABC e sugestão de compra
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
               Classificação ABC, giro, cobertura e ruptura por produto — recalculados todo dia, com
               sugestão de compra pronta para ajuste manual antes de virar pedido.
             </p>
@@ -410,7 +397,7 @@ export function StockIntelligenceScreen() {
               value={branchId}
               onChange={(event) => setBranchId(event.target.value)}
               placeholder="id da filial"
-              className="h-12 w-40 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              className="h-12 w-40 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
             />
             <button
               type="button"
@@ -468,10 +455,8 @@ export function StockIntelligenceScreen() {
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                    {tile.label}
-                  </p>
-                  <strong className="mt-2 block text-2xl font-bold tracking-tight text-slate-950 dark:text-slate-100">
+                  <p className="text-xs font-semibold text-slate-500">{tile.label}</p>
+                  <strong className="mt-2 block text-2xl font-bold tracking-tight text-slate-950">
                     {tile.value}
                   </strong>
                 </div>
@@ -486,8 +471,8 @@ export function StockIntelligenceScreen() {
           ))}
         </section>
 
-        <section className="border-hairline-light bg-canvas-light mt-5 overflow-hidden rounded-3xl border dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex flex-col gap-3 border-b border-slate-100 p-5 dark:border-slate-800">
+        <section className="border-hairline-light bg-canvas-light mt-5 overflow-hidden rounded-3xl border">
+          <div className="flex flex-col gap-3 border-b border-slate-100 p-5">
             <div className="flex flex-wrap items-center gap-2">
               {FILTER_OPTIONS.map((option) => (
                 <button
@@ -496,8 +481,8 @@ export function StockIntelligenceScreen() {
                   onClick={() => setFilter(option.key)}
                   className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
                     filter === option.key
-                      ? 'bg-slate-950 text-white shadow dark:bg-white dark:text-slate-900'
-                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'
+                      ? 'bg-slate-950 text-white shadow'
+                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                   }`}
                 >
                   {option.label}

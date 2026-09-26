@@ -120,15 +120,15 @@ export function CommandPalette({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center bg-slate-950/40 p-4 pt-[12vh] backdrop-blur-sm dark:bg-black/60">
+    <div className="fixed inset-0 z-[60] flex items-start justify-center bg-slate-950/40 p-4 pt-[12vh] backdrop-blur-sm">
       <button
         type="button"
         aria-label="Fechar busca"
         className="absolute inset-0"
         onClick={() => onOpenChange(false)}
       />
-      <div className="relative w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900">
-        <div className="flex items-center gap-3 border-b border-slate-100 px-4 dark:border-slate-800">
+      <div className="relative w-full max-w-xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+        <div className="flex items-center gap-3 border-b border-slate-100 px-4">
           <Search size={16} className="text-slate-400" />
           <input
             ref={inputRef}
@@ -136,9 +136,9 @@ export function CommandPalette({
             onChange={(event) => setQuery(event.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Buscar cliente, produto, pedido, NF-e, boleto…"
-            className="h-14 w-full bg-transparent text-sm outline-none placeholder:text-slate-400 dark:text-slate-100"
+            className="h-14 w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
           />
-          <kbd className="rounded-md border border-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-400 dark:border-slate-700">
+          <kbd className="rounded-md border border-slate-200 px-1.5 py-0.5 text-[10px] font-bold text-slate-400">
             Esc
           </kbd>
         </div>
@@ -168,8 +168,8 @@ export function CommandPalette({
                         onMouseEnter={() => setHighlighted(index)}
                         className={`flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm transition ${
                           index === highlighted
-                            ? 'bg-blue-50 text-blue-900 dark:bg-blue-500/10 dark:text-blue-200'
-                            : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800'
+                            ? 'bg-blue-50 text-blue-900'
+                            : 'text-slate-700 hover:bg-slate-50'
                         }`}
                       >
                         <Icon size={16} className="shrink-0 text-slate-400" />
@@ -190,7 +190,7 @@ export function CommandPalette({
           )}
         </div>
         {unavailable.length > 0 && query.trim() && (
-          <div className="border-t border-slate-100 px-4 py-2 text-[11px] text-slate-400 dark:border-slate-800">
+          <div className="border-t border-slate-100 px-4 py-2 text-[11px] text-slate-400">
             Busca por vendedor ainda não está disponível.
           </div>
         )}

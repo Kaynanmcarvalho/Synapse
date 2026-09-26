@@ -71,7 +71,7 @@ export function SavedFiltersBar<T extends Record<string, unknown>>({
       {filters.map((filter) => (
         <span
           key={filter.id}
-          className="group flex items-center gap-1 rounded-full bg-blue-50 py-1 pl-3 pr-1.5 text-[11px] font-bold text-blue-700 dark:bg-blue-500/10 dark:text-blue-300"
+          className="group flex items-center gap-1 rounded-full bg-blue-50 py-1 pl-3 pr-1.5 text-[11px] font-bold text-blue-700"
         >
           <button
             type="button"
@@ -85,7 +85,7 @@ export function SavedFiltersBar<T extends Record<string, unknown>>({
             onClick={() => remove(filter.id)}
             disabled={busy}
             aria-label={`Remover filtro ${filter.name}`}
-            className="flex h-4 w-4 items-center justify-center rounded-full text-blue-400 opacity-0 transition hover:bg-blue-100 hover:text-blue-700 group-hover:opacity-100 dark:hover:bg-blue-500/20"
+            className="flex h-4 w-4 items-center justify-center rounded-full text-blue-400 opacity-0 transition hover:bg-blue-100 hover:text-blue-700 group-hover:opacity-100"
           >
             <X size={10} />
           </button>
@@ -100,13 +100,13 @@ export function SavedFiltersBar<T extends Record<string, unknown>>({
             onChange={(event) => setName(event.target.value)}
             onKeyDown={(event) => event.key === 'Enter' && save()}
             placeholder="nome do filtro"
-            className="h-7 w-32 rounded-full border border-slate-200 px-2.5 text-[11px] outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900"
+            className="h-7 w-32 rounded-full border border-slate-200 px-2.5 text-[11px] outline-none focus:border-blue-500"
           />
           <button
             type="button"
             onClick={save}
             disabled={busy || !name.trim()}
-            className="h-7 rounded-full bg-slate-950 px-2.5 text-[11px] font-bold text-white disabled:opacity-40 dark:bg-white dark:text-slate-900"
+            className="h-7 rounded-full bg-slate-950 px-2.5 text-[11px] font-bold text-white disabled:opacity-40"
           >
             Salvar
           </button>
@@ -115,7 +115,7 @@ export function SavedFiltersBar<T extends Record<string, unknown>>({
         <button
           type="button"
           onClick={() => setNaming(true)}
-          className="flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-2.5 py-1 text-[11px] font-bold text-slate-400 transition hover:border-blue-300 hover:text-blue-600 dark:border-slate-700 dark:hover:text-blue-300"
+          className="flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-2.5 py-1 text-[11px] font-bold text-slate-400 transition hover:border-blue-300 hover:text-blue-600"
         >
           <Plus size={11} /> Salvar filtro atual
         </button>

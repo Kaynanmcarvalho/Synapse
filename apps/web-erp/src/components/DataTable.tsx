@@ -80,7 +80,7 @@ export function DataTable<T>({
 
   return (
     <div>
-      <div className="flex items-center gap-2 border-b border-slate-100 p-3 dark:border-slate-800">
+      <div className="flex items-center gap-2 border-b border-slate-100 p-3">
         {filterValue && (
           <div className="relative max-w-xs flex-1">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -88,7 +88,7 @@ export function DataTable<T>({
               value={filter}
               onChange={(event) => setFilter(event.target.value)}
               placeholder={filterPlaceholder}
-              className="h-9 w-full rounded-lg border border-slate-200 pl-8 pr-3 text-xs outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-900"
+              className="h-9 w-full rounded-lg border border-slate-200 pl-8 pr-3 text-xs outline-none focus:border-blue-500"
             />
           </div>
         )}
@@ -96,16 +96,16 @@ export function DataTable<T>({
           <button
             type="button"
             onClick={() => setColumnsMenuOpen((open) => !open)}
-            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-[11px] font-bold text-slate-500 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
+            className="flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 px-3 text-[11px] font-bold text-slate-500 transition hover:bg-slate-50"
           >
             <Columns3 size={13} /> Colunas
           </button>
           {columnsMenuOpen && (
-            <div className="absolute right-0 top-10 z-10 w-52 rounded-xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+            <div className="absolute right-0 top-10 z-10 w-52 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
               {columns.map((column) => (
                 <label
                   key={column.key}
-                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-800"
+                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
                 >
                   <input
                     type="checkbox"
@@ -123,7 +123,7 @@ export function DataTable<T>({
       <div className="overflow-x-auto">
         <table className="w-full min-w-[480px] text-left text-sm">
           <thead>
-            <tr className="bg-slate-50/70 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400 dark:bg-slate-900/60">
+            <tr className="bg-slate-50/70 text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">
               {visibleColumns.map((column) => (
                 <th
                   key={column.key}
@@ -133,7 +133,7 @@ export function DataTable<T>({
                     <button
                       type="button"
                       onClick={() => toggleSort(column.key)}
-                      className="inline-flex items-center gap-1 hover:text-slate-700 dark:hover:text-slate-200"
+                      className="inline-flex items-center gap-1 hover:text-slate-700"
                     >
                       {column.header}
                       {sort?.key === column.key ? (
@@ -153,7 +153,7 @@ export function DataTable<T>({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+          <tbody className="divide-y divide-slate-100">
             {sorted.length === 0 && (
               <tr>
                 <td
@@ -165,10 +165,7 @@ export function DataTable<T>({
               </tr>
             )}
             {sorted.map((row) => (
-              <tr
-                key={rowKey(row)}
-                className="transition hover:bg-slate-50/80 dark:hover:bg-slate-800/60"
-              >
+              <tr key={rowKey(row)} className="transition hover:bg-slate-50/80">
                 {visibleColumns.map((column) => (
                   <td
                     key={column.key}

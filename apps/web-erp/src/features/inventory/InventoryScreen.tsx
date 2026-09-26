@@ -162,14 +162,14 @@ function SelectField({
 }) {
   return (
     <label className="group block">
-      <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+      <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
         {label}
       </span>
       <span className="relative block">
         <select
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm font-semibold text-slate-800 shadow-sm outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+          className="h-12 w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 pr-10 text-sm font-semibold text-slate-800 shadow-sm outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
         >
           {children}
         </select>
@@ -259,8 +259,8 @@ function NewInventoryModalBody({
                       active
                         ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
                         : done
-                          ? 'bg-emerald-400 text-slate-950 dark:text-slate-100'
-                          : 'bg-white/5 text-slate-500 ring-1 ring-white/10 dark:text-slate-400'
+                          ? 'bg-emerald-400 text-slate-950'
+                          : 'bg-white/5 text-slate-500 ring-1 ring-white/10'
                     }`}
                   >
                     {done ? icons.check : number}
@@ -271,7 +271,7 @@ function NewInventoryModalBody({
                     >
                       {label}
                     </span>
-                    <span className="mt-0.5 block text-xs leading-5 text-slate-500 dark:text-slate-400">
+                    <span className="mt-0.5 block text-xs leading-5 text-slate-500">
                       {description}
                     </span>
                   </span>
@@ -297,7 +297,7 @@ function NewInventoryModalBody({
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
               Etapa {step} de 3
             </p>
-            <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl dark:text-slate-100">
+            <h2 className="mt-1 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">
               {step === 1 && 'Como você quer contar?'}
               {step === 2 && 'Configure a operação'}
               {step === 3 && 'Tudo pronto para começar'}
@@ -316,7 +316,7 @@ function NewInventoryModalBody({
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6 sm:px-8 sm:py-7">
           {step === 1 && (
             <div>
-              <p className="mb-5 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+              <p className="mb-5 max-w-xl text-sm leading-6 text-slate-500">
                 Escolha o formato que melhor representa a conferência de hoje. Você poderá refinar o
                 escopo na próxima etapa.
               </p>
@@ -331,23 +331,23 @@ function NewInventoryModalBody({
                       className={`group relative flex min-h-[102px] items-center gap-4 overflow-hidden rounded-2xl border p-4 text-left transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-500/10 ${
                         selected
                           ? 'border-blue-500 bg-blue-50/70'
-                          : 'border-slate-200 bg-white hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg hover:shadow-slate-200/50 dark:border-slate-700 dark:bg-slate-900'
+                          : 'border-slate-200 bg-white hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lg hover:shadow-slate-200/50'
                       } ${index === 0 ? 'sm:col-span-2' : ''}`}
                     >
                       <span
                         className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition ${
                           selected
                             ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                            : 'bg-slate-100 text-slate-500 group-hover:bg-slate-900 group-hover:text-white dark:bg-slate-800 dark:text-slate-400'
+                            : 'bg-slate-100 text-slate-500 group-hover:bg-slate-900 group-hover:text-white'
                         }`}
                       >
                         {option.icon}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-bold text-slate-900 dark:text-slate-100">
+                        <span className="block text-sm font-bold text-slate-900">
                           {option.label}
                         </span>
-                        <span className="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">
+                        <span className="mt-1 block text-xs leading-5 text-slate-500">
                           {option.description}
                         </span>
                       </span>
@@ -411,7 +411,7 @@ function NewInventoryModalBody({
               </div>
 
               <fieldset>
-                <legend className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                <legend className="mb-3 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
                   Movimentações durante a contagem
                 </legend>
                 <div className="grid gap-3 sm:grid-cols-2">
@@ -436,18 +436,16 @@ function NewInventoryModalBody({
                       className={`rounded-2xl border p-4 text-left transition focus:outline-none focus:ring-4 focus:ring-blue-500/10 ${
                         draft.policy === policy.value
                           ? 'border-blue-500 bg-blue-50/60'
-                          : 'border-slate-200 hover:border-slate-300 dark:border-slate-700'
+                          : 'border-slate-200 hover:border-slate-300'
                       }`}
                     >
                       <span className="flex items-center justify-between gap-3">
-                        <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                          {policy.title}
-                        </span>
-                        <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                        <span className="text-sm font-bold text-slate-900">{policy.title}</span>
+                        <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-500">
                           {policy.badge}
                         </span>
                       </span>
-                      <span className="mt-2 block text-xs leading-5 text-slate-500 dark:text-slate-400">
+                      <span className="mt-2 block text-xs leading-5 text-slate-500">
                         {policy.copy}
                       </span>
                     </button>
@@ -456,7 +454,7 @@ function NewInventoryModalBody({
               </fieldset>
 
               <label className="block">
-                <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+                <span className="mb-2 block text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500">
                   Observação{' '}
                   <span className="font-medium normal-case tracking-normal text-slate-400">
                     (opcional)
@@ -467,7 +465,7 @@ function NewInventoryModalBody({
                   value={draft.notes}
                   onChange={(event) => setDraft({ ...draft, notes: event.target.value })}
                   placeholder="Ex.: priorizar o corredor B e produtos com validade próxima"
-                  className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+                  className="w-full resize-none rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                 />
               </label>
             </div>
@@ -490,8 +488,8 @@ function NewInventoryModalBody({
                     Inventário {selectedType.label.toLowerCase()}
                   </h3>
                   <p className="mt-1 text-sm text-slate-400">
-                    {draft.branch}{' '}
-                    <span className="px-1 text-slate-600 dark:text-slate-300">/</span>{' '}
+                    {draft.branch} <span className="px-1 text-slate-600">/</span>
+                    {''}
                     {draft.warehouse}
                   </p>
                   <div className="mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-2xl bg-white/10 sm:grid-cols-3">
@@ -504,7 +502,7 @@ function NewInventoryModalBody({
                         key={label}
                         className="bg-white/[0.06] p-4 last:col-span-2 sm:last:col-span-1"
                       >
-                        <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                        <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
                           {label}
                         </span>
                         <span className="mt-1.5 block truncate text-sm font-semibold text-slate-100">
@@ -532,7 +530,7 @@ function NewInventoryModalBody({
           <button
             type="button"
             onClick={() => (step === 1 ? requestClose() : setStep(step - 1))}
-            className="h-11 rounded-xl px-4 text-sm font-bold text-slate-600 transition hover:bg-slate-200/70 hover:text-slate-950 focus:outline-none focus:ring-4 focus:ring-slate-400/15 dark:text-slate-300"
+            className="h-11 rounded-xl px-4 text-sm font-bold text-slate-600 transition hover:bg-slate-200/70 hover:text-slate-950 focus:outline-none focus:ring-4 focus:ring-slate-400/15"
           >
             {step === 1 ? 'Cancelar' : 'Voltar'}
           </button>
@@ -588,17 +586,17 @@ export function InventoryScreen() {
   };
 
   return (
-    <main className="bg-canvas-light relative min-h-screen overflow-hidden text-slate-950 dark:bg-slate-950 dark:text-slate-100">
+    <main className="bg-canvas-light relative min-h-screen overflow-hidden text-slate-950">
       <div className="relative mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">
         <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
               <span className="h-1.5 w-1.5 rounded-full bg-blue-600" /> Operações de estoque
             </div>
-            <h1 className="mt-3 text-3xl font-bold tracking-[-0.035em] text-slate-950 sm:text-4xl dark:text-slate-100">
+            <h1 className="mt-3 text-3xl font-bold tracking-[-0.035em] text-slate-950 sm:text-4xl">
               Inventário
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
               Conte, concilie e ajuste seu estoque com rastreabilidade de ponta a ponta.
             </p>
           </div>
@@ -649,10 +647,8 @@ export function InventoryScreen() {
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                    {metric.label}
-                  </p>
-                  <strong className="mt-2 block text-2xl font-bold tracking-tight text-slate-950 dark:text-slate-100">
+                  <p className="text-xs font-semibold text-slate-500">{metric.label}</p>
+                  <strong className="mt-2 block text-2xl font-bold tracking-tight text-slate-950">
                     {metric.value}
                   </strong>
                 </div>
@@ -667,7 +663,7 @@ export function InventoryScreen() {
           ))}
         </section>
 
-        <section className="border-hairline-light bg-canvas-light mt-5 overflow-hidden rounded-3xl border dark:bg-slate-900">
+        <section className="border-hairline-light bg-canvas-light mt-5 overflow-hidden rounded-3xl border">
           <div className="flex flex-col gap-5 border-b border-slate-100 p-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4">
               <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-950 text-white">
@@ -676,43 +672,39 @@ export function InventoryScreen() {
               </span>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="font-bold text-slate-950 dark:text-slate-100">
-                    Inventário rotativo · Setembro
-                  </h2>
+                  <h2 className="font-bold text-slate-950">Inventário rotativo · Setembro</h2>
                   <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-700">
                     Em contagem
                   </span>
                 </div>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                <p className="mt-1 text-xs text-slate-500">
                   Depósito Central · iniciado hoje às 08:42 por Marina Alves
                 </p>
               </div>
             </div>
             <button
               type="button"
-              className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 dark:border-slate-700 dark:text-slate-300"
+              className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 transition hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
             >
               Continuar contagem {icons.arrow}
             </button>
           </div>
           <div className="px-6 py-5">
-            <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <div className="flex items-center justify-between text-xs font-semibold text-slate-500">
               <span>Progresso da conferência</span>
-              <span className="text-slate-900 dark:text-slate-100">1.002 / 1.284</span>
+              <span className="text-slate-900">1.002 / 1.284</span>
             </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
               <div className="h-full w-[78%] rounded-full bg-gradient-to-r from-blue-600 to-cyan-400 shadow-sm" />
             </div>
           </div>
         </section>
 
-        <section className="border-hairline-light bg-canvas-light mt-5 overflow-hidden rounded-3xl border dark:bg-slate-900">
+        <section className="border-hairline-light bg-canvas-light mt-5 overflow-hidden rounded-3xl border">
           <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
             <div>
-              <h2 className="font-bold text-slate-950 dark:text-slate-100">
-                Divergências recentes
-              </h2>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              <h2 className="font-bold text-slate-950">Divergências recentes</h2>
+              <p className="mt-1 text-xs text-slate-500">
                 Comparativo entre saldo do sistema e quantidade contada
               </p>
             </div>
@@ -738,17 +730,15 @@ export function InventoryScreen() {
                   return (
                     <tr key={row.sku} className="text-sm transition hover:bg-slate-50/80">
                       <td className="px-6 py-4">
-                        <span className="block font-semibold text-slate-800 dark:text-slate-200">
-                          {row.product}
-                        </span>
+                        <span className="block font-semibold text-slate-800">{row.product}</span>
                         <span className="mt-0.5 block text-[11px] text-slate-400">
                           SKU {row.sku}
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-right font-medium text-slate-500 dark:text-slate-400">
+                      <td className="px-4 py-4 text-right font-medium text-slate-500">
                         {row.system}
                       </td>
-                      <td className="px-4 py-4 text-right font-bold text-slate-800 dark:text-slate-200">
+                      <td className="px-4 py-4 text-right font-bold text-slate-800">
                         {row.counted}
                       </td>
                       <td
@@ -781,7 +771,7 @@ export function InventoryScreen() {
           role="status"
           className="fixed bottom-6 right-6 z-40 flex max-w-sm items-center gap-3 rounded-2xl bg-slate-950 px-5 py-4 text-sm font-semibold text-white shadow-2xl"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-400 text-slate-950 dark:text-slate-100">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-400 text-slate-950">
             {icons.check}
           </span>
           Inventário aberto. A equipe já pode iniciar a leitura.

@@ -84,7 +84,7 @@ function ConfigFields({ form }: { readonly form: BranchConfigForm }) {
       <label>
         Domínio
         <select
-          className="mt-1 w-full rounded border bg-white p-2 dark:bg-slate-900"
+          className="mt-1 w-full rounded border bg-white p-2"
           value={form.domain}
           onChange={(e) => {
             form.setDomain(e.target.value);
@@ -111,7 +111,7 @@ function ConfigFields({ form }: { readonly form: BranchConfigForm }) {
         Consultar valor e origem
       </button>
       {form.resolved && (
-        <p className="rounded bg-blue-50 p-3 dark:bg-blue-950">
+        <p className="rounded bg-blue-50 p-3">
           Origem: <strong>{form.resolved.source}</strong> —{' '}
           {form.resolved.source === 'GLOBAL'
             ? 'definido na empresa'

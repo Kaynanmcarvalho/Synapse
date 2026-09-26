@@ -42,11 +42,11 @@ const LEVEL_LABEL: Record<ExpiryAlertLevel, string> = {
 };
 
 const LEVEL_TINT: Record<ExpiryAlertLevel, string> = {
-  D90: 'bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300',
-  D60: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300',
-  D30: 'bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300',
-  D15: 'bg-red-50 text-red-700 dark:bg-red-500/10 dark:text-red-300',
-  EXPIRED: 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900',
+  D90: 'bg-blue-50 text-blue-700',
+  D60: 'bg-amber-50 text-amber-700',
+  D30: 'bg-orange-50 text-orange-700',
+  D15: 'bg-red-50 text-red-700',
+  EXPIRED: 'bg-slate-900 text-white',
 };
 
 function LoginGate({ onSignedIn }: { readonly onSignedIn: () => void }) {
@@ -69,7 +69,7 @@ function LoginGate({ onSignedIn }: { readonly onSignedIn: () => void }) {
   };
 
   return (
-    <main className="bg-canvas-light flex min-h-screen items-center justify-center p-8 dark:bg-slate-950">
+    <main className="bg-canvas-light flex min-h-screen items-center justify-center p-8">
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Entrar (emulador local)</CardTitle>
@@ -160,7 +160,7 @@ function NewLotModal({
         <div>
           <label
             htmlFor="new-lot-manufactured-at"
-            className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"
+            className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500"
           >
             Fabricação
           </label>
@@ -174,7 +174,7 @@ function NewLotModal({
         <div>
           <label
             htmlFor="new-lot-expires-at"
-            className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"
+            className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500"
           >
             Validade
           </label>
@@ -297,19 +297,17 @@ function QuickAdjustDrawer({
               className={cn(
                 'flex flex-col items-center gap-2 rounded-xl border p-3 text-center transition',
                 selected
-                  ? 'border-blue-500 bg-blue-50/70 dark:bg-blue-500/10'
-                  : 'border-slate-200 hover:border-slate-300 dark:border-slate-700',
+                  ? 'border-blue-500 bg-blue-50/70'
+                  : 'border-slate-200 hover:border-slate-300',
               )}
             >
               <option.icon size={20} className={option.tint} />
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                {option.label}
-              </span>
+              <span className="text-xs font-bold text-slate-800">{option.label}</span>
             </button>
           );
         })}
       </div>
-      <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+      <p className="mt-2 text-xs leading-5 text-slate-500">
         {KIND_OPTIONS.find((option) => option.value === kind)?.description}
       </p>
 
@@ -336,19 +334,19 @@ function QuickAdjustDrawer({
           value={form.quantity}
           onChange={(e) => setForm({ ...form, quantity: e.target.value })}
         />
-        <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
+        <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
           <input
             type="checkbox"
             checked={allowNegative}
             onChange={(e) => setAllowNegative(e.target.checked)}
-            className="h-4 w-4 rounded border-slate-300 dark:border-slate-600"
+            className="h-4 w-4 rounded border-slate-300"
           />
           Permitir saldo negativo
         </label>
       </div>
 
       <label className="mt-3 block">
-        <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+        <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
           Motivo
         </span>
         <textarea
@@ -356,7 +354,7 @@ function QuickAdjustDrawer({
           value={form.reason}
           onChange={(e) => setForm({ ...form, reason: e.target.value })}
           placeholder="Ex.: avaria no transporte, contagem cega, doação"
-          className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+          className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
         />
       </label>
       {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
@@ -417,7 +415,7 @@ function LotDetailDrawer({
         </div>
       ) : (
         balance && (
-          <div className="mt-6 grid grid-cols-3 gap-px overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800">
+          <div className="mt-6 grid grid-cols-3 gap-px overflow-hidden rounded-2xl bg-slate-100">
             {(
               [
                 ['Físico', balance.physical],
@@ -425,13 +423,11 @@ function LotDetailDrawer({
                 ['Disponível', balance.available],
               ] as const
             ).map(([label, value]) => (
-              <div key={label} className="bg-white p-4 dark:bg-slate-900">
+              <div key={label} className="bg-white p-4">
                 <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
                   {label}
                 </span>
-                <span className="mt-1 block text-xl font-bold text-slate-950 dark:text-slate-100">
-                  {value}
-                </span>
+                <span className="mt-1 block text-xl font-bold text-slate-950">{value}</span>
               </div>
             ))}
           </div>
@@ -439,19 +435,17 @@ function LotDetailDrawer({
       )}
 
       <dl className="mt-6 space-y-3 text-sm">
-        <div className="flex justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
-          <dt className="text-slate-500 dark:text-slate-400">Fabricação</dt>
-          <dd className="font-semibold text-slate-800 dark:text-slate-200">{lot.manufacturedAt}</dd>
+        <div className="flex justify-between border-b border-slate-100 pb-3">
+          <dt className="text-slate-500">Fabricação</dt>
+          <dd className="font-semibold text-slate-800">{lot.manufacturedAt}</dd>
         </div>
-        <div className="flex justify-between border-b border-slate-100 pb-3 dark:border-slate-800">
-          <dt className="text-slate-500 dark:text-slate-400">Validade</dt>
-          <dd className="font-semibold text-slate-800 dark:text-slate-200">{lot.expiresAt}</dd>
+        <div className="flex justify-between border-b border-slate-100 pb-3">
+          <dt className="text-slate-500">Validade</dt>
+          <dd className="font-semibold text-slate-800">{lot.expiresAt}</dd>
         </div>
         <div className="flex justify-between">
-          <dt className="text-slate-500 dark:text-slate-400">Quantidade inicial</dt>
-          <dd className="font-semibold text-slate-800 dark:text-slate-200">
-            {lot.initialQuantity}
-          </dd>
+          <dt className="text-slate-500">Quantidade inicial</dt>
+          <dd className="font-semibold text-slate-800">{lot.initialQuantity}</dd>
         </div>
       </dl>
     </Drawer>
@@ -475,21 +469,21 @@ function AlertSummary({
       value: total,
       detail: 'Janela de 90 dias',
       icon: Boxes,
-      tint: 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-300',
+      tint: 'bg-blue-50 text-blue-600',
     },
     {
       label: 'Vencidos',
       value: expired,
       detail: 'Requer baixa ou descarte',
       icon: PackageX,
-      tint: 'bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900',
+      tint: 'bg-slate-900 text-white',
     },
     {
       label: 'Críticos (≤15 dias)',
       value: critical,
       detail: 'Priorizar saída FEFO',
       icon: ShieldAlert,
-      tint: 'bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-300',
+      tint: 'bg-red-50 text-red-600',
     },
   ];
 
@@ -498,15 +492,15 @@ function AlertSummary({
       {tiles.map((tile) => (
         <article
           key={tile.label}
-          className="border-hairline-light bg-canvas-light rounded-2xl border p-5 dark:border-slate-800 dark:bg-slate-900/90"
+          className="border-hairline-light bg-canvas-light rounded-2xl border p-5"
         >
           <div className="flex items-start justify-between">
-            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{tile.label}</p>
+            <p className="text-xs font-semibold text-slate-500">{tile.label}</p>
             <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${tile.tint}`}>
               <tile.icon size={19} />
             </span>
           </div>
-          <strong className="mt-5 block text-2xl font-bold tracking-tight text-slate-950 dark:text-slate-100">
+          <strong className="mt-5 block text-2xl font-bold tracking-tight text-slate-950">
             {tile.value}
           </strong>
           <p className="mt-3 text-xs text-slate-400">{tile.detail}</p>
@@ -525,7 +519,7 @@ function ExpiryTable({
 }) {
   if (alerts.length === 0) {
     return (
-      <p className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+      <p className="px-6 py-10 text-center text-sm text-slate-500">
         Nenhum lote dentro da janela de alerta (90 dias).
       </p>
     );
@@ -534,7 +528,7 @@ function ExpiryTable({
     <div className="overflow-x-auto">
       <table className="w-full min-w-[680px] text-left">
         <thead>
-          <tr className="bg-slate-50/70 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400 dark:bg-slate-800/40">
+          <tr className="bg-slate-50/70 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
             <th className="px-6 py-3">Produto</th>
             <th className="px-4 py-3">Depósito</th>
             <th className="px-4 py-3 text-right">Saldo</th>
@@ -542,7 +536,7 @@ function ExpiryTable({
             <th className="px-6 py-3 text-center">Alerta</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+        <tbody className="divide-y divide-slate-100">
           {alerts.map((alert) => {
             const { lot, daysUntilExpiry, alertLevel } = alert;
             return (
@@ -553,25 +547,23 @@ function ExpiryTable({
                 onKeyDown={(event) => {
                   if (event.key === 'Enter') onSelect(alert);
                 }}
-                className="cursor-pointer text-sm outline-none transition hover:bg-slate-50/80 focus-visible:bg-blue-50/60 dark:hover:bg-slate-800/60"
+                className="cursor-pointer text-sm outline-none transition hover:bg-slate-50/80 focus-visible:bg-blue-50/60"
               >
                 <td className="px-6 py-4">
-                  <span className="block font-semibold text-slate-800 dark:text-slate-200">
-                    {lot.productId}
-                  </span>
+                  <span className="block font-semibold text-slate-800">{lot.productId}</span>
                   <span className="mt-0.5 block text-[11px] text-slate-400">
                     Lote {lot.id.slice(0, 8)}
                   </span>
                 </td>
-                <td className="px-4 py-4 text-slate-500 dark:text-slate-400">
+                <td className="px-4 py-4 text-slate-500">
                   {lot.branchId} / {lot.warehouseId}
                 </td>
-                <td className="px-4 py-4 text-right font-bold text-slate-800 dark:text-slate-200">
+                <td className="px-4 py-4 text-right font-bold text-slate-800">
                   {lot.physical - lot.reserved}
                 </td>
-                <td className="px-4 py-4 text-right text-slate-500 dark:text-slate-400">
+                <td className="px-4 py-4 text-right text-slate-500">
                   {alertLevel === 'EXPIRED' ? (
-                    <span className="flex items-center justify-end gap-1 text-red-700 dark:text-red-400">
+                    <span className="flex items-center justify-end gap-1 text-red-700">
                       <AlertTriangle size={14} /> há {Math.abs(daysUntilExpiry)} dias
                     </span>
                   ) : (
@@ -620,17 +612,17 @@ export function StockScreen() {
   if (!signedIn) return <LoginGate onSignedIn={() => setSignedIn(true)} />;
 
   return (
-    <main className="bg-canvas-light relative min-h-screen overflow-hidden text-slate-950 dark:bg-slate-950 dark:text-slate-100">
+    <main className="bg-canvas-light relative min-h-screen overflow-hidden text-slate-950">
       <div className="relative mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">
         <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
               <span className="h-1.5 w-1.5 rounded-full bg-blue-600" /> Controle de estoque
             </div>
-            <h1 className="mt-3 text-3xl font-bold tracking-[-0.035em] text-slate-950 sm:text-4xl dark:text-slate-100">
+            <h1 className="mt-3 text-3xl font-bold tracking-[-0.035em] text-slate-950 sm:text-4xl">
               Estoque
             </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
               Lotes, validade e FEFO (§8) — a base do PDV e da separação.
             </p>
           </div>
@@ -638,7 +630,7 @@ export function StockScreen() {
             <button
               type="button"
               onClick={() => setModal('adjust')}
-              className="flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
+              className="flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
             >
               <Settings2 size={17} /> Ajuste rápido
             </button>
@@ -654,13 +646,11 @@ export function StockScreen() {
 
         <AlertSummary alerts={alerts} className="mt-8" />
 
-        <section className="border-hairline-light bg-canvas-light mt-5 overflow-hidden rounded-3xl border dark:bg-slate-900">
-          <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5 dark:border-slate-800">
+        <section className="border-hairline-light bg-canvas-light mt-5 overflow-hidden rounded-3xl border">
+          <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
             <div>
-              <h2 className="font-bold text-slate-950 dark:text-slate-100">
-                Produtos próximos do vencimento
-              </h2>
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+              <h2 className="font-bold text-slate-950">Produtos próximos do vencimento</h2>
+              <p className="mt-1 text-xs text-slate-500">
                 Janela de alerta de 90 dias, priorizando FEFO — clique num lote para ver o detalhe
               </p>
             </div>

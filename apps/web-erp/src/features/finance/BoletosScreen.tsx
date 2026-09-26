@@ -115,7 +115,7 @@ export function BoletosScreen() {
           e.preventDefault();
           void run(issue);
         }}
-        className="rounded-xl border bg-white p-5 dark:bg-slate-900"
+        className="rounded-xl border bg-white p-5"
       >
         <fieldset
           disabled={busy}

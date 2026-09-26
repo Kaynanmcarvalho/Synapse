@@ -83,7 +83,7 @@ function PriceBadge({ productId }: { readonly productId: string }) {
         Resolver preço
       </Button>
       {price && (
-        <span className="bg-brand-100 text-brand-700 dark:bg-brand-900 dark:text-brand-200 rounded-full px-2 py-0.5 font-medium">
+        <span className="bg-brand-100 text-brand-700 rounded-full px-2 py-0.5 font-medium">
           R$ {price.price.toFixed(2)} · {SOURCE_LABEL[price.source] ?? price.source}
           {price.requiresApproval ? ' · precisa de aprovação' : ''}
         </span>
@@ -114,7 +114,7 @@ function ProductRow({
 
   return (
     <Card className="flex items-start gap-4">
-      <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded bg-slate-100 dark:bg-slate-800">
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded bg-slate-100">
         {product.photoUrl ? (
           <img
             src={`http://localhost:3333${product.photoUrl}`}
@@ -129,7 +129,7 @@ function ProductRow({
         <div className="flex items-center justify-between">
           <div>
             <p className="font-medium">{product.name}</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+            <p className="text-xs text-slate-500">
               SKU {product.sku} · {product.status} · R$ {product.pricing.salePrice.toFixed(2)}
             </p>
           </div>
@@ -260,9 +260,7 @@ export function ProductsScreen() {
     <main className="mx-auto flex max-w-3xl flex-col gap-6 p-8">
       <header>
         <h1 className="text-2xl font-bold">Produtos</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          Cadastro, foto e resolução de preço (§5 e §6).
-        </p>
+        <p className="text-sm text-slate-500">Cadastro, foto e resolução de preço (§5 e §6).</p>
       </header>
 
       <CreateProductForm onCreated={refresh} />
@@ -283,9 +281,7 @@ export function ProductsScreen() {
         <Spinner />
       ) : (
         <div className="flex flex-col gap-3">
-          {products.length === 0 && (
-            <p className="text-sm text-slate-500 dark:text-slate-400">Nenhum produto ainda.</p>
-          )}
+          {products.length === 0 && <p className="text-sm text-slate-500">Nenhum produto ainda.</p>}
           {products.map((product) => (
             <ProductRow key={product.id} product={product} onChanged={refresh} />
           ))}

@@ -32,7 +32,7 @@ export function CreateSuggestedPurchase({
     }
   };
   return (
-    <section className="my-5 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+    <section className="my-5 rounded-xl border border-slate-200 bg-white p-4">
       <h2 className="font-semibold">Gerar pedido das sugestões exibidas</h2>
       <p className="my-2 text-sm">
         {suggestionIds.length} produtos com quantidade positiva. Os ajustes aprovados serão usados.

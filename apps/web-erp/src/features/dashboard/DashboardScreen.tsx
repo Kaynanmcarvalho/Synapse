@@ -74,7 +74,7 @@ export function DashboardScreen() {
     <main className="mx-auto max-w-7xl space-y-6 p-4 sm:p-8">
       <header>
         <h1 className="text-3xl font-bold">Painel de Controle</h1>
-        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-sm text-slate-500">
           Resultados do período e posição atual de estoque e contas.
         </p>
       </header>
@@ -83,7 +83,7 @@ export function DashboardScreen() {
           e.preventDefault();
           void load();
         }}
-        className="flex flex-wrap items-end gap-3 rounded-xl border bg-white p-4 dark:bg-slate-900"
+        className="flex flex-wrap items-end gap-3 rounded-xl border bg-white p-4"
       >
         <label className="grid gap-1 text-sm">
           Perfil
@@ -145,10 +145,7 @@ export function DashboardScreen() {
         </button>
       </form>
       {error && (
-        <p
-          role="alert"
-          className="rounded bg-red-50 p-4 text-red-700 dark:bg-red-950 dark:text-red-200"
-        >
+        <p role="alert" className="rounded bg-red-50 p-4 text-red-700">
           {error}
         </p>
       )}
@@ -161,7 +158,7 @@ export function DashboardScreen() {
           </p>
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {cards.map(([label, value]) => (
-              <article key={label} className="rounded-xl border bg-white p-5 dark:bg-slate-900">
+              <article key={label} className="rounded-xl border bg-white p-5">
                 <h2 className="text-sm text-slate-500">{label}</h2>
                 <strong className="mt-2 block text-2xl">{value}</strong>
               </article>
