@@ -164,3 +164,77 @@ export const proximoIndice = (
   }
   return atual;
 };
+
+/** Tira acento e caixa: `"Configurações"` e `"configuracoes"` casam no type-ahead. */
+export const normalizarTexto = (texto: string): string =>
+  texto.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+
+/** Primeira entrada (nao separador) cujo rotulo comeca com o texto digitado. */
+export const indiceDoTypeAhead = (
+  entradas: readonly EntradaDeMenu[],
+  textoDigitado: string,
+): number => {
+  const alvo = normalizarTexto(textoDigitado);
+  if (!alvo) return -1;
+  return entradas.findIndex(
+    (entrada) => entrada.tipo !== 'separador' && normalizarTexto(entrada.rotulo).startsWith(alvo),
+  );
+};
+
+/** `mouseenter`/`mouseover` tambem disparam quando um painel aparece embaixo de
+ *  um cursor parado (o layout mudou, o ponteiro nao): o navegador reavalia qual
+ *  elemento esta sob o ponteiro e dispara hover sem o usuario ter mexido o
+ *  mouse. `movementX/Y` deveria distinguir isso, mas nao e confiavel em toda
+ *  parte (jsdom nem implementa). Guardamos a ultima posicao de verdade e so
+ *  contamos como hover intencional quando a coordenada muda de fato. */
+let ultimaPosicaoDoPonteiro: { readonly x: number; readonly y: number } | null = null;
+
+export const moveuDeVerdade = (evento: {
+  readonly clientX: number;
+  readonly clientY: number;
+}): boolean => {
+  const anterior = ultimaPosicaoDoPonteiro;
+  ultimaPosicaoDoPonteiro = { x: evento.clientX, y: evento.clientY };
+  // Primeiro hover que este modulo ve: sem base de comparacao, deixa passar.
+  if (!anterior) return true;
+  return anterior.x !== evento.clientX || anterior.y !== evento.clientY;
+};
+
+export type FamiliaDeLargura = 'compacto' | 'padrao' | 'largo';
+
+/** Largura do painel por familia, nao pelo texto mais longo de cada menu: um
+ *  unico rotulo comprido (Estoque tinha um com 68 caracteres) nao pode mais
+ *  esticar o menu inteiro — ele quebra em duas linhas dentro da familia `largo`. */
+export const LARGURA_DO_PAINEL: Record<FamiliaDeLargura, number> = {
+  compacto: 280,
+  padrao: 320,
+  largo: 360,
+};
+
+const comprimentoDaEntrada = (entrada: EntradaDeMenu): number => {
+  if (entrada.tipo === 'separador') return 0;
+  const doAtalho = entrada.tipo === 'item' && entrada.atalho ? entrada.atalho.rotulo.length + 3 : 0;
+  return entrada.rotulo.length + doAtalho;
+};
+
+export const familiaDoPainel = (entradas: readonly EntradaDeMenu[]): FamiliaDeLargura => {
+  const maiorComprimento = entradas.reduce(
+    (maior, entrada) => Math.max(maior, comprimentoDaEntrada(entrada)),
+    0,
+  );
+  if (maiorComprimento <= 22) return 'compacto';
+  if (maiorComprimento <= 34) return 'padrao';
+  return 'largo';
+};
+
+/** Id do modulo de primeiro nivel dono da rota atual, para a linha de modulo
+ *  ativo na barra — independente de algum menu estar aberto. */
+export const moduloAtivoPara = (
+  menus: readonly MenuPrincipal[],
+  caminho: string,
+): string | undefined =>
+  menus.find((menu) => itensFolha(menu.itens).some((item) => item.caminho === caminho))?.id;
+
+/** Alvo previsivel de foco quando Tab sai da barra de menus: o conteudo da
+ *  rota atual, montado pelo AppShell com este id. */
+export const ID_CONTEUDO_PRINCIPAL = 'conteudo-principal';
