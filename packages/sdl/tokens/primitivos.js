@@ -156,6 +156,10 @@ export const sombra = {
   cartao: '0 1px 2px rgba(25, 28, 31, 0.04), 0 12px 28px -16px rgba(25, 28, 31, 0.22)',
   cartaoAlto: '0 2px 4px rgba(25, 28, 31, 0.05), 0 22px 44px -20px rgba(25, 28, 31, 0.28)',
   menu: '0 12px 32px -8px rgba(25, 28, 31, 0.14)',
+  /** Sombra curta para menu de software (Fase 3 do chrome): perto da borda, sem
+   *  o halo difuso do `menu`. Nao troca o token acima porque `shadow-lg/xl/2xl`
+   *  em telas fora do chrome ainda apontam para ele. */
+  menuContido: '0 4px 10px -4px rgba(25, 28, 31, 0.22), 0 1px 2px rgba(25, 28, 31, 0.08)',
   janela: '0 10px 24px -14px rgba(25, 28, 31, 0.22), 0 40px 80px -32px rgba(25, 28, 31, 0.32)',
 };
 

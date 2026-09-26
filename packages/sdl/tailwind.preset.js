@@ -143,6 +143,7 @@ export default {
         janela: sombra.janela,
         // --- nome semantico para o mesmo desenho de sombra do menu
         menu: sombra.menu,
+        'menu-contido': sombra.menuContido,
       },
       zIndex: Object.fromEntries(
         Object.entries(camada).map(([nome, valor]) => [nome, String(valor)]),
