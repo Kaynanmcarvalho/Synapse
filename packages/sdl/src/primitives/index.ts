@@ -15,4 +15,11 @@ export { NumberInput, type NumberInputProps } from './NumberInput';
 export { MoneyInput, type MoneyInputProps } from './MoneyInput';
 export { DocInput, type DocInputProps } from './DocInput';
 
+export { Button, type ButtonProps, type VarianteDeBotao } from './Button';
+export { IconButton, type IconButtonProps } from './IconButton';
+export { Kbd, type KbdProps } from './Kbd';
+
+export { Status, type StatusProps, type TomDeStatus } from './Status';
+export { Spinner, type SpinnerProps } from './Spinner';
+
 export { TAMANHO_DE_ICONE, type Densidade } from './visual';
