@@ -1,3 +1,7 @@
+/* A cor da marca do tenant, em canais RGB. Vem antes das diretivas do Tailwind
+   porque @import precisa abrir o arquivo. Ver packages/sdl/tokens.css. */
+@import '@synapse/sdl/tokens.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,8 +12,6 @@
     /* Com o eixo opsz da Inter, titulos grandes usam o corte Display sozinhos. */
     font-optical-sizing: auto;
     color-scheme: light;
-    --brand-primary: #494fdf;
-    --brand-secondary: #3a40c4;
   }
 
   body {

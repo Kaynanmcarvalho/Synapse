@@ -1,23 +1,22 @@
-/** Preset compartilhado pelos apps web. Um so lugar define a paleta da marca. */
+import { primitivos } from '@synapse/sdl';
+
+/** Preset do web-admin e do web-vendedor.
+ *
+ *  O web-erp nao usa mais este arquivo: o tema dele vem do SDL
+ *  (`@synapse/sdl/tailwind.preset.js`). Aqui continua o azul que estes dois apps
+ *  ja renderizam, agora lido do proprio SDL — o valor deixa de existir em dois
+ *  lugares, e a aparencia nao muda.
+ *
+ *  Levar tambem estes apps para o vocabulario do SDL (superficie, conteudo,
+ *  estado) e assunto de uma fase propria: trocar a marca deles aqui mudaria a
+ *  cor de telas que nao estao em revisao. */
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        brand: {
-          50: '#eef6ff',
-          100: '#d9eaff',
-          200: '#bcdaff',
-          300: '#8ec4ff',
-          400: '#59a3ff',
-          500: '#3380fc',
-          600: '#1d61f2',
-          700: '#164cdf',
-          800: '#193fb4',
-          900: '#1a398e',
-          950: '#142457',
-        },
+        brand: primitivos.azulLegado,
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'sans-serif'],

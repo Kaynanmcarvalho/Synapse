@@ -269,6 +269,9 @@ importers:
       '@synapse/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@synapse/sdl':
+        specifier: workspace:*
+        version: link:../../packages/sdl
       '@types/react':
         specifier: ^19.0.7
         version: 19.2.18
@@ -444,6 +447,15 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.20.1)(jsdom@25.0.1)(terser@5.51.2)
 
+  packages/sdl:
+    devDependencies:
+      '@synapse/config':
+        specifier: workspace:*
+        version: link:../config
+      eslint:
+        specifier: ^9.18.0
+        version: 9.39.5(jiti@1.21.7)
+
   packages/types:
     devDependencies:
       '@synapse/config':
@@ -464,6 +476,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@synapse/sdl':
+        specifier: workspace:*
+        version: link:../sdl
       clsx:
         specifier: ^2.1.1
         version: 2.1.1

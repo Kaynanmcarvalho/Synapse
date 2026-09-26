@@ -1,5 +1,22 @@
+import { canaisDoHex, MARCA } from '@synapse/sdl';
 import { useEffect, useState } from 'react';
 import { apiRequest } from '../lib/dev-auth';
+
+/** A API devolve estes dois como branding de quem nunca configurou marca. Sao
+ *  placeholder, nao decisao de ninguem: aplicar o primeiro pintaria o ERP
+ *  inteiro de outro azul. Enquanto o padrao da API nao for o cobalto do
+ *  Synapse, eles valem como "sem marca definida". */
+const SEM_MARCA_DEFINIDA = ['#2563eb', '#4f46e5'];
+
+/** Tenant -> custom property -> token do SDL -> classes (`bg-primary`,
+ *  `ring-primary/15`). Nenhuma tela precisa saber o HEX da marca, e cor invalida
+ *  nao apaga a marca: `canaisDoHex` devolve nulo e o cobalto continua valendo. */
+const aplicarMarcaDoTenant = (cor: string | null | undefined): void => {
+  const escolhida = cor?.trim().toLowerCase();
+  if (!escolhida || SEM_MARCA_DEFINIDA.includes(escolhida)) return;
+  const canais = canaisDoHex(escolhida);
+  if (canais) document.documentElement.style.setProperty(MARCA.variavel, canais);
+};
 
 export type FeatureKey =
   | 'NFE'
@@ -42,8 +59,8 @@ const defaults: Experience = {
     systemName: 'Synapse',
     logoUrl: null,
     faviconUrl: null,
-    primaryColor: '#2563eb',
-    secondaryColor: '#4f46e5',
+    primaryColor: MARCA.padraoHex,
+    secondaryColor: MARCA.padraoHex,
     theme: 'system',
   },
 };
@@ -55,11 +72,7 @@ export function useTenantExperience() {
       .then((value) => {
         setExperience(value);
         document.title = value.branding.systemName;
-        document.documentElement.style.setProperty('--brand-primary', value.branding.primaryColor);
-        document.documentElement.style.setProperty(
-          '--brand-secondary',
-          value.branding.secondaryColor,
-        );
+        aplicarMarcaDoTenant(value.branding.primaryColor);
         // O tema da marca nao escurece a retaguarda: o design system e so claro.
         if (value.branding.faviconUrl) {
           const existing = document.querySelector("link[rel='icon']");
