@@ -1,4 +1,14 @@
-import { Button, Input, Select, Spinner, Status, Surface, Text } from '@synapse/sdl';
+import {
+  Button,
+  DataGridCabecalho,
+  DataGridCelula,
+  Input,
+  Select,
+  Spinner,
+  Status,
+  Surface,
+  Text,
+} from '@synapse/sdl';
 import type { ItemDeTabela, MeioDePagamento, TipoDeTabela } from '@synapse/types';
 import { MEIOS_DE_PAGAMENTO, ROTULO_DA_TABELA, ROTULO_DO_MEIO } from '@synapse/types';
 import { Check, Pencil, Plus, X } from 'lucide-react';
@@ -10,9 +20,13 @@ import { alterarItemDeTabela, listarTabela } from '../comum/cadastros.api';
  *  Grupos e Sub-Grupos de Fornecedores): código, nome e se está ativo. O código
  *  1 é o "GERAL" das fichas novas e fica sempre ativo.
  *
- *  Primeira tela no vocabulário do SDL: nenhuma altura, cor ou raio é decidido
- *  aqui. A linha usa a densidade compacta, a situação é ponto e texto — não
- *  pílula — e os botões trazem as hierarquias do sistema. */
+ *  Primeira tela no vocabulário do SDL (Fase 2) — já sem cor solta, uppercase
+ *  ou pílula antes de a fundação de DataGrid existir. A Fase 5.2 traz
+ *  cabeçalho e célula para os primitives compartilhados (`DataGridCabecalho`/
+ *  `DataGridCelula`), mas NÃO usa `classesDaLinha`: a linha aqui não abre
+ *  nada e não tem hover — cada ação é um botão próprio, não a linha inteira.
+ *  Forçar a gramática de linha clicável numa linha que não é clicável seria
+ *  pior do que não usar a fundação. */
 
 const DESCRICAO: Readonly<Record<TipoDeTabela, string>> = {
   cargos:
@@ -23,8 +37,6 @@ const DESCRICAO: Readonly<Record<TipoDeTabela, string>> = {
   'subgrupos-de-fornecedor': 'Subdivisão dos grupos de fornecedores.',
   'formas-de-pagamento': 'Como o cliente paga no Ponto de Vendas e no PDV.',
 };
-
-const CELULA = 'px-4 py-2';
 
 interface EdicaoDaLinha {
   readonly tipo: TipoDeTabela;
@@ -166,13 +178,13 @@ function Linha({
   );
 
   return (
-    <tr className="border-line-fina border-b last:border-0">
-      <td className={`${CELULA} w-20 text-right`}>
+    <tr className="border-hairline-light border-b last:border-0">
+      <DataGridCelula papel="data" alinhamento="direita" truncar={false} className="w-20">
         <Text variant="dado" tone="sutil">
           {item.codigo}
         </Text>
-      </td>
-      <td className={CELULA}>
+      </DataGridCelula>
+      <DataGridCelula papel="primary" truncar={false}>
         {editando ? (
           <CamposDaLinha
             tipo={tipo}
@@ -194,18 +206,18 @@ function Linha({
             {erro}
           </Text>
         ) : null}
-      </td>
+      </DataGridCelula>
       {tipo === 'formas-de-pagamento' ? (
-        <td className={CELULA}>
+        <DataGridCelula papel="secondary" truncar={false}>
           <Text variant="corpo" as="span">
             {item.meio ? ROTULO_DO_MEIO[item.meio] : '—'}
           </Text>
-        </td>
+        </DataGridCelula>
       ) : null}
-      <td className={CELULA}>
+      <DataGridCelula papel="status" truncar={false}>
         <Status tone={item.ativo ? 'ok' : 'neutro'}>{item.ativo ? 'Ativo' : 'Inativo'}</Status>
-      </td>
-      <td className={`${CELULA} text-right`}>
+      </DataGridCelula>
+      <DataGridCelula papel="action" alinhamento="direita" truncar={false}>
         <AcoesDaLinha
           item={item}
           tipo={tipo}
@@ -213,7 +225,7 @@ function Linha({
           aoRenomear={() => setEditando(true)}
           aoAlternarSituacao={() => void gravar({ nome: item.nome, ativo: !item.ativo })}
         />
-      </td>
+      </DataGridCelula>
     </tr>
   );
 }
@@ -228,24 +240,16 @@ function TabelaDeItens({
   readonly aoAlterar: (item: ItemDeTabela) => void;
 }) {
   return (
-    <table className="w-full min-w-[560px]">
+    <table className="w-full min-w-[560px] border-collapse">
       <thead>
-        <tr className="border-line-fina border-b text-left">
-          <th className={`${CELULA} text-right`}>
-            <Text variant="rotulo">Código</Text>
-          </th>
-          <th className={CELULA}>
-            <Text variant="rotulo">Nome</Text>
-          </th>
+        <tr className="border-hairline-light border-b">
+          <DataGridCabecalho id="codigo" rotulo="Código" alinhamento="direita" />
+          <DataGridCabecalho id="nome" rotulo="Nome" />
           {tipo === 'formas-de-pagamento' ? (
-            <th className={CELULA}>
-              <Text variant="rotulo">No caixa</Text>
-            </th>
+            <DataGridCabecalho id="meio" rotulo="No caixa" />
           ) : null}
-          <th className={CELULA}>
-            <Text variant="rotulo">Situação</Text>
-          </th>
-          <th className={CELULA} />
+          <DataGridCabecalho id="situacao" rotulo="Situação" />
+          <DataGridCabecalho id="acoes" rotulo="" />
         </tr>
       </thead>
       <tbody>
