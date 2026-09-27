@@ -439,6 +439,54 @@ dentro de `DataGridCelula`.
 Fora do inventário do web-erp: `apps/web-admin/src/app/App.tsx` (tabela de
 empresas do console administrativo, ainda em `@synapse/ui`).
 
+## Form Grammar v1 — CANDIDATE (Fase 6)
+
+Provada em dois pilotos (Purchasing e o formulário de Boletos). As peças
+vivem em `apps/web-erp/src/components/formulario/` e só sobem para o SDL
+quando uma terceira tela confirmar a forma. Nenhuma API nova no SDL.
+
+| Peça     | Regra                                                                                                                                                 |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| rótulo   | sempre `Field` (label real, `htmlFor`); nunca placeholder como rótulo; linhas repetidas têm o rótulo visível uma vez e `aria-label` com o nº da linha |
+| controle | `Input`/`NumberInput`/`Select`/`DocInput` do SDL, 36px; nada de `h-11`/`h-8` locais                                                                   |
+| largura  | vem do dado (`codigo`/`curto`/`medio`/`longo`/`resto`, em `larguras.ts`), não de grade de 12 colunas; a linha quebra inteira em 1280                  |
+| seção    | `Secao`: título + hairline, nunca caixa arredondada dentro de caixa                                                                                   |
+| leitura  | `ValoresDeLeitura`: dado consultivo em texto, legível e copiável — nunca `input disabled`                                                             |
+| ações    | `BarraDeAcoes` no fim da seção que a ação conclui; `primary` uma por seção, alternativas `quiet`/`secondary`, largura do próprio texto                |
+| erro     | local: `Field error`; de envio: uma linha ao lado da ação (`role="alert"`) — nunca input vermelho + caixa + toast                                     |
+| abas     | `Abas` (setas ←/→, `aria-controls`, sublinhado cobalto), herdadas do assistente fiscal                                                                |
+
+Não é comum aos dois pilotos (fica local): o "status line" único de Boletos
+(um só `message` serve emissão, segunda via e baixa, então ele mora entre o
+formulário e a tabela) e as linhas repetidas de campo de Purchasing.
+
+`MoneyInput` não foi usado de propósito: ele é `type="text"`, e os dois
+pilotos convertem o digitado com `Number(...)`, que devolve `NaN` para
+"12,50". Trocar o controle mudaria a regra de parse; fica como dívida
+(precisa de um parser de moeda compartilhado antes).
+
+## Overlays — taxonomia (Fase 6)
+
+| Tipo    | Para quê                                | Implementação real hoje                                                       |
+| ------- | --------------------------------------- | ----------------------------------------------------------------------------- |
+| Modal   | decisão curta e bloqueante              | `@synapse/ui` `Modal` (trap, Esc por pilha, devolve foco); credit `Dialogo`   |
+| Drawer  | contexto lateral sem perder a tela      | `@synapse/ui` `Drawer` (StockScreen); `GavetaDoCliente` duplica sem trap/role |
+| Janela  | espaço de trabalho persistente/complexo | `credit/janela/Janela` (arrasto, resize, maximizar, geometria por usuário)    |
+| Popover | escolha contextual pequena              | sem primitive; 4 implementações locais                                        |
+
+Onde o código não bate com a taxonomia (dívida, não corrigida nesta fase):
+cadastros, ficha do cliente, PDV e históricos são workspaces feitos sobre
+`Modal size="full" bare`; o credit `Dialogo` e a `GavetaDoCliente` não têm
+trap nem devolvem foco; 9 decisões ainda usam `window.confirm`.
+
+**Ficha de crédito.** O 7/5 da ficha ligava por breakpoint de VIEWPORT
+(`lg:`), mas a ficha vive numa Janela de 72% da tela: tabelas de 650–920px
+caíam em cartões de 312–527px (até 464px escondidos em 1280). Agora o layout
+segue a largura da própria ficha (`useLargura`, o mesmo da janela de
+análise): quatro quadrantes só quando cada um comporta a própria tabela
+(≥1760px, janela maximizada em 1920); abaixo disso, as partes empilham na
+largura inteira. A Janela passou a devolver o foco para quem a abriu.
+
 ## Migrando do que existe hoje
 
 | Legado                                   | Vai virar                  | Quando            |
