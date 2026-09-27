@@ -280,6 +280,47 @@ Persistência de estado de coluna (ordem/largura/visibilidade) deve ser
 injetada pelo consumidor — a fundação não conhece `currentUid()` nem
 `localStorage`, isso é decisão do app, como já é em `usePreferenciasDaFila`.
 
+### Fase 5.1 — dois consumidores novos, o que mudou e o que não mudou
+
+`StockIntelligenceScreen` (migrando o `components/DataTable.tsx` legado, hoje
+removido) e `HistoricoDoBalcao` (dentro de um `Modal` do `@synapse/ui`)
+prometidos como prova real da fundação fora da Fila e de Clientes.
+
+**Mudou (comprovado por uso real, não por preferência):**
+
+- `DataGridCabecalho` agora anuncia `aria-sort="none"` em colunas ordenáveis
+  que não são a ativa — antes o atributo era só omitido. Só apareceu como
+  problema real quando uma tabela com 6 colunas ordenáveis existiu (a fila só
+  tem uma "atual" cada vez, então nunca expôs essa lacuna).
+- `DataGridCelula` ganhou `truncar` (default `true`): a fila tem colunas de
+  largura fixa (`table-fixed`), então cortar em reticências sempre fez
+  sentido; Clientes e Inteligência de Estoque não têm largura fixa, e forçar
+  `truncate whitespace-nowrap` ali mudaria como o texto quebra. `truncar` não
+  existia até Clientes expor a diferença — StockIntelligence só confirmou que
+  era a decisão certa.
+- `CelulaDeDinheiro` (em `apps/web-erp/src/components/datagrid/`, não no SDL)
+  teve seu segundo consumidor real (`HistoricoDoBalcao`) sem precisar de
+  nenhuma mudança — sinal de que a peça já estava certa desde Clientes.
+
+**Não mudou (testado e decidido não extrair):**
+
+- **Visibilidade de coluna.** Agora existem dois consumidores reais (Fila e
+  StockIntelligence), o que a tornaria uma candidata segundo a regra de "dois
+  consumidores". Mas os _shapes_ são genuinamente diferentes: a Fila guarda
+  visibilidade **junto** com ordem e persiste tudo por `uid`
+  (`usePreferenciasDaFila`); StockIntelligence usa um `Set` efêmero, sem
+  persistência, sem conceito de ordem. Unificar agora forçaria uma das duas a
+  herdar uma semântica que não tinha (persistência que StockIntelligence
+  nunca teve, ou desacoplar ordem de visibilidade na Fila, que sempre as
+  tratou juntas). Ficou local nos dois — a próxima tela com visibilidade é
+  quem decide se o formato comum finalmente aparece.
+- **Ordenação de 3 estados.** StockIntelligence tem um "nenhuma ordenação"
+  que a Fila nunca teve (lá sempre existe uma coluna ordenada, com padrão de
+  fábrica). `proximaOrdenacao` da fundação continua com o ciclo de 2 estados
+  da Fila; o ciclo de 3 estados ficou local
+  (`stock-intelligence/colunas.ts`) — forçar os dois no mesmo utilitário
+  apagaria um comportamento real que a tela já tinha antes da migração.
+
 ## Migrando do que existe hoje
 
 | Legado                                   | Vai virar                  | Quando            |

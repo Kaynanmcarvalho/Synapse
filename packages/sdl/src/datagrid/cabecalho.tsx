@@ -49,7 +49,15 @@ export function DataGridCabecalho<TId extends string>({
   return (
     <th
       scope="col"
-      aria-sort={ordenada ? (ordenacao?.direcao === 'asc' ? 'ascending' : 'descending') : undefined}
+      aria-sort={
+        !ordenavel
+          ? undefined
+          : ordenada
+            ? ordenacao?.direcao === 'asc'
+              ? 'ascending'
+              : 'descending'
+            : 'none'
+      }
       className={cn(
         'text-caption text-ink-medio whitespace-nowrap px-3 py-2.5 font-medium',
         ALINHAMENTO[alinhamento],

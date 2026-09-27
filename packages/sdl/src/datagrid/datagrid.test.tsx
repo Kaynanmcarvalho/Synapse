@@ -111,6 +111,24 @@ describe('DataGridCelula', () => {
 });
 
 describe('DataGridCabecalho', () => {
+  it('ordenável mas não é a coluna ativa anuncia aria-sort="none"', () => {
+    montar(
+      <table>
+        <thead>
+          <tr>
+            <DataGridCabecalho
+              id="cidade"
+              rotulo="Cidade"
+              ordenacao={{ coluna: 'nome', direcao: 'asc' }}
+              aoOrdenar={() => {}}
+            />
+          </tr>
+        </thead>
+      </table>,
+    );
+    expect(caixa.querySelector('th')?.getAttribute('aria-sort')).toBe('none');
+  });
+
   it('sem aoOrdenar, é só texto, sem aria-sort', () => {
     montar(
       <table>
