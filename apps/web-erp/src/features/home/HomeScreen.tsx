@@ -1,5 +1,6 @@
-import { Button, Divider, Kbd, Status, Surface, Text } from '@synapse/sdl';
+import { Button, Divider, IndiceOperacional, Kbd, Status, Surface, Text } from '@synapse/sdl';
 import { ArrowRight, RotateCw } from 'lucide-react';
+import { Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { useUsuario } from '../../app/auth/AuthContext';
 import { todosOsItens } from '../../app/menu/menu.utils';
@@ -39,14 +40,33 @@ function Cabecalho({ nome }: { readonly nome: string }) {
   );
 }
 
+/** "R$" separado do valor (§16 da Fase 4.2): o prefixo e contexto, o numero e
+ *  o dado — nao tem por que pesar a mesma coisa. So separa quando o valor de
+ *  fato comeca com "R$ " (contagem simples como "6" continua uma peca so). */
+const separarMoeda = (
+  valor: string,
+): { readonly prefixo: string | null; readonly numero: string } =>
+  valor.startsWith('R$ ')
+    ? { prefixo: 'R$', numero: valor.slice(3) }
+    : { prefixo: null, numero: valor };
+
+/** A coluna do valor e as das linhas vizinhas so alinham de verdade se
+ *  dividirem os MESMOS trilhos — por isso cada linha e um `grid-cols-subgrid`
+ *  dentro do grid que `SecaoDeExcecoes` declara, em vez de um grid proprio com
+ *  uma largura fixa adivinhada (a origem da sobreposicao que a auditoria da
+ *  Fase 4.1 encontrou: "R$ 5.259,00" nao cabia nos 3.5rem reservados). `auto`
+ *  no trilho do valor cresce sozinho ate o maior valor da lista, para
+ *  "R$ 500,00" e "R$ 1.250.000,00" alinharem sem estourar. */
 function LinhaDeExcecao({ aviso }: { readonly aviso: Aviso }) {
+  const { prefixo, numero } = separarMoeda(aviso.valor);
   return (
     <Link
       to={aviso.caminho}
-      className="focus-visible:ring-primary/70 rounded-minimo hover:bg-surface-hover duration-instantaneo group grid grid-cols-[3.5rem_1fr_auto_1rem] items-center gap-x-3 py-2.5 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset"
+      className="focus-visible:ring-primary/70 rounded-minimo hover:bg-surface-hover duration-instantaneo group col-span-4 grid grid-cols-subgrid items-center py-2.5 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset"
     >
-      <Text variant="dado" className="text-heading-sm text-right">
-        {aviso.valor}
+      <Text variant="dado" className="text-heading-sm whitespace-nowrap text-right font-medium">
+        {prefixo && <span className="text-ink-apoio text-body-sm mr-1 font-normal">{prefixo}</span>}
+        {numero}
       </Text>
       <Status
         tone={aviso.tom === 'critico' ? 'perigo' : 'atencao'}
@@ -114,25 +134,26 @@ function SecaoDeExcecoes({
             </div>
           )}
 
-          <div className="mt-3">
-            {estado.avisos.length > 0 &&
-              estado.avisos.map((aviso, indice) => (
-                <div key={aviso.id}>
-                  {indice > 0 && <Divider />}
+          {estado.avisos.length > 0 && (
+            <div className="mt-3 grid grid-cols-[auto_1fr_auto_1rem] gap-x-3">
+              {estado.avisos.map((aviso, indice) => (
+                <Fragment key={aviso.id}>
+                  {indice > 0 && <Divider className="col-span-4" />}
                   <LinhaDeExcecao aviso={aviso} />
-                </div>
+                </Fragment>
               ))}
-            {estado.avisos.length === 0 && !estado.algoIndisponivel && (
-              <Text variant="corpoSecundario" className="block py-3">
-                Nenhuma pendência crítica no momento.
-              </Text>
-            )}
-            {estado.avisos.length === 0 && estado.algoIndisponivel && (
-              <Text variant="corpoSecundario" className="block py-3">
-                Não foi possível confirmar todas as pendências agora.
-              </Text>
-            )}
-          </div>
+            </div>
+          )}
+          {estado.avisos.length === 0 && !estado.algoIndisponivel && (
+            <Text variant="corpoSecundario" className="mt-3 block py-3">
+              Nenhuma pendência crítica no momento.
+            </Text>
+          )}
+          {estado.avisos.length === 0 && estado.algoIndisponivel && (
+            <Text variant="corpoSecundario" className="mt-3 block py-3">
+              Não foi possível confirmar todas as pendências agora.
+            </Text>
+          )}
 
           {estado.calculando && (
             <Text variant="legenda" tone="apoio" className="mt-2 block">
@@ -167,23 +188,21 @@ function AcessoRapido() {
       <Text id="titulo-acesso-rapido" variant="tituloSecao" as="h2">
         Acesso rápido
       </Text>
-      <div className="mt-3">
+      <div className="mt-3 grid grid-cols-[auto_1fr_auto] gap-x-3">
         {atalhos.map(({ rotulo, caminho, atalho }, indice) => (
-          <div key={caminho}>
-            {indice > 0 && <Divider />}
+          <Fragment key={caminho}>
+            {indice > 0 && <Divider className="col-span-3" />}
             <Link
               to={caminho}
-              className="focus-visible:ring-primary/70 rounded-minimo hover:bg-surface-hover duration-instantaneo grid grid-cols-[1.75rem_1fr_auto] items-center gap-x-3 py-2.5 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset"
+              className="focus-visible:ring-primary/70 rounded-minimo hover:bg-surface-hover duration-instantaneo group col-span-3 grid grid-cols-subgrid items-center py-2.5 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset"
             >
-              <Text variant="legenda" tone="apoio" className="tabular-nums">
-                {String(indice + 1).padStart(2, '0')}
-              </Text>
+              <IndiceOperacional posicao={indice + 1} />
               <Text variant="corpo" className="truncate">
                 {rotulo}
               </Text>
               {atalho && <Kbd className="hidden sm:inline-flex">{atalho}</Kbd>}
             </Link>
-          </div>
+          </Fragment>
         ))}
       </div>
     </section>
@@ -209,12 +228,21 @@ export function HomeScreen() {
     >
       <Cabecalho nome={usuario.nome.split(' ')[0] || usuario.nome} />
       <Divider />
-      <div className="py-6">
-        <SecaoDeExcecoes estado={estado} onRecarregar={() => void recarregar()} />
-      </div>
-      <Divider />
-      <div className="py-6">
-        <AcessoRapido />
+      {/* Ate 1440 a Home continua uma coluna so, densa e linear (§29 da Fase
+       *  4.2: nao inventar breakpoint por estetica). So a partir de 1600px
+       *  (`ampla:`, o mesmo nome que ja nomeava essa largura no SDL) sobra
+       *  espaco de verdade — em vez de deixar a coluna esticada terminar cedo
+       *  num oceano vazio, Requer Atencao vira a regiao principal e Acesso
+       *  Rapido passa a compor como indice lateral, separado por uma linha
+       *  vertical (a mesma gramatica de divisor, so no outro eixo). */}
+      <div className="ampla:grid ampla:grid-cols-[1.4fr_1fr] ampla:items-start ampla:gap-x-10">
+        <div className="py-6">
+          <SecaoDeExcecoes estado={estado} onRecarregar={() => void recarregar()} />
+        </div>
+        <Divider className="ampla:hidden" />
+        <div className="ampla:border-line-fina ampla:border-l ampla:pl-10 py-6">
+          <AcessoRapido />
+        </div>
       </div>
     </Surface>
   );
