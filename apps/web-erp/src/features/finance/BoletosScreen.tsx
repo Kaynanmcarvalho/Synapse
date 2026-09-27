@@ -1,21 +1,125 @@
+/* eslint-disable max-lines, max-lines-per-function */
+import {
+  Button,
+  classesDaLinha,
+  DataGridCabecalho,
+  DataGridCelula,
+  Status,
+  Text,
+  type TomDeStatus,
+} from '@synapse/sdl';
 import { useEffect, useRef, useState } from 'react';
+import { CelulaDeDinheiro } from '../../components/datagrid/CelulaDeDinheiro';
 import { apiRequest } from '../../lib/dev-auth';
+import { formatarData, formatarMoeda } from '../customers/formato';
+import { type ChargeStatus, podeBaixarManualmente, podeCancelar } from './regrasDoBoleto';
 
 interface Account {
   id: string;
   apelido: string;
   environment: string;
 }
+
 interface Charge {
   id: string;
   amountCentavos: number;
   dueDate: string;
-  status: string;
+  status: ChargeStatus;
   installment: number;
   bank: { linhaDigitavel: string; pdfUrl: string | null } | null;
 }
-const money = (value: number) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value / 100);
+
+const ROTULO_DO_STATUS: Record<ChargeStatus, string> = {
+  PENDING: 'Pendente',
+  REGISTERED: 'Registrado',
+  PAID: 'Pago',
+  OVERDUE: 'Vencido',
+  CANCELLED: 'Cancelado',
+};
+
+/** Os 5 status já encaixam nos tons que o Status do SDL já tem — pendente e
+ *  vencido são literalmente o mesmo conceito usado na fila de crédito e na
+ *  Home ("contas a receber vencidas"). Nenhum tom novo foi necessário. */
+const TOM_DO_STATUS: Record<ChargeStatus, TomDeStatus> = {
+  PENDING: 'pendente',
+  REGISTERED: 'info',
+  PAID: 'ok',
+  OVERDUE: 'vencido',
+  CANCELLED: 'neutro',
+};
+
+export function LinhaDoBoleto({
+  charge,
+  busy,
+  aoPedirSegundaVia,
+  aoIniciarBaixa,
+  aoCancelar,
+}: {
+  readonly charge: Charge;
+  readonly busy: boolean;
+  readonly aoPedirSegundaVia: (charge: Charge) => void;
+  readonly aoIniciarBaixa: (charge: Charge) => void;
+  readonly aoCancelar: (charge: Charge) => void;
+}) {
+  return (
+    <tr className={classesDaLinha({ clicavel: false, focoComAnel: false, hairlineNaLinha: true })}>
+      <DataGridCelula papel="data" truncar={false}>
+        <Text variant="dado">{charge.installment}</Text>
+      </DataGridCelula>
+      <DataGridCelula papel="data" truncar={false}>
+        <Text variant="dado">{formatarData(charge.dueDate)}</Text>
+      </DataGridCelula>
+      <CelulaDeDinheiro
+        truncar={false}
+        peso="forte"
+        valorFormatado={formatarMoeda(charge.amountCentavos)}
+      />
+      <DataGridCelula papel="status" truncar={false}>
+        <Status tone={TOM_DO_STATUS[charge.status]}>{ROTULO_DO_STATUS[charge.status]}</Status>
+      </DataGridCelula>
+      <DataGridCelula papel="action" truncar={false}>
+        <div className="flex items-center gap-1">
+          {/* Segunda via — SECONDARY: segura, frequente, nunca muda estado. */}
+          <Button
+            variant="quiet"
+            density="compacta"
+            disabled={busy || !charge.bank}
+            onClick={() => aoPedirSegundaVia(charge)}
+          >
+            Segunda via
+          </Button>
+          {/* Baixa manual — PRIMARY: a ação de negócio que move o boleto para
+           *  frente (recebido). Sinalizada por cor, não por preenchimento —
+           *  não deve dominar a linha. */}
+          {podeBaixarManualmente(charge.status) && (
+            <Button
+              variant="quiet"
+              density="compacta"
+              className="text-primary"
+              disabled={busy}
+              onClick={() => aoIniciarBaixa(charge)}
+            >
+              Baixa manual
+            </Button>
+          )}
+          {/* Cancelar — DESTRUCTIVE: só o tom muda (perigo só no hover/foco);
+           *  a confirmação nativa já existente não foi alterada. */}
+          {podeCancelar(charge.status) && (
+            <Button
+              variant="quiet"
+              density="compacta"
+              className="text-status-perigo hover:bg-status-perigo-fundo"
+              disabled={busy}
+              onClick={() => aoCancelar(charge)}
+            >
+              Cancelar
+            </Button>
+          )}
+        </div>
+      </DataGridCelula>
+    </tr>
+  );
+}
 
 export function BoletosScreen() {
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -177,12 +281,12 @@ export function BoletosScreen() {
           </button>
         </fieldset>
       </form>
-      <p role="status" className="whitespace-pre-wrap text-sm">
+      <Text variant="corpo" as="p" role="status" className="whitespace-pre-wrap">
         {busy ? 'Processando…' : message}
-      </p>
+      </Text>
       {selected && (
         <form
-          className="flex flex-wrap gap-3 rounded border p-4"
+          className="border-hairline-light rounded-controle flex flex-wrap items-center gap-3 border p-4"
           onSubmit={(e) => {
             e.preventDefault();
             void run(async () => {
@@ -199,7 +303,9 @@ export function BoletosScreen() {
             });
           }}
         >
-          <p>Baixa manual de {money(selected.amountCentavos)}</p>
+          <Text variant="corpo" as="span">
+            Baixa manual de {formatarMoeda(selected.amountCentavos)}
+          </Text>
           <input
             required
             minLength={3}
@@ -207,77 +313,53 @@ export function BoletosScreen() {
             placeholder="Justificativa"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            className="rounded border bg-transparent p-2"
+            className="border-line-fina h-controle-padrao rounded-controle text-body-sm focus:border-primary focus:ring-primary/30 border bg-transparent px-3 outline-none focus:ring-2"
           />
-          <button disabled={busy} className="rounded bg-blue-600 p-2 text-white">
+          <Button variant="primary" disabled={busy}>
             Confirmar recebimento
-          </button>
-          <button type="button" onClick={() => setSelected(null)}>
+          </Button>
+          <Button variant="quiet" type="button" onClick={() => setSelected(null)}>
             Voltar
-          </button>
+          </Button>
         </form>
       )}
-      <div className="overflow-x-auto rounded-xl border">
-        <table className="w-full min-w-[720px] text-left text-sm">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[720px] border-collapse text-left">
           <thead>
-            <tr>
-              {['Parcela', 'Vencimento', 'Valor', 'Status', 'Ações'].map((s) => (
-                <th key={s} className="p-3">
-                  {s}
-                </th>
-              ))}
+            <tr className="border-hairline-light bg-surface-soft border-b">
+              <DataGridCabecalho id="parcela" rotulo="Parcela" />
+              <DataGridCabecalho id="vencimento" rotulo="Vencimento" />
+              <DataGridCabecalho id="valor" rotulo="Valor" alinhamento="direita" />
+              <DataGridCabecalho id="status" rotulo="Status" />
+              <DataGridCabecalho id="acoes" rotulo="Ações" />
             </tr>
           </thead>
           <tbody>
             {charges.map((charge) => (
-              <tr key={charge.id} className="border-t">
-                <td className="p-3">{charge.installment}</td>
-                <td>{charge.dueDate}</td>
-                <td>{money(charge.amountCentavos)}</td>
-                <td>{charge.status}</td>
-                <td className="flex gap-3 p-3">
-                  <button
-                    disabled={busy || !charge.bank}
-                    onClick={() =>
-                      void run(async () => {
-                        const bank = await apiRequest<{ linhaDigitavel: string }>(
-                          `/finance/boletos/${charge.id}/second-copy`,
-                        );
-                        setMessage(`Linha digitável: ${bank.linhaDigitavel}`);
-                      })
-                    }
-                  >
-                    Segunda via
-                  </button>
-                  {!['PAID', 'CANCELLED', 'PENDING'].includes(charge.status) && (
-                    <button
-                      disabled={busy}
-                      onClick={() => {
-                        setSelected(charge);
-                        setNote('');
-                      }}
-                    >
-                      Baixa manual
-                    </button>
-                  )}
-                  {!['PAID', 'CANCELLED'].includes(charge.status) && (
-                    <button
-                      disabled={busy}
-                      onClick={() => {
-                        if (window.confirm('Cancelar este boleto e o título vinculado?'))
-                          void run(async () => {
-                            await apiRequest(`/finance/boletos/${charge.id}/cancel`, {
-                              method: 'POST',
-                            });
-                            await refresh();
-                          });
-                      }}
-                    >
-                      Cancelar
-                    </button>
-                  )}
-                </td>
-              </tr>
+              <LinhaDoBoleto
+                key={charge.id}
+                charge={charge}
+                busy={busy}
+                aoPedirSegundaVia={(c) =>
+                  void run(async () => {
+                    const bank = await apiRequest<{ linhaDigitavel: string }>(
+                      `/finance/boletos/${c.id}/second-copy`,
+                    );
+                    setMessage(`Linha digitável: ${bank.linhaDigitavel}`);
+                  })
+                }
+                aoIniciarBaixa={(c) => {
+                  setSelected(c);
+                  setNote('');
+                }}
+                aoCancelar={(c) => {
+                  if (window.confirm('Cancelar este boleto e o título vinculado?'))
+                    void run(async () => {
+                      await apiRequest(`/finance/boletos/${c.id}/cancel`, { method: 'POST' });
+                      await refresh();
+                    });
+                }}
+              />
             ))}
           </tbody>
         </table>
