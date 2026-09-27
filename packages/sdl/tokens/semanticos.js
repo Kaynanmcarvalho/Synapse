@@ -79,15 +79,19 @@ export const superficie = {
   inversaSuave: superficieCrua.escuroElevado,
 };
 
-/** Texto, do mais forte ao mais apagado. `sutil` (#8d969e) tem contraste 2,9:1
- *  sobre branco: serve para rotulo curto e apoio, nunca para leitura corrida. */
+/** Texto, do mais forte ao mais apagado. Todo papel aqui e TEXTO de leitura
+ *  (vazio, dica, linha secundaria, codigo leading, placeholder) e passa AA:
+ *  `sutil` era #8d969e (3,0:1) e foi para `neutro[450]` (5,4:1 no branco,
+ *  4,6:1 no hover de linha) na Fase 6 — 270+ usos como `text-stone`/`text-ink-sutil`
+ *  eram texto real, nao decoracao. So `desabilitado` fica abaixo de AA, como
+ *  permite a WCAG para controle inativo. */
 export const conteudo = {
   forte: neutro[900],
   padrao: neutro[800],
   medio: neutro[700],
   apoio: neutro[600],
   fraco: neutro[500],
-  sutil: neutro[400],
+  sutil: neutro[450],
   desabilitado: neutro[300],
   inverso: superficieCrua.branco,
   naMarca: superficieCrua.branco,

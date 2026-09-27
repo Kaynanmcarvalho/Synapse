@@ -16,6 +16,10 @@ export const neutro = {
   200: '#e2e2e7',
   300: '#c9c9cd',
   400: '#8d969e',
+  /** Fase 6: o cinza de TEXTO mais claro que ainda passa AA em todo fundo de
+   *  texto do sistema (5,4:1 no branco, 4,6:1 no hover de linha). O `400`
+   *  continua para o que nao e texto (ponto do status neutro). */
+  450: '#636b73',
   500: '#5c5e60',
   600: '#505a63',
   700: '#3a3d40',
