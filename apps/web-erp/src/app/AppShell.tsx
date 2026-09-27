@@ -107,8 +107,8 @@ export function AppShell() {
 
   return (
     <ShellContext.Provider value={casca}>
-      <div className="bg-canvas-light text-ink min-h-screen">
-        <header className="border-hairline-light bg-canvas-light/95 sticky top-0 z-30 border-b backdrop-blur-xl">
+      <div className="bg-surface-tela text-ink min-h-screen">
+        <header className="border-hairline-light bg-surface-tela/95 sticky top-0 z-30 border-b backdrop-blur-xl">
           {/* Application Header — 48px. So a estrutura externa muda aqui: marca,
            *  busca, atalhos, notificacoes e usuario. O conteudo da Command
            *  Palette continua o mesmo. */}
