@@ -1,14 +1,32 @@
 /* eslint-disable max-lines, max-lines-per-function */
 import {
+  Button,
   classesDaLinha,
   DataGridCabecalho,
   DataGridCelula,
+  Divider,
+  Field,
+  Input,
+  NumberInput,
   Status,
+  Surface,
+  SynapseSignal,
   Text,
   type TomDeStatus,
 } from '@synapse/sdl';
+import { Plus, RotateCw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { CelulaDeDinheiro } from '../../components/datagrid/CelulaDeDinheiro';
+import {
+  Abas,
+  AreaDeTexto,
+  BarraDeAcoes,
+  LinhaDeCampos,
+  PainelDeAba,
+  Secao,
+  ValoresDeLeitura,
+} from '../../components/formulario/Formulario';
+import { LARGURA_DE_CAMPO } from '../../components/formulario/larguras';
 import { formatarMoeda } from '../customers/formato';
 import {
   addQuote,
@@ -21,6 +39,13 @@ import {
   selectSupplier,
   type PurchaseOrder,
 } from './purchasing.api';
+
+/** Compras e recebimento — piloto 1 da Form Grammar (Fase 6).
+ *
+ *  Só apresentação mudou. Toda chamada de API, toda validação local, o parse
+ *  dos valores digitados (`Number(...)`, centavos por `* 100`) e as regras de
+ *  quando cada parte aparece (status do pedido, "duas cotações para aprovar")
+ *  são exatamente as de antes. */
 
 const money = formatarMoeda;
 
@@ -44,6 +69,8 @@ const TOM_DO_STATUS: Record<PurchaseOrder['status'], TomDeStatus> = {
   CANCELADO: 'neutro',
 };
 
+const codigoDoPedido = (id: string) => id.slice(0, 8);
+
 function LoginPanel({ onSignedIn }: { readonly onSignedIn: () => void }) {
   const [email, setEmail] = useState('teste.rbac@synapse.dev');
   const [password, setPassword] = useState('Senha123!');
@@ -64,35 +91,30 @@ function LoginPanel({ onSignedIn }: { readonly onSignedIn: () => void }) {
   };
 
   return (
-    <main className="bg-canvas-light flex min-h-screen items-center justify-center p-8">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-sm font-bold text-slate-900">Entrar (emulador local)</h2>
+    <Surface variant="tela" as="main" className="flex min-h-screen items-center justify-center p-8">
+      <Surface variant="painel" className="w-full max-w-sm p-6">
+        <Text variant="tituloCartao" as="h2">
+          Entrar (emulador local)
+        </Text>
         <div className="mt-4 flex flex-col gap-3">
-          <input
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="e-mail"
-            className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            placeholder="senha"
-            className="h-11 rounded-xl border border-slate-200 px-3 text-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-          />
-          {error && <p className="text-xs text-red-600">{error}</p>}
-          <button
-            type="button"
-            onClick={submit}
-            disabled={loading}
-            className="h-11 rounded-xl bg-blue-600 text-sm font-bold text-white transition hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? 'Entrando…' : 'Entrar'}
-          </button>
+          <Field label="E-mail">
+            <Input value={email} onChange={(event) => setEmail(event.target.value)} />
+          </Field>
+          <Field label="Senha">
+            <Input
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </Field>
+          <BarraDeAcoes mensagem={error}>
+            <Button variant="primary" loading={loading} onClick={submit}>
+              Entrar
+            </Button>
+          </BarraDeAcoes>
         </div>
-      </div>
-    </main>
+      </Surface>
+    </Surface>
   );
 }
 
@@ -100,6 +122,21 @@ interface ItemRow {
   productId: string;
   quantityOrdered: string;
 }
+
+/** Rótulo de coluna para linhas repetidas de campo: o rótulo visível fica uma
+ *  vez só, em cima; cada controle leva o próprio `aria-label` com o número da
+ *  linha, para o leitor de tela não ouvir "Produto, Produto, Produto". */
+const RotuloDeColuna = ({
+  children,
+  className,
+}: {
+  readonly children: string;
+  readonly className: string;
+}) => (
+  <Text variant="rotulo" aria-hidden="true" className={className}>
+    {children}
+  </Text>
+);
 
 function NewOrderForm({
   branchId,
@@ -141,61 +178,90 @@ function NewOrderForm({
   };
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-      <h3 className="text-sm font-bold text-slate-900">Novo pedido de compra</h3>
-      <div className="mt-3 flex items-center gap-2">
-        <span className="text-xs font-semibold text-slate-500">Depósito</span>
-        <input
-          value={warehouseId}
-          onChange={(event) => setWarehouseId(event.target.value)}
-          className="h-9 flex-1 rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-500"
-        />
+    <Secao titulo="Novo pedido de compra" descricao="Itens e quantidades; o preço vem da cotação.">
+      <Field label="Depósito" className={LARGURA_DE_CAMPO.curto}>
+        <Input value={warehouseId} onChange={(event) => setWarehouseId(event.target.value)} />
+      </Field>
+      <div className="mt-4 flex gap-3">
+        <RotuloDeColuna className="flex-1">Produto</RotuloDeColuna>
+        <RotuloDeColuna className="w-28 text-right">Quantidade</RotuloDeColuna>
       </div>
-      <div className="mt-3 space-y-2">
+      <div className="mt-1.5 space-y-2">
         {rows.map((row, index) => (
-          <div key={index} className="flex items-center gap-2">
-            <input
+          <div key={index} className="flex gap-3">
+            <Input
+              aria-label={`Produto do item ${index + 1}`}
               value={row.productId}
               onChange={(event) => setRow(index, { productId: event.target.value })}
-              placeholder="id do produto"
-              className="h-9 flex-1 rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-500"
+              placeholder="Código do produto"
+              className="flex-1"
             />
-            <input
+            <NumberInput
+              aria-label={`Quantidade do item ${index + 1}`}
               value={row.quantityOrdered}
               onChange={(event) => setRow(index, { quantityOrdered: event.target.value })}
-              placeholder="quantidade"
-              type="number"
               min={1}
-              className="h-9 w-32 rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-blue-500"
+              className="w-28"
             />
           </div>
         ))}
       </div>
-      <div className="mt-3 flex items-center justify-between">
-        <button
-          type="button"
+      <BarraDeAcoes mensagem={error}>
+        <Button
+          variant="quiet"
           onClick={() => setRows((current) => [...current, { productId: '', quantityOrdered: '' }])}
-          className="text-xs font-bold text-blue-600 hover:text-blue-800"
         >
-          + adicionar item
-        </button>
-        <button
-          type="button"
-          onClick={submit}
-          disabled={saving}
-          className="h-9 rounded-lg bg-slate-950 px-4 text-xs font-bold text-white transition hover:bg-blue-600 disabled:opacity-50"
-        >
-          {saving ? 'Criando…' : 'Criar pedido'}
-        </button>
-      </div>
-      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
-    </div>
+          <Plus size={15} aria-hidden="true" /> Adicionar item
+        </Button>
+        <Button variant="primary" loading={saving} onClick={submit}>
+          Criar pedido
+        </Button>
+      </BarraDeAcoes>
+    </Secao>
   );
 }
 
 interface QuoteRow {
   productId: string;
   unitCost: string;
+}
+
+function ItensDoPedido({ order }: { readonly order: PurchaseOrder }) {
+  return (
+    <table className="w-full border-collapse text-left">
+      <thead>
+        <tr className="border-hairline-light border-b">
+          <DataGridCabecalho id="produto" rotulo="Produto" />
+          <DataGridCabecalho id="pedido" rotulo="Pedido" alinhamento="direita" />
+          <DataGridCabecalho id="recebido" rotulo="Recebido" alinhamento="direita" />
+          <DataGridCabecalho id="custo" rotulo="Custo" alinhamento="direita" />
+        </tr>
+      </thead>
+      <tbody>
+        {order.items.map((item) => (
+          <tr
+            key={item.productId}
+            className={classesDaLinha({ clicavel: false, focoComAnel: false })}
+          >
+            <DataGridCelula papel="primary" truncar={false}>
+              <Text variant="dado">{item.productId}</Text>
+            </DataGridCelula>
+            <DataGridCelula papel="data" alinhamento="direita" truncar={false}>
+              <Text variant="dado">{item.quantityOrdered}</Text>
+            </DataGridCelula>
+            <DataGridCelula papel="data" alinhamento="direita" truncar={false}>
+              <Text variant="dado">{item.quantityReceived}</Text>
+            </DataGridCelula>
+            <CelulaDeDinheiro
+              truncar={false}
+              peso="normal"
+              valorFormatado={item.unitCostCentavos > 0 ? money(item.unitCostCentavos) : '—'}
+            />
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
 }
 
 function OrderDetail({
@@ -317,226 +383,303 @@ function OrderDetail({
     }
   };
 
+  const emCotacao = order.status === 'RASCUNHO' || order.status === 'EM_COTACAO';
+  const emRecebimento = order.status === 'APROVADO' || order.status === 'RECEBIDO_PARCIAL';
+  const idDasAbas = `recebimento-${order.id}`;
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold text-slate-900">Pedido {order.id.slice(0, 8)}</h3>
-        <Status tone={TOM_DO_STATUS[order.status]}>{STATUS_LABEL[order.status]}</Status>
-      </div>
-
-      <table className="mt-3 w-full border-collapse text-left">
-        <thead>
-          <tr className="border-hairline-light border-b">
-            <DataGridCabecalho id="produto" rotulo="Produto" />
-            <DataGridCabecalho id="pedido" rotulo="Pedido" alinhamento="direita" />
-            <DataGridCabecalho id="recebido" rotulo="Recebido" alinhamento="direita" />
-            <DataGridCabecalho id="custo" rotulo="Custo" alinhamento="direita" />
-          </tr>
-        </thead>
-        <tbody>
-          {order.items.map((item) => (
-            <tr
-              key={item.productId}
-              className={classesDaLinha({ clicavel: false, focoComAnel: false })}
-            >
-              <DataGridCelula papel="primary" truncar={false}>
-                <Text variant="dado">{item.productId}</Text>
-              </DataGridCelula>
-              <DataGridCelula papel="data" alinhamento="direita" truncar={false}>
-                <Text variant="dado">{item.quantityOrdered}</Text>
-              </DataGridCelula>
-              <DataGridCelula papel="data" alinhamento="direita" truncar={false}>
-                <Text variant="dado">{item.quantityReceived}</Text>
-              </DataGridCelula>
-              <CelulaDeDinheiro
-                truncar={false}
-                peso="normal"
-                valorFormatado={item.unitCostCentavos > 0 ? money(item.unitCostCentavos) : '—'}
-              />
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {(order.status === 'RASCUNHO' || order.status === 'EM_COTACAO') && (
-        <div className="mt-5 rounded-xl bg-slate-50 p-4">
-          <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-            Cotações ({order.quotes.length})
-          </p>
-          {totals.length > 0 && (
-            <ul className="mt-2 space-y-1.5">
-              {totals
-                .sort((a, b) => a.total - b.total)
-                .map((quote) => (
-                  <li
-                    key={quote.supplierId}
-                    className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-xs"
-                  >
-                    <span className="font-semibold text-slate-700">
-                      {quote.supplierId} · {quote.leadDays}d
-                    </span>
-                    <span className="flex items-center gap-2">
-                      <strong className="text-slate-900">{money(quote.total)}</strong>
-                      <button
-                        type="button"
-                        disabled={busy || order.quotes.length < 2}
-                        onClick={() => approve(quote.supplierId)}
-                        className="rounded-md bg-slate-950 px-2 py-1 text-[10px] font-bold text-white transition hover:bg-blue-600 disabled:opacity-40"
-                      >
-                        Aprovar
-                      </button>
-                    </span>
-                  </li>
-                ))}
-            </ul>
-          )}
-          {order.quotes.length < 2 && (
-            <p className="mt-2 text-[11px] text-amber-700">
-              Precisa de pelo menos duas cotações para aprovar (§40).
-            </p>
-          )}
-
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <input
-              value={supplierId}
-              onChange={(event) => setSupplierId(event.target.value)}
-              placeholder="id do fornecedor"
-              className="h-9 rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-blue-500"
-            />
-            <input
-              value={leadDays}
-              onChange={(event) => setLeadDays(event.target.value)}
-              placeholder="lead time (dias)"
-              type="number"
-              className="h-9 rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-blue-500"
-            />
-          </div>
-          <div className="mt-2 space-y-1.5">
-            {quoteRows.map((row, index) => (
-              <div key={row.productId} className="flex items-center gap-2">
-                <span className="w-32 truncate text-[11px] text-slate-500">{row.productId}</span>
-                <input
-                  value={row.unitCost}
-                  onChange={(event) =>
-                    setQuoteRows((current) =>
-                      current.map((item, i) =>
-                        i === index ? { ...item, unitCost: event.target.value } : item,
-                      ),
-                    )
-                  }
-                  placeholder="preço unitário (R$)"
-                  type="number"
-                  className="h-8 flex-1 rounded-lg border border-slate-200 px-2 text-xs outline-none focus:border-blue-500"
-                />
-              </div>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={submitQuote}
-            disabled={busy}
-            className="mt-3 h-9 w-full rounded-lg bg-white text-xs font-bold text-blue-600 ring-1 ring-inset ring-blue-200 transition hover:bg-blue-50 disabled:opacity-50"
-          >
-            Enviar cotação
-          </button>
+    <Surface variant="painel" as="article" aria-label={`Pedido ${codigoDoPedido(order.id)}`}>
+      <header className="flex flex-wrap items-start justify-between gap-4 px-5 pb-4 pt-5">
+        <div className="min-w-0">
+          <Text variant="rotulo">Pedido de compra</Text>
+          <Text variant="tituloSecao" as="h2" className="font-data mt-0.5">
+            {codigoDoPedido(order.id)}
+          </Text>
         </div>
-      )}
+        <Status tone={TOM_DO_STATUS[order.status]}>{STATUS_LABEL[order.status]}</Status>
+      </header>
+      <div className="px-5 pb-4">
+        <ValoresDeLeitura
+          itens={[
+            { rotulo: 'Depósito', valor: order.warehouseId, dado: true },
+            { rotulo: 'Fornecedor', valor: order.supplierId ?? '—', dado: true },
+            { rotulo: 'Itens', valor: order.items.length, dado: true },
+            { rotulo: 'Cotações', valor: order.quotes.length, dado: true },
+          ]}
+        />
+      </div>
+      <Divider />
 
-      {(order.status === 'APROVADO' || order.status === 'RECEBIDO_PARCIAL') && (
-        <div className="mt-5 rounded-xl bg-slate-50 p-4">
-          <div className="flex gap-1.5 text-[11px] font-bold">
-            <button
-              type="button"
-              onClick={() => setTab('manual')}
-              className={`rounded-full px-3 py-1 ${tab === 'manual' ? 'bg-slate-950 text-white' : 'bg-white text-slate-500'}`}
-            >
-              Conferência manual
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab('xml')}
-              className={`rounded-full px-3 py-1 ${tab === 'xml' ? 'bg-slate-950 text-white' : 'bg-white text-slate-500'}`}
-            >
-              Entrada por XML (DF-e)
-            </button>
-          </div>
+      <div className="space-y-6 p-5">
+        <Secao titulo="Itens">
+          <ItensDoPedido order={order} />
+        </Secao>
 
-          {tab === 'manual' ? (
-            <div className="mt-3 space-y-1.5">
-              {order.items
-                .filter((item) => item.quantityReceived < item.quantityOrdered)
-                .map((item) => (
-                  <div key={item.productId} className="flex items-center gap-2">
-                    <span className="w-32 truncate text-[11px] text-slate-500">
-                      {item.productId}
-                    </span>
-                    <input
-                      value={receivingLines[item.productId]?.qty ?? ''}
-                      onChange={(event) =>
-                        setReceivingLines((current) => ({
-                          ...current,
-                          [item.productId]: {
-                            ...current[item.productId],
-                            qty: event.target.value,
-                            cost: current[item.productId]?.cost ?? '',
-                          },
-                        }))
-                      }
-                      placeholder="qtd recebida"
-                      type="number"
-                      className="h-8 w-28 rounded-lg border border-slate-200 px-2 text-xs outline-none focus:border-blue-500"
+        {emCotacao && (
+          <Secao
+            titulo={`Cotações (${order.quotes.length})`}
+            descricao="A mais barata primeiro. Aprovar escolhe o fornecedor do pedido."
+          >
+            {totals.length > 0 && (
+              <table className="w-full border-collapse text-left">
+                <thead>
+                  <tr className="border-hairline-light border-b">
+                    <DataGridCabecalho id="fornecedor" rotulo="Fornecedor" />
+                    <DataGridCabecalho id="prazo" rotulo="Prazo" alinhamento="direita" />
+                    <DataGridCabecalho id="total" rotulo="Total" alinhamento="direita" />
+                    <DataGridCabecalho id="acao" rotulo="" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {totals
+                    .sort((a, b) => a.total - b.total)
+                    .map((quote) => (
+                      <tr
+                        key={quote.supplierId}
+                        className={classesDaLinha({ clicavel: false, focoComAnel: false })}
+                      >
+                        <DataGridCelula papel="primary" truncar={false}>
+                          <Text variant="dado">{quote.supplierId}</Text>
+                        </DataGridCelula>
+                        <DataGridCelula papel="data" alinhamento="direita" truncar={false}>
+                          <Text variant="dado">{quote.leadDays} dias</Text>
+                        </DataGridCelula>
+                        <CelulaDeDinheiro
+                          truncar={false}
+                          peso="forte"
+                          valorFormatado={money(quote.total)}
+                        />
+                        <DataGridCelula papel="action" alinhamento="direita" truncar={false}>
+                          <Button
+                            variant="quiet"
+                            density="compacta"
+                            className="text-primary"
+                            disabled={busy || order.quotes.length < 2}
+                            onClick={() => approve(quote.supplierId)}
+                          >
+                            Aprovar
+                          </Button>
+                        </DataGridCelula>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            )}
+            {order.quotes.length < 2 && (
+              <Text variant="corpo" tone="atencao" className="mt-2">
+                Precisa de pelo menos duas cotações para aprovar (§40).
+              </Text>
+            )}
+
+            <div className="border-line-fina mt-5 border-t pt-4">
+              <Text variant="tituloCartao" as="h4" className="text-body-sm">
+                Registrar cotação
+              </Text>
+              <div className="mt-3">
+                <LinhaDeCampos>
+                  <Field label="Fornecedor" className={LARGURA_DE_CAMPO.medio}>
+                    <Input
+                      value={supplierId}
+                      onChange={(event) => setSupplierId(event.target.value)}
+                      placeholder="Código do fornecedor"
                     />
-                    <input
-                      value={receivingLines[item.productId]?.cost ?? ''}
+                  </Field>
+                  <Field label="Prazo de entrega (dias)" className={LARGURA_DE_CAMPO.curto}>
+                    <NumberInput
+                      value={leadDays}
+                      onChange={(event) => setLeadDays(event.target.value)}
+                    />
+                  </Field>
+                </LinhaDeCampos>
+              </div>
+              <div className="mt-4 flex gap-3">
+                <RotuloDeColuna className="flex-1">Produto</RotuloDeColuna>
+                <RotuloDeColuna className="w-40 text-right">Preço unitário (R$)</RotuloDeColuna>
+              </div>
+              <div className="mt-1.5 space-y-2">
+                {quoteRows.map((row, index) => (
+                  <div key={row.productId} className="flex items-center gap-3">
+                    <Text variant="dado" className="min-w-0 flex-1 truncate">
+                      {row.productId}
+                    </Text>
+                    <NumberInput
+                      aria-label={`Preço unitário de ${row.productId}, em reais`}
+                      step="0.01"
+                      value={row.unitCost}
                       onChange={(event) =>
-                        setReceivingLines((current) => ({
-                          ...current,
-                          [item.productId]: {
-                            ...current[item.productId],
-                            cost: event.target.value,
-                            qty: current[item.productId]?.qty ?? '',
-                          },
-                        }))
+                        setQuoteRows((current) =>
+                          current.map((item, i) =>
+                            i === index ? { ...item, unitCost: event.target.value } : item,
+                          ),
+                        )
                       }
-                      placeholder="custo unit. (R$)"
-                      type="number"
-                      className="h-8 w-32 rounded-lg border border-slate-200 px-2 text-xs outline-none focus:border-blue-500"
+                      className="w-40"
                     />
                   </div>
                 ))}
-              <button
-                type="button"
-                onClick={submitManualReceiving}
-                disabled={busy}
-                className="mt-2 h-9 w-full rounded-lg bg-emerald-600 text-xs font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
-              >
-                Confirmar recebimento
-              </button>
+              </div>
+              <BarraDeAcoes mensagem={error}>
+                <Button variant="secondary" loading={busy} onClick={submitQuote}>
+                  Enviar cotação
+                </Button>
+              </BarraDeAcoes>
             </div>
-          ) : (
-            <div className="mt-3">
-              <textarea
-                value={xml}
-                onChange={(event) => setXml(event.target.value)}
-                rows={6}
-                placeholder="Cole aqui o XML da NF-e do fornecedor"
-                className="w-full rounded-lg border border-slate-200 p-3 font-mono text-[11px] outline-none focus:border-blue-500"
-              />
-              <button
-                type="button"
-                onClick={submitXmlReceiving}
-                disabled={busy || !xml.trim()}
-                className="mt-2 h-9 w-full rounded-lg bg-emerald-600 text-xs font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
-              >
-                Importar XML e confirmar recebimento
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+          </Secao>
+        )}
 
-      {error && <p className="mt-3 text-xs text-red-600">{error}</p>}
-    </div>
+        {emRecebimento && (
+          <Secao titulo="Recebimento" descricao="Confira item a item ou importe o XML da NF-e.">
+            <Abas
+              idBase={idDasAbas}
+              rotulo="Forma de recebimento"
+              ativa={tab}
+              aoMudar={setTab}
+              abas={[
+                { id: 'manual', rotulo: 'Conferência manual' },
+                { id: 'xml', rotulo: 'Entrada por XML (DF-e)' },
+              ]}
+            />
+            <PainelDeAba idBase={idDasAbas} ativa={tab}>
+              {tab === 'manual' ? (
+                <>
+                  <div className="flex gap-3">
+                    <RotuloDeColuna className="flex-1">Produto</RotuloDeColuna>
+                    <RotuloDeColuna className="w-32 text-right">Qtd. recebida</RotuloDeColuna>
+                    <RotuloDeColuna className="w-40 text-right">Custo unit. (R$)</RotuloDeColuna>
+                  </div>
+                  <div className="mt-1.5 space-y-2">
+                    {order.items
+                      .filter((item) => item.quantityReceived < item.quantityOrdered)
+                      .map((item) => (
+                        <div key={item.productId} className="flex items-center gap-3">
+                          <span className="min-w-0 flex-1">
+                            <Text variant="dado" className="block truncate">
+                              {item.productId}
+                            </Text>
+                            <Text variant="legenda">
+                              {item.quantityReceived} de {item.quantityOrdered} recebidos
+                            </Text>
+                          </span>
+                          <NumberInput
+                            aria-label={`Quantidade recebida de ${item.productId}`}
+                            value={receivingLines[item.productId]?.qty ?? ''}
+                            onChange={(event) =>
+                              setReceivingLines((current) => ({
+                                ...current,
+                                [item.productId]: {
+                                  ...current[item.productId],
+                                  qty: event.target.value,
+                                  cost: current[item.productId]?.cost ?? '',
+                                },
+                              }))
+                            }
+                            className="w-32"
+                          />
+                          <NumberInput
+                            aria-label={`Custo unitário de ${item.productId}, em reais`}
+                            step="0.01"
+                            value={receivingLines[item.productId]?.cost ?? ''}
+                            onChange={(event) =>
+                              setReceivingLines((current) => ({
+                                ...current,
+                                [item.productId]: {
+                                  ...current[item.productId],
+                                  cost: event.target.value,
+                                  qty: current[item.productId]?.qty ?? '',
+                                },
+                              }))
+                            }
+                            className="w-40"
+                          />
+                        </div>
+                      ))}
+                  </div>
+                  <BarraDeAcoes mensagem={error}>
+                    <Button variant="primary" loading={busy} onClick={submitManualReceiving}>
+                      Confirmar recebimento
+                    </Button>
+                  </BarraDeAcoes>
+                </>
+              ) : (
+                <>
+                  <Field
+                    label="XML da NF-e do fornecedor"
+                    hint="Cole o conteúdo do arquivo. Quantidade e custo vêm da própria nota."
+                  >
+                    <AreaDeTexto
+                      value={xml}
+                      onChange={(event) => setXml(event.target.value)}
+                      rows={8}
+                      spellCheck={false}
+                      className="font-code text-caption"
+                    />
+                  </Field>
+                  <BarraDeAcoes mensagem={error}>
+                    <Button
+                      variant="primary"
+                      loading={busy}
+                      disabled={!xml.trim()}
+                      onClick={submitXmlReceiving}
+                    >
+                      Importar XML e confirmar recebimento
+                    </Button>
+                  </BarraDeAcoes>
+                </>
+              )}
+            </PainelDeAba>
+          </Secao>
+        )}
+
+        {!emCotacao && !emRecebimento && error && (
+          <Text variant="corpo" tone="perigo" role="alert">
+            {error}
+          </Text>
+        )}
+      </div>
+    </Surface>
+  );
+}
+
+function ListaDePedidos({
+  orders,
+  loading,
+  selectedId,
+  onSelect,
+}: {
+  readonly orders: readonly PurchaseOrder[];
+  readonly loading: boolean;
+  readonly selectedId: string | null;
+  readonly onSelect: (id: string) => void;
+}) {
+  if (loading) return <Text variant="corpoSecundario">Carregando…</Text>;
+  if (orders.length === 0)
+    return <Text variant="corpoSecundario">Nenhum pedido para esta filial.</Text>;
+  return (
+    <ul className="border-line-fina -mx-2 border-t">
+      {orders.map((order) => {
+        const selecionado = selectedId === order.id;
+        return (
+          <li key={order.id} className="border-line-fina border-b">
+            <button
+              type="button"
+              data-pedido={order.id}
+              aria-current={selecionado || undefined}
+              onClick={() => onSelect(order.id)}
+              className={`${classesDaLinha({ selecionada: selecionado, hairlineNaLinha: false })} flex w-full items-center justify-between gap-3 px-2 py-2.5 text-left`}
+            >
+              <SynapseSignal ativo={selecionado} />
+              <span className="min-w-0">
+                <Text variant="dado" className="block font-medium">
+                  {codigoDoPedido(order.id)}
+                </Text>
+                <Text variant="legenda">{order.items.length} item(ns)</Text>
+              </span>
+              <Status tone={TOM_DO_STATUS[order.status]}>{STATUS_LABEL[order.status]}</Status>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 
@@ -578,105 +721,94 @@ export function PurchasingScreen() {
   if (!signedIn) return <LoginPanel onSignedIn={() => setSignedIn(true)} />;
 
   return (
-    <main className="bg-canvas-light relative min-h-screen overflow-hidden text-slate-950">
-      <div className="relative mx-auto max-w-7xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">
-        <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
-              <span className="h-1.5 w-1.5 rounded-full bg-blue-600" /> Compras
-            </div>
-            <h1 className="mt-3 text-3xl font-bold tracking-[-0.035em] text-slate-950 sm:text-4xl">
-              Compras e recebimento
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              Da cotação com mais de um fornecedor até a conferência do que chegou — manual ou por
-              XML da NF-e — com custo médio e contas a pagar atualizados automaticamente.
-            </p>
-          </div>
-          <input
-            value={branchId}
-            onChange={(event) => setBranchId(event.target.value)}
-            placeholder="id da filial"
-            className="h-12 w-40 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-800 shadow-sm outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-          />
-        </header>
-
-        <section className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {[
-            { label: 'Em cotação', value: summary.cotacao, color: 'text-amber-600 bg-amber-50' },
-            { label: 'Aprovados', value: summary.aprovado, color: 'text-blue-600 bg-blue-50' },
-            {
-              label: 'Recebidos em parte',
-              value: summary.parcial,
-              color: 'text-violet-600 bg-violet-50',
-            },
-            {
-              label: 'Recebidos',
-              value: summary.recebido,
-              color: 'text-emerald-600 bg-emerald-50',
-            },
-          ].map((tile) => (
-            <article
-              key={tile.label}
-              className="border-hairline-light bg-canvas-light rounded-2xl border p-5"
-            >
-              <p className="text-xs font-semibold text-slate-500">{tile.label}</p>
-              <strong className="mt-2 block text-2xl font-bold tracking-tight text-slate-950">
-                {tile.value}
-              </strong>
-            </article>
-          ))}
-        </section>
-
-        <div className="mt-6 grid gap-5 lg:grid-cols-[380px_1fr]">
-          <div className="space-y-4">
-            <NewOrderForm branchId={branchId.trim()} onCreated={refresh} />
-            <div className="border-hairline-light bg-canvas-light rounded-2xl border">
-              <div className="border-b border-slate-100 p-4">
-                <h3 className="text-sm font-bold text-slate-900">Pedidos</h3>
-              </div>
-              <div className="max-h-[560px] divide-y divide-slate-100 overflow-y-auto">
-                {loading && <p className="p-4 text-xs text-slate-400">Carregando…</p>}
-                {!loading && orders.length === 0 && (
-                  <p className="p-4 text-xs text-slate-400">Nenhum pedido para esta filial.</p>
-                )}
-                {orders.map((order) => (
-                  <button
-                    key={order.id}
-                    type="button"
-                    onClick={() => setSelectedId(order.id)}
-                    className={`flex w-full items-center justify-between px-4 py-3 text-left transition hover:bg-slate-50 ${
-                      selectedId === order.id ? 'bg-blue-50/70' : ''
-                    }`}
-                  >
-                    <span>
-                      <span className="block text-xs font-bold text-slate-800">
-                        {order.id.slice(0, 8)}
-                      </span>
-                      <span className="mt-0.5 block text-[11px] text-slate-400">
-                        {order.items.length} item(ns)
-                      </span>
-                    </span>
-                    <Status tone={TOM_DO_STATUS[order.status]} variant="chip">
-                      {STATUS_LABEL[order.status]}
-                    </Status>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div>
-            {selected ? (
-              <OrderDetail order={selected} onChanged={refresh} />
-            ) : (
-              <div className="flex h-full min-h-[300px] items-center justify-center rounded-2xl border border-dashed border-slate-300 text-sm text-slate-400">
-                Selecione um pedido para ver cotações e recebimento
-              </div>
-            )}
-          </div>
+    <Surface
+      variant="pagina"
+      as="main"
+      className="max-w-conteudo-ampla mx-auto w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
+    >
+      <div className="flex flex-wrap items-end justify-between gap-4 pb-4">
+        <div className="min-w-0">
+          <Text variant="tituloTela">Compras e recebimento</Text>
+          <Text variant="corpoSecundario" className="mt-1 max-w-3xl">
+            Da cotação com mais de um fornecedor até a conferência do que chegou — manual ou por XML
+            da NF-e — com custo médio e contas a pagar atualizados automaticamente.
+          </Text>
+        </div>
+        <div className="flex items-end gap-2">
+          <Field label="Filial" className={LARGURA_DE_CAMPO.curto}>
+            <Input value={branchId} onChange={(event) => setBranchId(event.target.value)} />
+          </Field>
+          <Button variant="quiet" onClick={() => void refresh()}>
+            <RotateCw size={14} aria-hidden="true" /> Atualizar
+          </Button>
         </div>
       </div>
-    </main>
+      <Divider />
+
+      {/* Resumo em linha, não em quatro cartões: são contadores da lista ao
+       *  lado, e não indicadores de painel. */}
+      <dl className="flex flex-wrap gap-x-8 gap-y-2 py-4" aria-label="Pedidos por situação">
+        {[
+          { label: 'Em cotação', value: summary.cotacao, tone: TOM_DO_STATUS.EM_COTACAO },
+          { label: 'Aprovados', value: summary.aprovado, tone: TOM_DO_STATUS.APROVADO },
+          {
+            label: 'Recebidos em parte',
+            value: summary.parcial,
+            tone: TOM_DO_STATUS.RECEBIDO_PARCIAL,
+          },
+          { label: 'Recebidos', value: summary.recebido, tone: TOM_DO_STATUS.RECEBIDO },
+        ].map((tile) => (
+          <div key={tile.label} className="flex items-baseline gap-2">
+            <dt>
+              <Status tone={tile.tone}>{tile.label}</Status>
+            </dt>
+            <dd>
+              <Text variant="dado" className="text-body-md font-semibold">
+                {tile.value}
+              </Text>
+            </dd>
+          </div>
+        ))}
+      </dl>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]">
+        <aside className="min-w-0 space-y-6" aria-label="Pedidos e novo pedido">
+          <section>
+            <div className="mb-2 flex items-baseline justify-between">
+              <Text variant="tituloCartao" as="h2">
+                Pedidos
+              </Text>
+              <Text variant="legenda">{orders.length}</Text>
+            </div>
+            <div className="max-h-[520px] overflow-y-auto">
+              <ListaDePedidos
+                orders={orders}
+                loading={loading}
+                selectedId={selectedId}
+                onSelect={setSelectedId}
+              />
+            </div>
+          </section>
+          <div className="border-line-fina border-t pt-5">
+            <NewOrderForm branchId={branchId.trim()} onCreated={refresh} />
+          </div>
+        </aside>
+
+        <div className="min-w-0">
+          {selected ? (
+            <OrderDetail order={selected} onChanged={refresh} />
+          ) : (
+            <Surface
+              variant="afundada"
+              className="flex min-h-[300px] items-center justify-center p-6 text-center"
+            >
+              <Text variant="corpoSecundario">
+                Selecione um pedido para ver cotações e recebimento.
+              </Text>
+            </Surface>
+          )}
+        </div>
+      </div>
+    </Surface>
   );
 }
