@@ -6,4 +6,5 @@
  *  `@synapse/sdl/tokens.css`          a cor de marca do tenant */
 
 export * from './primitives';
+export * from './datagrid';
 export { cn } from './lib/cn';

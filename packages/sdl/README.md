@@ -236,6 +236,50 @@ estável para ancorar o entalhe, e forçá-lo na posição visualmente-primeira-
 -momento criaria uma linha que pula de lugar a cada reordenação. Ali a
 hairline continua de ponta a ponta — decisão deliberada, não uma pendência.
 
+## DataGrid — a fundação (Fase 5)
+
+A Fase 5 auditou as ~21 tabelas do web-erp, comparou engine própria vs
+TanStack Table vs alternativas, e decidiu **não adicionar dependência**: a
+fila de crédito já tinha, escrita e comprovada, praticamente toda a lógica
+que uma engine própria precisaria (ciclo de ordenação, ordem/largura/
+visibilidade de coluna persistidas por usuário via `lib/preferencias.ts`,
+navegação por teclado) — adotar uma biblioteca significaria reescrever essa
+lógica sobre uma API nova, pelo custo de bundle, sem ganhar capacidade real.
+O `packages/sdl/src/datagrid/` de hoje é o primeiro recorte dessa fundação:
+cobre o caso comum (célula, cabeçalho, estado de linha), não o avançado.
+
+### O que existe
+
+| Peça                                     | O que faz                                                                                                                                                     |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DataGridCelula`                         | `<td>` com papel de coluna (`leading`/`primary`/`secondary`/`data`/`status`/`meta`/`action`), `font-data` automático no papel `data`, hairline-inset opcional |
+| `DataGridCabecalho`                      | `<th>` congelado (sentence case, sem uppercase/tracking), indicador de ordenação discreto quando `aoOrdenar` é passado                                        |
+| `classesDaLinha`                         | as 5 classes de estado de linha da Data Row v1, numa função só                                                                                                |
+| `SynapseSignal`                          | o traço de 2px — `gatilho="controlado"` (seleção) ou `"foco-do-grupo"` (tabelas sem seleção)                                                                  |
+| `proximaOrdenacao` / `useOrdenacaoLocal` | o ciclo asc/desc/nova-coluna, extraído da fila                                                                                                                |
+
+Nenhuma dessas peças importa biblioteca de ícone ou qualquer dependência nova
+— quem consome injeta o que precisar (ex.: `iconeAscendente`/`iconeDescendente`
+em `DataGridCabecalho`).
+
+### O que ainda não existe
+
+Resize, reorder de coluna, seletor de visibilidade e navegação por teclado
+continuam vivendo só na Fila de Crédito (`credit/fila/*`), que é hoje a única
+tela com essas capacidades. Extrair isso para a fundação exige uma **segunda**
+tela que precise da mesma coisa — uma capacidade provada em um único lugar
+ainda é código daquele lugar, não uma abstração. Virtualização não foi
+implementada: nenhuma tela real hoje renderiza mais que ~200 linhas de uma
+vez (a fila tem um teto de 200; Clientes pagina 50 por cursor).
+
+### Pontos de extensão
+
+`PapelDeColuna` é o encaixe para capacidades futuras (uma coluna `action`
+saberá renderizar um menu de linha sem a fundação conhecer regra de negócio).
+Persistência de estado de coluna (ordem/largura/visibilidade) deve ser
+injetada pelo consumidor — a fundação não conhece `currentUid()` nem
+`localStorage`, isso é decisão do app, como já é em `usePreferenciasDaFila`.
+
 ## Migrando do que existe hoje
 
 | Legado                                   | Vai virar                  | Quando            |
@@ -252,6 +296,8 @@ novo. A remoção acontece quando o último consumidor migrar.
 
 ## O que **não** está aqui
 
-Primitives de componente (Button, Field, DataGrid…), migração de telas,
-remoção dos HEX das features, consolidação da escala tipográfica e escolha de
-uma família mono de verdade. Tudo isso é das fases 2 em diante.
+Migração de telas, remoção dos HEX das features, consolidação da escala
+tipográfica e escolha de uma família mono de verdade. Do DataGrid, o comum
+existe (célula/cabeçalho/linha, ver seção acima); resize, reorder,
+visibilidade de coluna e virtualização continuam fora daqui até uma segunda
+tela precisar deles de verdade.
