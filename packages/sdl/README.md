@@ -102,22 +102,23 @@ O vocabulário que as telas usam. Nome de componente em inglês, valor de
 propriedade no vocabulário dos tokens (`density="compacta"`, `tone="perigo"`) —
 é o mesmo idioma do `tokens/`.
 
-| Primitive     | Para que serve                                 | Variantes                                                                                                          |
-| ------------- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `Text`        | a escala tipográfica, por papel                | tituloTela · tituloSecao · tituloCartao · corpoGrande · corpo · corpoSecundario · rotulo · legenda · dado · codigo |
-| `Surface`     | o plano em que o conteúdo se apoia             | pagina · painel · elevada · afundada                                                                               |
-| `Divider`     | separar por linha                              | horizontal · vertical                                                                                              |
-| `Field`       | rótulo, controle, dica e erro amarrados        | densidade e `span` na grade                                                                                        |
-| `Input`       | texto                                          | densidade · `align` · `invalid`                                                                                    |
-| `Select`      | escolha, com `<select>` nativo                 | densidade · `invalid`                                                                                              |
-| `NumberInput` | quantidade e percentual                        | herda Input                                                                                                        |
-| `MoneyInput`  | valor em real (só apresentação)                | herda Input                                                                                                        |
-| `DocInput`    | CPF, CNPJ, CEP, telefone (máscara vem de fora) | herda Input                                                                                                        |
-| `Button`      | ação                                           | primary · secondary · quiet · danger                                                                               |
-| `IconButton`  | ação de glifo, com nome acessível obrigatório  | quiet · secondary · `shape`                                                                                        |
-| `Kbd`         | a tecla do atalho                              | —                                                                                                                  |
-| `Status`      | situação                                       | dot · text · chip, nos 8 tons                                                                                      |
-| `Spinner`     | espera                                         | decorativo ou anunciado                                                                                            |
+| Primitive           | Para que serve                                                 | Variantes                                                                                                          |
+| ------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `Text`              | a escala tipográfica, por papel                                | tituloTela · tituloSecao · tituloCartao · corpoGrande · corpo · corpoSecundario · rotulo · legenda · dado · codigo |
+| `Surface`           | o plano em que o conteúdo se apoia                             | pagina · painel · elevada · afundada                                                                               |
+| `Divider`           | separar por linha                                              | horizontal · vertical                                                                                              |
+| `Field`             | rótulo, controle, dica e erro amarrados                        | densidade e `span` na grade                                                                                        |
+| `Input`             | texto                                                          | densidade · `align` · `invalid`                                                                                    |
+| `Select`            | escolha, com `<select>` nativo                                 | densidade · `invalid`                                                                                              |
+| `NumberInput`       | quantidade e percentual                                        | herda Input                                                                                                        |
+| `MoneyInput`        | valor em real (só apresentação)                                | herda Input                                                                                                        |
+| `DocInput`          | CPF, CNPJ, CEP, telefone (máscara vem de fora)                 | herda Input                                                                                                        |
+| `Button`            | ação                                                           | primary · secondary · quiet · danger                                                                               |
+| `IconButton`        | ação de glifo, com nome acessível obrigatório                  | quiet · secondary · `shape`                                                                                        |
+| `Kbd`               | a tecla do atalho                                              | —                                                                                                                  |
+| `Status`            | situação                                                       | dot · text · chip, nos 8 tons                                                                                      |
+| `Spinner`           | espera                                                         | decorativo ou anunciado                                                                                            |
+| `IndiceOperacional` | posição/sequência numa lista real (não decore lista sem ordem) | `destaque`                                                                                                         |
 
 ### Três regras que não se negociam
 
@@ -166,6 +167,74 @@ ampliada.
 `corpo` e `corpoGrande` renderizam `<p>`. Em contexto de linha — dentro de
 `<button>`, de `<td>` ou de outro parágrafo — passe `as="span"`, senão o HTML
 fica inválido.
+
+## Data Row — a gramática de linha operacional
+
+Formalizada nas Fases 4.2–4.4, depois de provada em três superfícies reais e
+bem diferentes entre si: a Home (`Requer atenção`/`Acesso rápido`), a Lista de
+Clientes (`<table>` simples) e a Fila de Análise de Crédito (`<table>` com
+colunas reordenáveis/redimensionáveis pelo usuário, ordenação e seleção). Não
+é um componente React — é um conjunto pequeno de decisões que se repetem.
+
+### Planos: `tela` vs `pagina`
+
+`Surface variant="tela"` é o chão do aplicativo (o `AppShell` já usa por
+baixo do header/menubar); `variant="pagina"` é a folha de trabalho — sempre um
+tom mais clara, nunca com borda ou sombra entre as duas. A diferença é
+propositalmente pequena (perceptível por comparação lado a lado, não isolada)
+e sobrevive mesmo com uma tabela densa por cima (testado na Fila).
+
+### Colunas de uma linha de dado
+
+Nem toda linha tem as seis, mas quando existem, seguem esta ordem e este
+propósito — não force uma coluna que não tem correspondente real na tela:
+
+| Papel     | Exemplo                              | Tratamento                                                |
+| --------- | ------------------------------------ | --------------------------------------------------------- |
+| leading   | código, índice                       | `font-data`, discreto, nunca a informação principal       |
+| primary   | nome do cliente, número do pedido    | peso normal a semi-negrito, nunca cortado sem truncate    |
+| secondary | cidade, razão social                 | tom de apoio (`text-ink-apoio`/`tone="apoio"`)            |
+| data      | CNPJ/CPF, telefone, datas, valores   | `font-data` (liga `tnum`+`zero` — ver `font.data` abaixo) |
+| status    | situação, tipo                       | `Status`, nunca pílula com cor solta                      |
+| action    | um toggle de linha (ex.: "impresso") | controle real (`aria-pressed`), não decoração             |
+
+### `font.data`: por que não trocamos de família
+
+Avaliado na Fase 4.3 (Inter vs. Mona Sans vs. IBM Plex Sans, com arquivos
+temporários, nunca commitados): Inter ganhou por já cobrir os requisitos
+(zero cortado com a feature `zero`, `tnum` para não dançar a coluna, 1/l/I
+distintos o bastante, sem custo de bundle). A assinatura de dado não vem de
+trocar fonte — vem de ligar essas features OpenType consistentemente em todo
+número, código e documento, e só ali.
+
+### Estados de linha
+
+Cinco estados, cada um com um sinal diferente — nunca dois deles com o mesmo
+visual:
+
+| Estado                       | Sinal                                                                                                |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------- |
+| normal                       | nada                                                                                                 |
+| hover                        | só muda o plano (`bg-surface-hover`) — nunca o mesmo sinal do selecionado                            |
+| focus (teclado, sem seleção) | anel discreto de acessibilidade (`ring-primary/40 ring-inset`)                                       |
+| selected/current             | **Synapse Signal**: superfície neutra + traço de cobalto de 2px na borda esquerda — nunca fundo azul |
+| selected + focus             | o traço de cobalto do selecionado, com o anel de foco por cima — nunca as duas coisas competindo     |
+
+O Synapse Signal é a mesma gramática em quatro lugares hoje: o indicador de
+módulo ativo da Menubar (um segmento curto, não um sublinhado inteiro), a
+linha selecionada da Command Window, a linha em foco da Lista de Clientes e a
+linha selecionada da Fila de Crédito. É sempre um traço curto — nunca uma
+caixa cheia, nunca `border-left` sozinho sem a superfície acompanhando.
+
+### Hairline com inset — e onde ela NÃO se aplica
+
+Na Home e na Lista de Clientes, o divisor entre linhas começa depois da
+coluna `leading` (o código/índice fica com um "entalhe" próprio). Esse padrão
+depende de uma coluna `leading` **fixa** — na Fila de Crédito, onde o usuário
+pode reordenar livremente todas as colunas, não há uma coluna "leading"
+estável para ancorar o entalhe, e forçá-lo na posição visualmente-primeira-de-
+-momento criaria uma linha que pula de lugar a cada reordenação. Ali a
+hairline continua de ponta a ponta — decisão deliberada, não uma pendência.
 
 ## Migrando do que existe hoje
 
