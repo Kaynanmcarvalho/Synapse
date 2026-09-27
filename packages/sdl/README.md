@@ -386,6 +386,59 @@ situação, e a formatação de moeda passou a usar `formatarMoeda` em vez de um
 conferência"/"Lançar entrada" e toda a regra fiscal continuam exatamente como
 estavam.
 
+## Fase 5.4 — fechamento da expansão inicial
+
+A foundation não mudou nesta fase (zero linhas em `src/datagrid/`). Migraram
+`credit/Tabela.tsx` (primitive da ficha com 8 consumidores, API preservada;
+o divisor vertical entre colunas continua como decisão local da ficha), as
+abas Documentos de Cliente/Fornecedor/Funcionário e a tabela "Comparativo
+entre filiais" do Dashboard (só a tabela; a tela é assunto de Screens).
+
+**Sem `DocumentsTable` genérico.** As três abas de documentos parecem iguais,
+mas diferem em colunas (4/5/4/6), origem do dado (painel de crédito com
+permissão `financeiro.visualizar` vs. fetch próprio), quantidade de tabelas
+(3/3/1) e semântica de situação (dias de atraso calculados vs. string livre
+da API). Nenhuma tem ação, anexo, download ou row-open. O que é comum já é a
+foundation — uma quarta camada só esconderia as diferenças.
+
+**Editable grid: dois consumidores reais, nenhuma implementação.**
+`AbaNfceSeries` (séries NFC-e: input/select por célula, adicionar/remover
+linha, sem save próprio — o dirty state e o salvar são do assistente) e a
+conferência do `DfeScreen` (input por célula, commit pelo botão "Concluir
+conferência") são duas grades editáveis de verdade. Isso autoriza uma
+futura fase de **estudo** (edit mode, dirty, commit/cancel, validação, Tab/
+Enter/Escape, foco, erro por linha, save assíncrono) — não um `<input>`
+dentro de `DataGridCelula`.
+
+### Inventário canônico (web-erp, 21 arquivos com `<table>`)
+
+| Arquivo                                          | Categoria       | Classe do que sobra        |
+| ------------------------------------------------ | --------------- | -------------------------- |
+| `customers/TabelaDeClientes.tsx`                 | MIGRATED        | —                          |
+| `stock-intelligence/TabelaDeInteligencia.tsx`    | MIGRATED        | —                          |
+| `vendas/balcao/HistoricoDoBalcao.tsx`            | MIGRATED        | —                          |
+| `funcionarios/TabelaDeFuncionarios.tsx`          | MIGRATED        | —                          |
+| `fornecedores/TabelaDeFornecedores.tsx`          | MIGRATED        | —                          |
+| `cadastros/tabelas/TabelaAuxiliarScreen.tsx`     | MIGRATED        | —                          |
+| `inventory/StockScreen.tsx` (ExpiryTable)        | MIGRATED        | —                          |
+| `finance/BoletosScreen.tsx`                      | MIGRATED        | —                          |
+| `credit/Tabela.tsx`                              | MIGRATED        | —                          |
+| `customers/abas/Documentos.tsx`                  | MIGRATED        | —                          |
+| `fornecedores/abas/AbaDocumentos.tsx`            | MIGRATED        | —                          |
+| `funcionarios/abas/AbaDocumentosERelatorios.tsx` | MIGRATED        | —                          |
+| `dashboard/DashboardScreen.tsx`                  | MIGRATED        | tela: Screens              |
+| `purchasing/PurchasingScreen.tsx`                | PARTIAL         | workflow/form              |
+| `inbound/DfeScreen.tsx`                          | PARTIAL         | editable grid              |
+| `credit/fila/TabelaDaFila.tsx`                   | GOLDEN          | —                          |
+| `fiscal/assistente/etapas/AbaNfceSeries.tsx`     | BLOCKED         | editable grid              |
+| `vendas/comum/GradeDeItens.tsx`                  | BLOCKED         | interativa avançada        |
+| `vendas/pdv/VendasDoCaixa.tsx`                   | BLOCKED         | tabela simples, retida PDV |
+| `inventory/InventoryScreen.tsx`                  | MOCK-DATA       | —                          |
+| `vendas/impressao/FolhaDoPedido.tsx`             | OUT-OF-CATEGORY | impressão                  |
+
+Fora do inventário do web-erp: `apps/web-admin/src/app/App.tsx` (tabela de
+empresas do console administrativo, ainda em `@synapse/ui`).
+
 ## Migrando do que existe hoje
 
 | Legado                                   | Vai virar                  | Quando            |
