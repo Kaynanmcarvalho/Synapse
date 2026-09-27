@@ -3,10 +3,10 @@ import { Divider, Kbd, Spinner, Surface, Text } from '@synapse/sdl';
 import { Search } from 'lucide-react';
 import { type KeyboardEvent, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { ItemDeMenu } from '../../app/menu/menu.types';
-import { moveuDeVerdade } from '../../app/menu/menu.utils';
 import { useShell } from '../../app/shell/ShellContext';
-import { buscarNaNavegacao, contextoDoItem, itensComAtalho } from './menuSearch';
+import { LinhaDeResultado } from './LinhaDeResultado';
+import { buscarNaNavegacao, itensComAtalho } from './menuSearch';
+import { caminhoDoResultado, type Grupo, type Resultado } from './resultado';
 import { globalSearch, type SearchEntityType, type SearchResultItem } from './search.api';
 
 const TYPE_LABEL: Record<SearchEntityType, string> = {
@@ -19,80 +19,11 @@ const TYPE_LABEL: Record<SearchEntityType, string> = {
   titulo: 'Boleto/título',
 };
 
-type Resultado =
-  | { readonly tipo: 'navegacao'; readonly item: ItemDeMenu }
-  | { readonly tipo: 'entidade'; readonly item: SearchResultItem };
-
-interface Grupo {
-  readonly titulo: string;
-  readonly resultados: readonly Resultado[];
-}
-
 const DEBOUNCE_MS = 150;
 
-const caminhoDoResultado = (resultado: Resultado): string =>
-  resultado.tipo === 'navegacao' ? resultado.item.caminho : resultado.item.path;
-
-function LinhaDeResultado({
-  id,
-  resultado,
-  emDestaque,
-  onDestacar,
-  onEscolher,
-}: {
-  readonly id: string;
-  readonly resultado: Resultado;
-  readonly emDestaque: boolean;
-  readonly onDestacar: () => void;
-  readonly onEscolher: () => void;
-}) {
-  const principal = resultado.tipo === 'navegacao' ? resultado.item.rotulo : resultado.item.title;
-  const contexto =
-    resultado.tipo === 'navegacao' ? contextoDoItem(resultado.item) : resultado.item.subtitle;
-  const emBreve = resultado.tipo === 'navegacao' && resultado.item.situacao === 'em-breve';
-  const atalho = resultado.tipo === 'navegacao' ? resultado.item.atalho?.rotulo : undefined;
-
-  return (
-    // eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/interactive-supports-focus -- padrao combobox: o foco fica sempre no <input> (selecao virtual via aria-activedescendant), a opcao nunca recebe foco de verdade; Enter/teclado sao tratados no campo.
-    <div
-      id={id}
-      role="option"
-      aria-selected={emDestaque}
-      onMouseMove={(evento) => {
-        if (moveuDeVerdade(evento)) onDestacar();
-      }}
-      onClick={onEscolher}
-      className={`rounded-pequeno duration-instantaneo grid cursor-pointer grid-cols-[1fr_auto] items-center gap-x-3 px-3 py-2 transition-colors ${
-        emDestaque ? 'bg-surface-hover' : ''
-      }`}
-    >
-      <span className="min-w-0">
-        <Text as="span" variant="corpo" className="block truncate">
-          {principal}
-        </Text>
-        {contexto && (
-          <Text as="span" variant="legenda" tone="apoio" className="block truncate">
-            {contexto}
-          </Text>
-        )}
-      </span>
-      <span className="flex shrink-0 items-center gap-2">
-        {emBreve && (
-          <Text as="span" variant="legenda" tone="apoio">
-            em breve
-          </Text>
-        )}
-        {atalho && <Kbd>{atalho}</Kbd>}
-      </span>
-    </div>
-  );
-}
-
-/** §59/Fase 4.1 "Command Window": um campo, tres fontes — navegacao (menu,
- *  local, instantanea), e as entidades remotas que a API ja indexa
- *  (cliente, produto, pedido, NF-e, titulo, fornecedor, vendedor). `open` e
- *  `onOpenChange` continuam controlados de fora (AppShell) porque o atalho
- *  global (Ctrl+K) precisa funcionar em qualquer tela. */
+/** Command Window: um campo, tres fontes — navegacao local e as entidades
+ *  remotas que a API ja indexa. `open`/`onOpenChange` vem do AppShell (Ctrl+K
+ *  precisa funcionar em qualquer tela). */
 export function CommandPalette({
   open,
   onOpenChange,
