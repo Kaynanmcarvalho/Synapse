@@ -99,14 +99,14 @@ describe('IndiceOperacional (Fase 4.2)', () => {
     expect(span.getAttribute('aria-hidden')).toBe('true');
   });
 
-  it('sem destaque fica em cobalto discreto (contraste ~4,5:1); com destaque, cobalto cheio', () => {
+  it('sem destaque fica em cobalto discreto (contraste ~4,7:1); com destaque, cobalto cheio', () => {
     montar(<IndiceOperacional posicao={1} />);
-    expect((caixa.firstElementChild as HTMLElement).className).toContain('text-primary/85');
+    expect((caixa.firstElementChild as HTMLElement).className).toContain('text-primary/90');
 
     montar(<IndiceOperacional posicao={1} destaque />);
     const classe = (caixa.firstElementChild as HTMLElement).className;
     expect(classe).toContain('text-primary');
-    expect(classe).not.toContain('text-primary/85');
+    expect(classe).not.toContain('text-primary/90');
   });
 });
 

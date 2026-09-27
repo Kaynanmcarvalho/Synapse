@@ -14,8 +14,10 @@ import { cn } from '../lib/cn';
  *
  *  A Fase 4.3 auditou o repouso em `text-primary/45` (depois `/60`): ~2,7:1
  *  contra branco — sobrevive de perto, mas quase some em escala de cinza ou a
- *  50% de zoom, exatamente o teste que a Fase 4.4 pediu. `/85` mede ~4,5:1
- *  (referência AA, mesmo sendo `aria-hidden`/decorativo) e continua
+ *  50% de zoom. A Fase 4.4 subiu para `/85`, mas medido contra o fundo REAL
+ *  (`superficie.tela`, não branco puro) isso dava ~4,28:1 — perto, não em
+ *  cima. `/90` mede ~4,7:1 contra esse mesmo fundo (medido com
+ *  `getComputedStyle` no navegador, não estimado) e ainda assim continua
  *  visivelmente mais quieto que o cobalto cheio do estado em destaque —
  *  validado visualmente, não só pelo número. */
 export interface IndiceOperacionalProps extends HTMLAttributes<HTMLSpanElement> {
@@ -36,7 +38,7 @@ export function IndiceOperacional({
     <span
       className={cn(
         'font-data text-caption inline-block w-[2ch] shrink-0 text-right tabular-nums',
-        destaque ? 'text-primary' : 'text-primary/85 group-hover:text-primary',
+        destaque ? 'text-primary' : 'text-primary/90 group-hover:text-primary',
         className,
       )}
       aria-hidden="true"
