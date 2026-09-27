@@ -1,3 +1,4 @@
+import { classesDaLinha, DataGridCabecalho, DataGridCelula, Text } from '@synapse/sdl';
 import type { PainelDeAnaliseDeCredito } from '@synapse/types';
 import { CircleCheck, FileText, Hourglass, Paperclip } from 'lucide-react';
 import { Bloco } from '../campos';
@@ -25,30 +26,23 @@ function Tabela({
     <div className="overflow-x-auto">
       <table className="w-full min-w-[32rem] border-collapse">
         <thead>
-          <tr className="bg-surface-soft">
+          <tr className="border-hairline-light bg-surface-soft border-b">
             {colunas.map((coluna) => (
-              <th
-                key={coluna}
-                className="text-caption text-stone px-3 py-2 text-left font-semibold uppercase tracking-[0.06em] first:rounded-l-xl last:rounded-r-xl"
-              >
-                {coluna}
-              </th>
+              <DataGridCabecalho key={coluna} id={coluna} rotulo={coluna} />
             ))}
           </tr>
         </thead>
         <tbody>
           {linhas.map((linha, indice) => (
-            <tr
-              key={indice}
-              className="border-hairline-light hover:bg-surface-soft/50 border-b transition-colors last:border-0"
-            >
+            <tr key={indice} className={classesDaLinha({ clicavel: false, focoComAnel: false })}>
               {linha.map((celula, coluna) => (
-                <td
+                <DataGridCelula
                   key={coluna}
-                  className={`text-body-sm text-ink px-3 py-2.5 ${coluna > 0 ? 'tabular-nums' : ''}`}
+                  papel={coluna === 0 ? 'primary' : 'data'}
+                  truncar={false}
                 >
-                  {celula}
-                </td>
+                  <Text variant={coluna === 0 ? 'corpo' : 'dado'}>{celula}</Text>
+                </DataGridCelula>
               ))}
             </tr>
           ))}

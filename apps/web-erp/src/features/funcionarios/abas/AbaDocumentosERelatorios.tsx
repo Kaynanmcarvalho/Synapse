@@ -1,7 +1,16 @@
 /* eslint-disable max-lines-per-function */
+import {
+  classesDaLinha,
+  DataGridCabecalho,
+  DataGridCelula,
+  Status,
+  Text,
+  type TomDeStatus,
+} from '@synapse/sdl';
 import type { PedidoDoVendedor, ResumoDoVendedor } from '@synapse/types';
 import { ChartNoAxesColumn, LoaderCircle, ReceiptText } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { CelulaDeDinheiro } from '../../../components/datagrid/CelulaDeDinheiro';
 import { Bloco } from '../../customers/campos';
 import { formatarMoeda } from '../../customers/formato';
 import { pedidosDoFuncionario, resumoDoFuncionario } from '../funcionarios.api';
@@ -15,6 +24,16 @@ const SITUACAO: Readonly<Record<string, string>> = {
   REPROVADO: 'Reprovado',
   FATURADO: 'Faturado',
   CANCELADO: 'Cancelado',
+};
+
+/** Mesmo domínio e mesmo tom de HistoricoDoBalcao (Fase 5.1) — o pedido do
+ *  vendedor é o mesmo PedidoDeVenda, só filtrado por funcionário. */
+const TOM_DA_SITUACAO: Readonly<Record<string, TomDeStatus>> = {
+  AGUARDANDO_ANALISE: 'atencao',
+  APROVADO: 'ok',
+  REPROVADO: 'perigo',
+  FATURADO: 'ok',
+  CANCELADO: 'neutro',
 };
 
 const dataHora = (iso: string) =>
@@ -60,35 +79,45 @@ export function AbaDocumentos({ funcionarioId }: { readonly funcionarioId: strin
       ) : null}
       {pedidos?.length ? (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px]">
+          <table className="w-full min-w-[640px] border-collapse">
             <thead>
-              <tr className="text-caption text-stone border-hairline-light border-b text-left">
-                <th className="px-3 py-2 font-medium">Nº</th>
-                <th className="px-3 py-2 font-medium">Data</th>
-                <th className="px-3 py-2 font-medium">Cliente</th>
-                <th className="px-3 py-2 font-medium">Tipo</th>
-                <th className="px-3 py-2 font-medium">Situação</th>
-                <th className="px-3 py-2 text-right font-medium">Total</th>
+              <tr className="border-hairline-light border-b">
+                <DataGridCabecalho id="numero" rotulo="Nº" />
+                <DataGridCabecalho id="data" rotulo="Data" />
+                <DataGridCabecalho id="cliente" rotulo="Cliente" />
+                <DataGridCabecalho id="tipo" rotulo="Tipo" />
+                <DataGridCabecalho id="situacao" rotulo="Situação" />
+                <DataGridCabecalho id="total" rotulo="Total" alinhamento="direita" />
               </tr>
             </thead>
             <tbody>
               {pedidos.map((pedido) => (
                 <tr
                   key={pedido.id}
-                  className="border-hairline-light text-body-sm border-b last:border-0"
+                  className={classesDaLinha({ clicavel: false, focoComAnel: false })}
                 >
-                  <td className="px-3 py-2 tabular-nums">{pedido.numero}</td>
-                  <td className="text-charcoal px-3 py-2 tabular-nums">
-                    {dataHora(pedido.enviadoEm)}
-                  </td>
-                  <td className="text-ink px-3 py-2">{pedido.clienteNome}</td>
-                  <td className="text-charcoal px-3 py-2">{pedido.tipo}</td>
-                  <td className="text-charcoal px-3 py-2">
-                    {SITUACAO[pedido.situacao] ?? pedido.situacao}
-                  </td>
-                  <td className="text-ink px-3 py-2 text-right tabular-nums">
-                    {formatarMoeda(pedido.totalCentavos)}
-                  </td>
+                  <DataGridCelula papel="data" truncar={false}>
+                    <Text variant="dado">{pedido.numero}</Text>
+                  </DataGridCelula>
+                  <DataGridCelula papel="data" truncar={false}>
+                    <Text variant="dado">{dataHora(pedido.enviadoEm)}</Text>
+                  </DataGridCelula>
+                  <DataGridCelula papel="primary" truncar={false}>
+                    <Text variant="corpo">{pedido.clienteNome}</Text>
+                  </DataGridCelula>
+                  <DataGridCelula papel="secondary" truncar={false}>
+                    <Text variant="corpo">{pedido.tipo}</Text>
+                  </DataGridCelula>
+                  <DataGridCelula papel="status" truncar={false}>
+                    <Status tone={TOM_DA_SITUACAO[pedido.situacao] ?? 'neutro'}>
+                      {SITUACAO[pedido.situacao] ?? pedido.situacao}
+                    </Status>
+                  </DataGridCelula>
+                  <CelulaDeDinheiro
+                    truncar={false}
+                    peso="forte"
+                    valorFormatado={formatarMoeda(pedido.totalCentavos)}
+                  />
                 </tr>
               ))}
             </tbody>

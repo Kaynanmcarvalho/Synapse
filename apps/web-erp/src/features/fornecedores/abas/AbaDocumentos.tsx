@@ -1,7 +1,16 @@
 /* eslint-disable max-lines-per-function */
+import {
+  classesDaLinha,
+  DataGridCabecalho,
+  DataGridCelula,
+  Status,
+  Text,
+  type TomDeStatus,
+} from '@synapse/sdl';
 import type { DocumentosDoFornecedor, LinhaDeTituloDoFornecedor } from '@synapse/types';
 import { CircleDollarSign, LoaderCircle, PackageCheck, Wallet } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { CelulaDeDinheiro } from '../../../components/datagrid/CelulaDeDinheiro';
 import { Bloco } from '../../customers/campos';
 import { formatarData, formatarMoeda } from '../../customers/formato';
 import { documentosDoFornecedor } from '../fornecedores.api';
@@ -18,6 +27,19 @@ const SITUACAO_DO_PEDIDO: Readonly<Record<string, string>> = {
   CANCELADO: 'Cancelado',
 };
 
+/** Mesmo domínio e mesmo mapeamento de PurchasingScreen (Fase 5.3) — o
+ *  pedido de compra aqui é o mesmo PurchaseOrder, só visto pela aba do
+ *  fornecedor. Reaproveitar o tom evita inventar um segundo vocabulário para
+ *  o mesmo status. */
+const TOM_DO_PEDIDO: Readonly<Record<string, TomDeStatus>> = {
+  RASCUNHO: 'neutro',
+  EM_COTACAO: 'atencao',
+  APROVADO: 'info',
+  RECEBIDO_PARCIAL: 'pendente',
+  RECEBIDO: 'ok',
+  CANCELADO: 'neutro',
+};
+
 function Titulos({
   titulos,
   vazio,
@@ -28,33 +50,37 @@ function Titulos({
   if (titulos.length === 0) return <p className="text-body-sm text-stone">{vazio}</p>;
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[520px]">
+      <table className="w-full min-w-[520px] border-collapse">
         <thead>
-          <tr className="text-caption text-stone border-hairline-light border-b text-left">
-            <th className="px-3 py-2 font-medium">Descrição</th>
-            <th className="px-3 py-2 font-medium">Vencimento</th>
-            <th className="px-3 py-2 font-medium">Situação</th>
-            <th className="px-3 py-2 text-right font-medium">Valor</th>
-            <th className="px-3 py-2 text-right font-medium">Saldo</th>
+          <tr className="border-hairline-light border-b">
+            <DataGridCabecalho id="descricao" rotulo="Descrição" />
+            <DataGridCabecalho id="vencimento" rotulo="Vencimento" />
+            <DataGridCabecalho id="situacao" rotulo="Situação" />
+            <DataGridCabecalho id="valor" rotulo="Valor" alinhamento="direita" />
+            <DataGridCabecalho id="saldo" rotulo="Saldo" alinhamento="direita" />
           </tr>
         </thead>
         <tbody>
           {titulos.map((titulo) => (
-            <tr
-              key={titulo.id}
-              className="border-hairline-light text-body-sm border-b last:border-0"
-            >
-              <td className="text-ink px-3 py-2">{titulo.descricao}</td>
-              <td className="text-charcoal px-3 py-2 tabular-nums">
-                {formatarData(titulo.vencimento)}
-              </td>
-              <td className="text-charcoal px-3 py-2">{titulo.situacao}</td>
-              <td className="text-ink px-3 py-2 text-right tabular-nums">
-                {formatarMoeda(titulo.valorCentavos)}
-              </td>
-              <td className="text-ink px-3 py-2 text-right tabular-nums">
-                {formatarMoeda(titulo.saldoCentavos)}
-              </td>
+            <tr key={titulo.id} className={classesDaLinha({ clicavel: false, focoComAnel: false })}>
+              <DataGridCelula papel="primary" truncar={false}>
+                <Text variant="corpo">{titulo.descricao}</Text>
+              </DataGridCelula>
+              <DataGridCelula papel="data" truncar={false}>
+                <Text variant="dado">{formatarData(titulo.vencimento)}</Text>
+              </DataGridCelula>
+              <DataGridCelula papel="secondary" truncar={false}>
+                <Text variant="corpo">{titulo.situacao}</Text>
+              </DataGridCelula>
+              <CelulaDeDinheiro
+                truncar={false}
+                valorFormatado={formatarMoeda(titulo.valorCentavos)}
+              />
+              <CelulaDeDinheiro
+                truncar={false}
+                peso="forte"
+                valorFormatado={formatarMoeda(titulo.saldoCentavos)}
+              />
             </tr>
           ))}
         </tbody>
@@ -114,31 +140,37 @@ export function AbaDocumentos({ fornecedorId }: { readonly fornecedorId: string 
           <p className="text-body-sm text-stone">Nenhum pedido de compra com este fornecedor.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[480px]">
+            <table className="w-full min-w-[480px] border-collapse">
               <thead>
-                <tr className="text-caption text-stone border-hairline-light border-b text-left">
-                  <th className="px-3 py-2 font-medium">Pedido</th>
-                  <th className="px-3 py-2 font-medium">Data</th>
-                  <th className="px-3 py-2 font-medium">Situação</th>
-                  <th className="px-3 py-2 text-right font-medium">Total</th>
+                <tr className="border-hairline-light border-b">
+                  <DataGridCabecalho id="pedido" rotulo="Pedido" />
+                  <DataGridCabecalho id="data" rotulo="Data" />
+                  <DataGridCabecalho id="situacao" rotulo="Situação" />
+                  <DataGridCabecalho id="total" rotulo="Total" alinhamento="direita" />
                 </tr>
               </thead>
               <tbody>
                 {documentos.pedidosDeCompra.map((pedido) => (
                   <tr
                     key={pedido.id}
-                    className="border-hairline-light text-body-sm border-b last:border-0"
+                    className={classesDaLinha({ clicavel: false, focoComAnel: false })}
                   >
-                    <td className="text-ink px-3 py-2 tabular-nums">{pedido.numero}</td>
-                    <td className="text-charcoal px-3 py-2 tabular-nums">
-                      {formatarData(pedido.criadoEm)}
-                    </td>
-                    <td className="text-charcoal px-3 py-2">
-                      {SITUACAO_DO_PEDIDO[pedido.situacao] ?? pedido.situacao}
-                    </td>
-                    <td className="text-ink px-3 py-2 text-right tabular-nums">
-                      {formatarMoeda(pedido.totalCentavos)}
-                    </td>
+                    <DataGridCelula papel="data" truncar={false}>
+                      <Text variant="dado">{pedido.numero}</Text>
+                    </DataGridCelula>
+                    <DataGridCelula papel="data" truncar={false}>
+                      <Text variant="dado">{formatarData(pedido.criadoEm)}</Text>
+                    </DataGridCelula>
+                    <DataGridCelula papel="status" truncar={false}>
+                      <Status tone={TOM_DO_PEDIDO[pedido.situacao] ?? 'neutro'}>
+                        {SITUACAO_DO_PEDIDO[pedido.situacao] ?? pedido.situacao}
+                      </Status>
+                    </DataGridCelula>
+                    <CelulaDeDinheiro
+                      truncar={false}
+                      peso="forte"
+                      valorFormatado={formatarMoeda(pedido.totalCentavos)}
+                    />
                   </tr>
                 ))}
               </tbody>
