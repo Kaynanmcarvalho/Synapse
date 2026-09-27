@@ -569,6 +569,15 @@ describe('familiaDoPainel', () => {
     const { itens } = montarMenu('X', [item('Consulta Produtos', { atalho: 'Ctrl+F8' })]);
     expect(familiaDoPainel(itens)).not.toBe('compacto');
   });
+
+  it('"em breve" tambem conta — item sem tela e com atalho ao mesmo tempo (ex.: Cancelamento de Venda) nao pode quebrar a linha por falta de largura', () => {
+    const semAtalho = montarMenu('X', [item('Cancelamento de Venda')]);
+    const comAtalho = montarMenu('X', [item('Cancelamento de Venda', { atalho: 'Ctrl+L' })]);
+    // "em breve" sozinho ja empurra para fora do compacto; com atalho junto,
+    // as duas coisas somadas empurram para a familia larga.
+    expect(familiaDoPainel(semAtalho.itens)).not.toBe('compacto');
+    expect(familiaDoPainel(comAtalho.itens)).toBe('largo');
+  });
 });
 
 describe('moduloAtivoPara', () => {

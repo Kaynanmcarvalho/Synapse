@@ -3,8 +3,9 @@ import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MENUS } from './menu.data';
-import { ID_CONTEUDO_PRINCIPAL } from './menu.utils';
 import { MenuBar } from './MenuBar';
+
+const ID_SENTINELA_ANTES = 'sentinela-antes-da-barra';
 
 /** O comportamento de barra de aplicação que o Synapse já tem, registrado antes
  *  de a Fase 3 mexer na aparência: F10 leva o foco à barra, as setas andam entre
@@ -28,9 +29,18 @@ const renderizar = (caminhoAtual = '/rota-sem-modulo') => {
   act(() =>
     raiz.render(
       <MemoryRouter>
-        {/* Alvo de foco que o AppShell de verdade fornece ao redor do <Outlet/>. */}
-        <div id={ID_CONTEUDO_PRINCIPAL} tabIndex={-1} />
-        <MenuBar menus={MENUS} caminhoAtual={caminhoAtual} onSair={vi.fn()} />
+        {/* Fica no lugar do que a chrome de verdade tem antes da barra (o botão
+         *  Ajuda no AppShell): é para onde Shift+Tab sai a partir do primeiro
+         *  módulo. */}
+        <button type="button" id={ID_SENTINELA_ANTES}>
+          Antes da barra
+        </button>
+        <MenuBar
+          menus={MENUS}
+          caminhoAtual={caminhoAtual}
+          onSair={vi.fn()}
+          focarAntesDaBarra={() => document.getElementById(ID_SENTINELA_ANTES)?.focus()}
+        />
       </MemoryRouter>,
     ),
   );
@@ -235,24 +245,47 @@ describe('MenuBar — teclado', () => {
 });
 
 describe('MenuBar — bug: Tab com o menu aberto', () => {
-  it('Tab fecha tudo e vai para o conteúdo da rota — nunca solta o foco no body', () => {
+  /** Tab não pode "teleportar" o foco para um alvo artificial fora da barra —
+   *  isso é o defeito reaberto na validação da Fase 3.1. O padrão ARIA de menu
+   *  button diz que Tab fecha o menu e segue a ordem natural da página: o
+   *  próximo widget depois do módulo aberto é o módulo vizinho (ou Sair, se
+   *  for o último), e Shift+Tab é o widget anterior (ou o que vem antes da
+   *  barra, se for o primeiro). Isso é o que o browser faria sozinho se o
+   *  painel não estivesse num portal desconectado da ordem do DOM. */
+
+  it('Tab no meio da barra fecha o menu e vai para o PRÓXIMO módulo — nunca para um alvo fixo', () => {
     act(() => botaoDoModulo('Cadastros').click());
     expect(paineis()).toHaveLength(1);
 
     teclar(focado() as HTMLElement, 'Tab');
     expect(paineis()).toHaveLength(0);
-    expect(focado()?.id).toBe(ID_CONTEUDO_PRINCIPAL);
-    expect(focado()).not.toBe(document.body);
+    expect(focado()?.textContent?.trim()).toBe('Vendas');
+    expect(botaoDoModulo('Vendas').getAttribute('aria-expanded')).toBe('false');
   });
 
-  it('Shift+Tab fecha tudo e devolve o foco ao módulo que estava aberto', () => {
-    act(() => botaoDoModulo('Estoque').click());
+  it('Tab no último módulo (Suporte) vai para Sair — o próximo widget de verdade', () => {
+    act(() => botaoDoModulo('Suporte').click());
+    teclar(focado() as HTMLElement, 'Tab');
+    expect(paineis()).toHaveLength(0);
+    expect(focado()?.textContent?.trim()).toBe('Sair');
+  });
+
+  it('Shift+Tab volta para o módulo ANTERIOR — não para o que estava aberto', () => {
+    act(() => botaoDoModulo('Financeiro').click());
     teclar(focado() as HTMLElement, 'Tab', { shiftKey: true });
     expect(paineis()).toHaveLength(0);
     expect(focado()?.textContent?.trim()).toBe('Estoque');
   });
 
-  it('Tab também sai de dentro de um submenu, não só do primeiro nível', () => {
+  it('Shift+Tab no primeiro módulo (Cadastros) sai da barra para o que vem antes dela', () => {
+    act(() => botaoDoModulo('Cadastros').click());
+    teclar(focado() as HTMLElement, 'Tab', { shiftKey: true });
+    expect(paineis()).toHaveLength(0);
+    expect(focado()?.id).toBe(ID_SENTINELA_ANTES);
+    expect(focado()).not.toBe(document.body);
+  });
+
+  it('Tab também sai de dentro de um submenu, indo para o módulo seguinte ao que o contém', () => {
     act(() => botaoDoModulo('Cadastros').click());
     const clientes = itemPorTexto(paineis()[0] as HTMLElement, 'Clientes');
     passarOMouse(clientes);
@@ -260,7 +293,18 @@ describe('MenuBar — bug: Tab com o menu aberto', () => {
 
     teclar(focado() as HTMLElement, 'Tab');
     expect(paineis()).toHaveLength(0);
-    expect(focado()?.id).toBe(ID_CONTEUDO_PRINCIPAL);
+    expect(focado()?.textContent?.trim()).toBe('Vendas');
+  });
+
+  it('a sequência Tab, Tab a partir de um módulo aberto é coerente: cada Tab avança um widget', () => {
+    act(() => botaoDoModulo('Cadastros').click());
+    teclar(focado() as HTMLElement, 'Tab');
+    expect(focado()?.textContent?.trim()).toBe('Vendas');
+
+    // A partir daqui o botão de Vendas está fechado (não é mais um menu
+    // aberto) — o próximo Tab é navegação nativa do browser, fora do que a
+    // barra intercepta; testado de ponta a ponta com Playwright real.
+    expect(botaoDoModulo('Vendas').getAttribute('aria-expanded')).toBe('false');
   });
 });
 
@@ -337,6 +381,27 @@ describe('MenuBar — bug: seta lateral não pode cair num índice de outro cont
     // viria depois do destaque antigo e errado).
     teclar(focado() as HTMLElement, 'ArrowDown');
     expect(focado()?.textContent).toContain('Fornecedores');
+  });
+
+  /** jsdom não reproduz um detalhe do navegador real: quando o elemento
+   *  focado é removido do DOM, o navegador move o foco pro `body` na hora,
+   *  de forma síncrona. Esse teste passa tanto com quanto sem o `.focus()`
+   *  direto do fix (a garantia de verdade contra esse race só veio de rodar
+   *  no Chromium via Playwright — ver relatório da Fase 3.1). Fica aqui para
+   *  proteger a outra metade do comportamento: o destaque volta pro item
+   *  certo mesmo quando o submenu foi aberto por hover (que já chama
+   *  `setDestaque` — voltar pro MESMO índice não muda o estado). */
+  it('voltar do submenu por Escape mantém o destaque no item certo mesmo quando ele foi aberto por hover', () => {
+    act(() => botaoDoModulo('Cadastros').click());
+    const painelDeCadastros = paineis()[0] as HTMLElement;
+    const clientes = itemPorTexto(painelDeCadastros, 'Clientes');
+
+    passarOMouse(clientes);
+    expect(paineis()).toHaveLength(2);
+
+    teclar(focado() as HTMLElement, 'Escape');
+    expect(paineis()).toHaveLength(1);
+    expect(focado()?.textContent).toContain('Clientes');
   });
 });
 

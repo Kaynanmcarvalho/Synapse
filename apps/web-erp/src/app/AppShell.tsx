@@ -1,14 +1,14 @@
 /* eslint-disable max-lines-per-function */
 import { Kbd } from '@synapse/sdl';
 import { CircleHelp, Keyboard, Menu, Search } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { NotificationCenter } from '../features/notifications/NotificationCenter';
 import { CommandPalette } from '../features/search/CommandPalette';
 import { ShortcutsModal } from '../features/search/ShortcutsModal';
 import { useAuth, useUsuario } from './auth/AuthContext';
 import { MENUS } from './menu/menu.data';
-import { filtrarPorFeature, ID_CONTEUDO_PRINCIPAL } from './menu/menu.utils';
+import { filtrarPorFeature } from './menu/menu.utils';
 import { MenuBar } from './menu/MenuBar';
 import { MobileMenu } from './menu/MobileMenu';
 import { useMenuShortcuts } from './menu/useMenuShortcuts';
@@ -61,6 +61,7 @@ export function AppShell() {
   const navigate = useNavigate();
   const experience = useTenantExperience();
   const { sair } = useAuth();
+  const botaoAjuda = useRef<HTMLButtonElement | null>(null);
 
   // Opcao de modulo desligado para o tenant nao aparece — nem no menu, nem no atalho.
   const menus = useMemo(
@@ -134,7 +135,9 @@ export function AppShell() {
               className="border-hairline-light bg-surface-soft hover:bg-surface-hover duration-rapido rounded-controle ml-2 hidden h-8 w-full max-w-[320px] items-center gap-2 border px-2.5 text-left transition-colors sm:flex"
             >
               <Search size={15} className="text-stone shrink-0" aria-hidden="true" />
-              <span className="text-body-sm text-stone flex-1 truncate">O que você precisa?</span>
+              {/* text-ash, nao text-stone: o texto do placeholder precisa ler
+               *  como conteudo (AA, 4.5:1), nao so como decoracao. */}
+              <span className="text-body-sm text-ash flex-1 truncate">O que você precisa?</span>
               <span className="flex shrink-0 items-center gap-0.5">
                 <Kbd className="h-5 min-w-5 px-1 text-[10px]">Ctrl</Kbd>
                 <Kbd className="h-5 min-w-5 px-1 text-[10px]">K</Kbd>
@@ -161,6 +164,7 @@ export function AppShell() {
               </button>
               <NotificationCenter />
               <button
+                ref={botaoAjuda}
                 type="button"
                 aria-label="Ajuda"
                 className={`${BOTAO_DE_ICONE} hidden sm:flex`}
@@ -174,7 +178,12 @@ export function AppShell() {
           {/* Application Menubar — 40px. Os paineis do menu abrem num portal:
            *  rolar esta faixa em tela estreita nao os corta. */}
           <div className="border-hairline-light hidden h-10 items-center overflow-x-auto border-t px-4 [scrollbar-width:none] lg:flex lg:px-6">
-            <MenuBar menus={menus} caminhoAtual={location.pathname} onSair={() => void sair()} />
+            <MenuBar
+              menus={menus}
+              caminhoAtual={location.pathname}
+              onSair={() => void sair()}
+              focarAntesDaBarra={() => botaoAjuda.current?.focus()}
+            />
           </div>
         </header>
 
@@ -186,12 +195,9 @@ export function AppShell() {
           />
         )}
 
-        {/* Alvo previsivel de foco quando Tab sai da barra de menus. */}
-        <div id={ID_CONTEUDO_PRINCIPAL} tabIndex={-1} className="outline-none">
-          <LimiteDeFalha key={location.pathname}>
-            <Outlet />
-          </LimiteDeFalha>
-        </div>
+        <LimiteDeFalha key={location.pathname}>
+          <Outlet />
+        </LimiteDeFalha>
 
         <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
         {shortcutsOpen && <ShortcutsModal onClose={() => setShortcutsOpen(false)} />}

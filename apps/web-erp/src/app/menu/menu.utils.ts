@@ -211,10 +211,16 @@ export const LARGURA_DO_PAINEL: Record<FamiliaDeLargura, number> = {
   largo: 360,
 };
 
+/** `"em breve"` (8 letras) tambem ocupa a coluna de metadado, e alguns itens
+ *  tem as duas coisas ao mesmo tempo — ex.: "Cancelamento de Venda" tem atalho
+ *  (Ctrl+L) e ainda nao tem tela. Contar só o atalho subestimava a largura
+ *  necessaria e a linha quebrava de um jeito imprevisivel. */
 const comprimentoDaEntrada = (entrada: EntradaDeMenu): number => {
   if (entrada.tipo === 'separador') return 0;
-  const doAtalho = entrada.tipo === 'item' && entrada.atalho ? entrada.atalho.rotulo.length + 3 : 0;
-  return entrada.rotulo.length + doAtalho;
+  if (entrada.tipo !== 'item') return entrada.rotulo.length;
+  const doAtalho = entrada.atalho ? entrada.atalho.rotulo.length + 3 : 0;
+  const doEmBreve = entrada.situacao === 'em-breve' ? 'em breve'.length + 3 : 0;
+  return entrada.rotulo.length + doAtalho + doEmBreve;
 };
 
 export const familiaDoPainel = (entradas: readonly EntradaDeMenu[]): FamiliaDeLargura => {
@@ -234,7 +240,3 @@ export const moduloAtivoPara = (
   caminho: string,
 ): string | undefined =>
   menus.find((menu) => itensFolha(menu.itens).some((item) => item.caminho === caminho))?.id;
-
-/** Alvo previsivel de foco quando Tab sai da barra de menus: o conteudo da
- *  rota atual, montado pelo AppShell com este id. */
-export const ID_CONTEUDO_PRINCIPAL = 'conteudo-principal';

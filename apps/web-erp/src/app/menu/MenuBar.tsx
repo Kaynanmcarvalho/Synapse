@@ -2,7 +2,7 @@
 import { ChevronDown, LogOut } from 'lucide-react';
 import { type KeyboardEvent as EventoDeTeclado, useEffect, useRef, useState } from 'react';
 import type { MenuPrincipal } from './menu.types';
-import { ID_CONTEUDO_PRINCIPAL, moduloAtivoPara, moveuDeVerdade } from './menu.utils';
+import { moduloAtivoPara, moveuDeVerdade } from './menu.utils';
 import { PainelDeMenu } from './PainelDeMenu';
 
 /** Barra de menus no lugar e na ordem do Syndata, com comportamento de barra de
@@ -12,13 +12,18 @@ export function MenuBar({
   menus,
   caminhoAtual,
   onSair,
+  focarAntesDaBarra,
 }: {
   readonly menus: readonly MenuPrincipal[];
   readonly caminhoAtual: string;
   readonly onSair: () => void;
+  /** Shift+Tab saindo do primeiro modulo (Cadastros) volta para o que vem
+   *  antes da barra na chrome — hoje o botao Ajuda. */
+  readonly focarAntesDaBarra: () => void;
 }) {
   const [aberto, setAberto] = useState<number | null>(null);
   const botoes = useRef<Array<HTMLButtonElement | null>>([]);
+  const botaoSair = useRef<HTMLButtonElement | null>(null);
   const moduloAtivoId = moduloAtivoPara(menus, caminhoAtual);
 
   const indiceVizinho = (indice: number, direcao: 1 | -1) =>
@@ -49,14 +54,23 @@ export function MenuBar({
     };
   }, []);
 
-  /** Tab sai da barra de vez (fecha tudo e segue para o conteudo da rota);
-   *  Shift+Tab volta para o modulo que estava aberto — nunca solta o foco no
-   *  body, que e o defeito que a Fase 3 corrige. */
+  /** Tab fecha o menu aberto e segue a ordem natural da pagina, como pede o
+   *  padrao ARIA de menu button: o widget nao muda onde voce esta na
+   *  sequencia de tabulacao, so fecha e deixa o Tab continuar. Por isso o
+   *  destino e sempre relativo ao modulo aberto — nunca um alvo fixo fora da
+   *  barra (isso seria teleportar o foco, o defeito que a Fase 3 corrige). */
   const sairComTab = (paraFrente: boolean) => {
     const indiceAtual = aberto;
     setAberto(null);
-    if (paraFrente) document.getElementById(ID_CONTEUDO_PRINCIPAL)?.focus();
-    else if (indiceAtual !== null) botoes.current[indiceAtual]?.focus();
+    if (indiceAtual === null) return;
+    if (paraFrente) {
+      if (indiceAtual < menus.length - 1) botoes.current[indiceAtual + 1]?.focus();
+      else botaoSair.current?.focus();
+    } else if (indiceAtual > 0) {
+      botoes.current[indiceAtual - 1]?.focus();
+    } else {
+      focarAntesDaBarra();
+    }
   };
 
   const aoTeclarNoBotao = (evento: EventoDeTeclado<HTMLButtonElement>, indice: number) => {
@@ -107,7 +121,7 @@ export function MenuBar({
                 if (aberto !== null && !estaAberto && moveuDeVerdade(evento)) setAberto(indice);
               }}
               onKeyDown={(evento) => aoTeclarNoBotao(evento, indice)}
-              className={`text-button-sm focus-visible:ring-primary/40 duration-rapido group relative inline-flex h-full items-center gap-1 whitespace-nowrap px-3 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset ${
+              className={`text-button-sm focus-visible:ring-primary/70 duration-rapido group relative inline-flex h-full items-center gap-1 whitespace-nowrap px-3 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset ${
                 estaAberto || ativo ? 'text-ink' : 'text-charcoal hover:text-ink'
               }`}
             >
@@ -137,9 +151,10 @@ export function MenuBar({
 
       <span aria-hidden="true" className="bg-hairline-light mx-2 h-4 w-px" />
       <button
+        ref={botaoSair}
         type="button"
         onClick={onSair}
-        className="text-button-sm text-charcoal hover:text-accent-danger focus-visible:ring-primary/40 duration-rapido inline-flex h-full items-center gap-1.5 whitespace-nowrap px-3 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset"
+        className="text-button-sm text-charcoal hover:text-accent-danger focus-visible:ring-primary/70 duration-rapido inline-flex h-full items-center gap-1.5 whitespace-nowrap px-3 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset"
       >
         <LogOut size={14} aria-hidden="true" /> Sair
       </button>

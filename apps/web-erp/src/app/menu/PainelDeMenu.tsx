@@ -49,8 +49,10 @@ function ConteudoDoItem({ item }: { readonly item: ItemDeMenu }) {
     <>
       <IconeDoMenuItem icone={item.icone} />
       <span className="flex-1 leading-snug">{item.rotulo}</span>
+      {/* text-ash, nao text-stone: 13px precisa ler 4.5:1 (AA), nao so
+       *  "parecer" discreto. */}
       {item.situacao === 'em-breve' && (
-        <span className="text-stone text-caption shrink-0">em breve</span>
+        <span className="text-ash text-caption shrink-0">em breve</span>
       )}
       {item.atalho && <Kbd className="h-5 shrink-0 px-1.5 text-[11px]">{item.atalho.rotulo}</Kbd>}
     </>
@@ -226,10 +228,19 @@ export function PainelDeMenu(props: PropsDoPainel) {
                 rotulo={entrada.rotulo}
                 onFechar={(focarOrigem) => {
                   setSubmenuAberto(null);
-                  // Estado, nao DOM direto: `elementoDo(indice)?.focus()` aqui
-                  // desalinhava o destaque visual do foco real (o bug da seta
-                  // lateral). O efeito acima refoca o elemento certo sozinho.
-                  if (focarOrigem) setDestaque(indice);
+                  if (!focarOrigem) return;
+                  // As duas coisas, e nessa ordem: `setDestaque` mantem o
+                  // destaque visual certo (o item que abriu o submenu, nao um
+                  // outro que tenha ficado em destaque antes — o bug da seta
+                  // lateral). O `.focus()` direto e imediato porque, quando o
+                  // submenu foi aberto por hover, `destaque` ja era `indice`
+                  // — chamar `setDestaque(indice)` de novo com o MESMO valor
+                  // nao dispara o efeito que refocaria, e nesse meio tempo o
+                  // navegador ja moveu o foco pro body (o item focado dentro
+                  // do submenu acabou de sair do DOM). Sem o `.focus()` aqui,
+                  // o foco fica preso no body.
+                  setDestaque(indice);
+                  elementoDo(indice)?.focus();
                 }}
                 onFecharTudo={onFecharTudo}
                 onTab={onTab}
