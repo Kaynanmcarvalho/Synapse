@@ -57,6 +57,11 @@ export function Field({
     <div className={cn('min-w-0', LARGURA[String(span)], className)} {...resto}>
       <label htmlFor={id} className="text-caption text-ink-medio mb-1.5 block font-medium">
         {label}
+        {required ? (
+          <span aria-hidden="true" className="text-ink-sutil ml-0.5 font-normal">
+            *
+          </span>
+        ) : null}
       </label>
       <CampoContexto.Provider value={{ id, invalid, describedBy, density, required, disabled }}>
         {children}

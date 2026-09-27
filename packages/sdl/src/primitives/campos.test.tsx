@@ -73,6 +73,27 @@ describe('Field', () => {
     expect(input().getAttribute('aria-required')).toBe('true');
   });
 
+  it('obrigatório ganha uma marca discreta no rótulo, não um asterisco vermelho', () => {
+    montar(
+      <Field label="Praça" required>
+        <Input />
+      </Field>,
+    );
+    const marca = caixa.querySelector('label span');
+    expect(marca?.textContent).toBe('*');
+    expect(marca?.getAttribute('aria-hidden')).toBe('true');
+    expect(marca?.className).not.toContain('perigo');
+  });
+
+  it('sem required, o rótulo não ganha marca nenhuma', () => {
+    montar(
+      <Field label="Praça">
+        <Input />
+      </Field>,
+    );
+    expect(caixa.querySelector('label span')).toBeNull();
+  });
+
   it('a densidade do campo vale para o controle sem a tela repetir', () => {
     montar(
       <Field label="Código" density="compacta">
