@@ -1,14 +1,28 @@
-import { Button, Input, Select, Status, Text, type TomDeStatus } from '@synapse/sdl';
+import {
+  Button,
+  classesDaLinha,
+  DataGridCabecalho,
+  DataGridCelula,
+  Input,
+  Select,
+  Status,
+  SynapseSignal,
+  Text,
+  type PapelDeColuna,
+  type TomDeStatus,
+} from '@synapse/sdl';
 import type { ClienteNaLista } from '@synapse/types';
 import { Search } from 'lucide-react';
-import { separarMoeda } from '../../lib/dinheiro';
+import { CelulaDeDinheiro } from '../../components/datagrid/CelulaDeDinheiro';
 import { formatarDocumento, formatarMoeda, formatarTelefone } from './formato';
 import type { EstadoDaLista, FiltrosDaTela } from './useListaDeClientes';
 
-/** A barra de filtros e a tabela da tela de clientes — o primeiro teste da
- *  linguagem visual da Fase 4.2 fora da Home: mesmo grid de dado, mesmo
- *  `font-data`, mesmo `Status` do SDL, sem virar "tabela premium" (sem célula
- *  arredondada, sem linha com sombra, sem zebra gratuita). */
+/** A barra de filtros e a tabela da tela de clientes — piloto 1 da fundação
+ *  de DataGrid (Fase 5): mesma aparência da Fase 4.3, agora composta com os
+ *  primitives compartilhados (`DataGridCelula`/`DataGridCabecalho`/
+ *  `classesDaLinha`) em vez de classes soltas reimplementadas aqui. Clientes
+ *  não tem seleção, ordenação, resize ou reorder — não ganhou nenhum desses
+ *  para "demonstrar" a fundação; paridade com a Fase 4.3 é o contrato. */
 
 const ROTULO_DA_SITUACAO: Record<ClienteNaLista['situacao'], string> = {
   REGULAR: 'Liberado',
@@ -24,7 +38,22 @@ const TOM_DA_SITUACAO: Record<ClienteNaLista['situacao'], TomDeStatus> = {
   BLOCKED: 'bloqueado',
 };
 
-const COLUNAS = ['Código', 'Cliente', 'CNPJ / CPF', 'Cidade', 'Telefone', 'Limite', 'Situação'];
+interface DefinicaoDeColuna {
+  readonly id: string;
+  readonly rotulo: string;
+  readonly papel: PapelDeColuna;
+  readonly alinhamento: 'esquerda' | 'direita';
+}
+
+const COLUNAS: readonly DefinicaoDeColuna[] = [
+  { id: 'codigo', rotulo: 'Código', papel: 'leading', alinhamento: 'esquerda' },
+  { id: 'cliente', rotulo: 'Cliente', papel: 'primary', alinhamento: 'esquerda' },
+  { id: 'documento', rotulo: 'CNPJ / CPF', papel: 'data', alinhamento: 'esquerda' },
+  { id: 'cidade', rotulo: 'Cidade', papel: 'secondary', alinhamento: 'esquerda' },
+  { id: 'telefone', rotulo: 'Telefone', papel: 'data', alinhamento: 'esquerda' },
+  { id: 'limite', rotulo: 'Limite', papel: 'data', alinhamento: 'direita' },
+  { id: 'situacao', rotulo: 'Situação', papel: 'status', alinhamento: 'esquerda' },
+];
 
 export function BarraDeFiltros({
   filtros,
@@ -81,12 +110,6 @@ export function BarraDeFiltros({
   );
 }
 
-/** Todo `<td>` tem a linha de baixo, menos o primeiro: o hairline começa no
- *  Cliente, não no Código — o mesmo inset deliberado, não um
- *  `border-bottom: 1px solid gray` em tudo (§10 da Fase 4.3). */
-const CELULA = 'py-3 px-3 border-hairline-light border-b';
-const CELULA_LEADING = 'py-3 pl-1 pr-3';
-
 function Linha({
   cliente,
   aoAbrir,
@@ -94,7 +117,6 @@ function Linha({
   readonly cliente: ClienteNaLista;
   readonly aoAbrir: () => void;
 }) {
-  const { prefixo, numero } = separarMoeda(formatarMoeda(cliente.limiteCentavos));
   return (
     <tr
       tabIndex={0}
@@ -102,22 +124,19 @@ function Linha({
       onKeyDown={(evento) => {
         if (evento.key === 'Enter') aoAbrir();
       }}
-      className="hover:bg-surface-hover focus-visible:bg-surface-hover group cursor-pointer outline-none"
+      className={classesDaLinha({ hairlineNaLinha: false, focoComAnel: false })}
     >
       {/* Código — LEADING: dado auxiliar, discreto, font-data. Sem hairline
-       *  embaixo: é o "entalhe" que separa o índice do resto da linha (o
-       *  mesmo raciocínio do índice operacional da Home, sem repetir o
-       *  primitive — aqui o dado já existe, não é uma posição inventada). */}
-      <td className={`${CELULA_LEADING} relative`}>
-        <span
-          aria-hidden="true"
-          className="bg-primary duration-instantaneo absolute inset-y-2 left-0 w-[2px] scale-y-0 rounded-full opacity-0 transition-all group-focus-visible:scale-y-100 group-focus-visible:opacity-100"
-        />
+       *  embaixo: é o "entalhe" que separa o índice do resto da linha — o
+       *  mesmo padrão inset da fila de crédito, aqui na única coluna que já
+       *  funciona como âncora estável (Clientes não tem reorder). */}
+      <DataGridCelula papel="leading" truncar={false} className="pl-1 pr-3">
+        <SynapseSignal gatilho="foco-do-grupo" />
         <Text variant="dado" tone="sutil" className="text-body-sm pl-2">
           {cliente.codigo ?? '—'}
         </Text>
-      </td>
-      <td className={CELULA}>
+      </DataGridCelula>
+      <DataGridCelula papel="primary" truncar={false} comHairline>
         <Text variant="corpo" className="block font-medium">
           {cliente.nome}
         </Text>
@@ -126,29 +145,28 @@ function Linha({
             {cliente.razaoSocial}
           </Text>
         ) : null}
-      </td>
-      <td className={CELULA}>
+      </DataGridCelula>
+      <DataGridCelula papel="data" truncar={false} comHairline>
         <Text variant="dado" className="text-body-sm">
           {formatarDocumento(cliente.documento)}
         </Text>
-      </td>
-      <td className={CELULA}>
+      </DataGridCelula>
+      <DataGridCelula papel="secondary" truncar={false} comHairline>
         <Text variant="corpoSecundario">
           {cliente.uf ? `${cliente.cidade}/${cliente.uf}` : cliente.cidade}
         </Text>
-      </td>
-      <td className={CELULA}>
+      </DataGridCelula>
+      <DataGridCelula papel="data" truncar={false} comHairline>
         <Text variant="dado" className="text-body-sm">
           {formatarTelefone(cliente.telefone)}
         </Text>
-      </td>
-      <td className={`${CELULA} text-right`}>
-        <Text variant="dado" className="text-body-sm">
-          {prefixo && <span className="text-ink-apoio mr-1 font-normal">{prefixo}</span>}
-          {numero}
-        </Text>
-      </td>
-      <td className={CELULA}>
+      </DataGridCelula>
+      <CelulaDeDinheiro
+        truncar={false}
+        comHairline
+        valorFormatado={formatarMoeda(cliente.limiteCentavos)}
+      />
+      <DataGridCelula papel="status" truncar={false} comHairline>
         <Status tone={TOM_DA_SITUACAO[cliente.situacao]}>
           {ROTULO_DA_SITUACAO[cliente.situacao]}
         </Status>
@@ -157,7 +175,7 @@ function Linha({
             Inativo
           </Text>
         )}
-      </td>
+      </DataGridCelula>
     </tr>
   );
 }
@@ -201,16 +219,15 @@ export function TabelaDeClientes({
       <div className="overflow-x-auto">
         <table className="w-full min-w-[48rem] border-collapse">
           <thead>
-            <tr>
-              {COLUNAS.map((coluna, indice) => (
-                <th
-                  key={coluna}
-                  className={`text-caption text-ink-medio border-line-media whitespace-nowrap border-b py-2 font-medium ${
-                    indice === 0 ? 'pl-1 pr-3' : 'px-3'
-                  } ${coluna === 'Limite' ? 'text-right' : 'text-left'}`}
-                >
-                  {coluna}
-                </th>
+            <tr className="border-hairline-light border-b">
+              {COLUNAS.map((coluna) => (
+                <DataGridCabecalho
+                  key={coluna.id}
+                  id={coluna.id}
+                  rotulo={coluna.rotulo}
+                  alinhamento={coluna.alinhamento}
+                  className={coluna.id === 'codigo' ? 'pl-1 pr-3' : undefined}
+                />
               ))}
             </tr>
           </thead>
