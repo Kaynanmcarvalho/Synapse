@@ -145,13 +145,24 @@ export function Abas<TId extends string>({
   ativa,
   aoMudar,
   rotulo,
+  comErro,
 }: {
   readonly idBase: string;
   readonly abas: ReadonlyArray<{ readonly id: TId; readonly rotulo: string }>;
   readonly ativa: TId;
   readonly aoMudar: (aba: TId) => void;
   readonly rotulo: string;
+  /** Abas com campo para corrigir — o ponto de aviso ao lado do rótulo.
+   *  Segundo consumidor real (JanelaDoCliente, Fase 6.1): sem isto a aba
+   *  perderia a única pista de "tem erro aqui" ao trocar de pílula para
+   *  sublinhado. */
+  readonly comErro?: ReadonlySet<TId> | readonly TId[];
 }) {
+  const temErro = (id: TId): boolean => {
+    if (!comErro) return false;
+    if (comErro instanceof Set) return comErro.has(id);
+    return (comErro as readonly TId[]).includes(id);
+  };
   const mover = (evento: React.KeyboardEvent<HTMLButtonElement>, indice: number) => {
     const passo = ({ ArrowRight: 1, ArrowLeft: -1 } as Record<string, number>)[evento.key];
     if (!passo) return;
@@ -162,7 +173,11 @@ export function Abas<TId extends string>({
     document.getElementById(`${idBase}-aba-${proxima.id}`)?.focus();
   };
   return (
-    <div role="tablist" aria-label={rotulo} className="border-line-fina flex gap-4 border-b">
+    <div
+      role="tablist"
+      aria-label={rotulo}
+      className="border-line-fina flex gap-4 overflow-x-auto border-b"
+    >
       {abas.map((aba, indice) => {
         const selecionada = aba.id === ativa;
         return (
@@ -176,13 +191,19 @@ export function Abas<TId extends string>({
             tabIndex={selecionada ? 0 : -1}
             onClick={() => aoMudar(aba.id)}
             onKeyDown={(evento) => mover(evento, indice)}
-            className={`text-button-sm focus-visible:ring-primary/40 rounded-minimo -mb-px h-9 whitespace-nowrap border-b-2 outline-none transition-colors focus-visible:ring-2 ${
+            className={`text-button-sm focus-visible:ring-primary/40 rounded-minimo -mb-px inline-flex h-9 items-center gap-1.5 whitespace-nowrap border-b-2 outline-none transition-colors focus-visible:ring-2 ${
               selecionada
                 ? 'border-primary text-ink'
                 : 'text-ink-medio hover:text-ink border-transparent'
             }`}
           >
             {aba.rotulo}
+            {temErro(aba.id) ? (
+              <span
+                aria-label="Há campo para corrigir nesta aba"
+                className="bg-status-perigo h-1.5 w-1.5 shrink-0 rounded-full"
+              />
+            ) : null}
           </button>
         );
       })}

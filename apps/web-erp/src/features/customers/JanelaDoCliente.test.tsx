@@ -52,9 +52,13 @@ afterEach(() => {
   caixa.remove();
 });
 
+// A Fase 6.1 acrescentou uma marca "*" discreta (aria-hidden) ao rótulo dos
+// campos obrigatórios — o texto vira "CNPJ*"/"CNPJ *". O helper ignora essa
+// marca: procurar pelo campo pelo nome continua funcionando do jeito que o
+// teste já esperava, e é o texto que a pessoa vê, não o nó exato do DOM.
 const campo = (rotulo: string): HTMLInputElement | HTMLSelectElement => {
   const label = [...document.querySelectorAll('label')].find(
-    (item) => item.textContent?.trim() === rotulo,
+    (item) => item.textContent?.replace(/\s*\*$/, '').trim() === rotulo,
   );
   if (!label) throw new Error(`campo "${rotulo}" não encontrado`);
   const controle = document.getElementById(label.htmlFor);
@@ -159,7 +163,9 @@ describe('JanelaDoCliente — cadastro novo', () => {
       'Relatórios',
     ]);
     expect(document.body.textContent).toContain('Novo cliente');
-    expect(campo('Código').value).toBe('Novo cadastro');
+    // Fase 6.1: código passou de input desabilitado para ValoresDeLeitura —
+    // texto puro, não mais um campo com <label htmlFor>.
+    expect(document.body.textContent).toContain('Novo cadastro');
   });
 
   it('salvar vazio não chama a API: aponta os campos e marca a aba', async () => {
@@ -186,6 +192,24 @@ describe('JanelaDoCliente — cadastro novo', () => {
     expect(document.body.textContent).not.toContain('Confira os campos destacados.');
     expect(document.body.textContent).toContain('Alterações não salvas.');
     expect(document.querySelector('[aria-label="Há campo para corrigir nesta aba"]')).toBeNull();
+  });
+
+  it('ArrowRight/ArrowLeft movem entre as abas (Fase 6.1 — Form Grammar)', async () => {
+    act(() => raiz.render(<JanelaDoCliente clienteId={null} aoFechar={() => undefined} />));
+    await esperar();
+    const abas = () => [...document.querySelectorAll('[role="tab"]')] as HTMLButtonElement[];
+    expect(abas()[0]?.getAttribute('aria-selected')).toBe('true');
+
+    act(() =>
+      abas()[0]?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })),
+    );
+    expect(abas()[1]?.getAttribute('aria-selected')).toBe('true');
+    expect(document.activeElement).toBe(abas()[1]);
+
+    act(() =>
+      abas()[1]?.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true })),
+    );
+    expect(abas()[0]?.getAttribute('aria-selected')).toBe('true');
   });
 
   it('com os dados, salva o corpo que a API valida e avisa quem abriu', async () => {
@@ -256,7 +280,8 @@ describe('JanelaDoCliente — cliente gravado', () => {
     api.buscarCliente.mockResolvedValue(gravado());
     act(() => raiz.render(<JanelaDoCliente clienteId="cliente-1" aoFechar={() => undefined} />));
     await esperar();
-    expect(campo('Código').value).toBe('C-0042');
+    // Fase 6.1: código é ValoresDeLeitura (texto puro), não mais um campo.
+    expect(document.body.textContent).toContain('C-0042');
     expect(campo('Nome fantasia').value).toBe('Mercado do Bairro');
 
     digitar('Nome fantasia', 'Outro nome');

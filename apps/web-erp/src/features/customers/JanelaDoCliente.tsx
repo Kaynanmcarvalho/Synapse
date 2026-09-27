@@ -2,6 +2,7 @@ import type { Customer } from '@synapse/types';
 import { Modal } from '@synapse/ui';
 import { LoaderCircle } from 'lucide-react';
 import { useCallback, useState } from 'react';
+import { Abas, PainelDeAba } from '../../components/formulario/Formulario';
 import { AbaControleDeVendas } from './abas/ControleDeVendas';
 import { AbaDocumentos } from './abas/Documentos';
 import { AbaOutrasInformacoes } from './abas/OutrasInformacoes';
@@ -10,8 +11,8 @@ import { AbaPrincipal } from './abas/Principal';
 import { AbaReferencias } from './abas/Referencias';
 import { AbaRelatorios } from './abas/Relatorios';
 import type { PropsDaAba } from './abas/aba';
-import { abasComErro, type Aba } from './janela';
-import { Abas, Cabecalho, Rodape } from './JanelaPartes';
+import { ABAS, abasComErro, type Aba } from './janela';
+import { Cabecalho, Rodape } from './JanelaPartes';
 import { useAtalhosDoCadastro } from './useAtalhosDoCadastro';
 import { useCadastroDeCliente, type EstadoDaCarga } from './useCadastroDeCliente';
 import { useVisaoDeCredito, type VisaoDeCredito } from './useVisaoDeCredito';
@@ -22,9 +23,18 @@ import { useVisaoDeCredito, type VisaoDeCredito } from './useVisaoDeCredito';
  *  pergunta antes — perder meia hora de digitação por um Esc sem querer é o
  *  tipo de coisa que não se desfaz.
  *
- *  Cabeçalho, abas e rodapé ficam brancos e fixos; o miolo rola sobre um fundo
- *  cinza, e é esse contraste que faz os cartões das abas saltarem. A altura é
- *  fixa para a janela não pular de tamanho a cada troca de aba. */
+ *  Cabeçalho e rodapé ficam brancos e fixos; o miolo rola sobre um fundo
+ *  cinza, e é esse contraste que faz as seções das abas saltarem. A altura é
+ *  fixa para a janela não pular de tamanho a cada troca de aba.
+ *
+ *  Fase 6.1: as abas eram uma pílula própria (mesmo desenho de
+ *  `JanelaDeCadastro`, duplicado). Passam a usar `Abas`/`PainelDeAba` da Form
+ *  Grammar (Fase 6) — sublinhado cobalto, ArrowLeft/Right, `aria-controls` —
+ *  segundo consumidor real depois do assistente fiscal. O aviso de "aba com
+ *  erro" (que a pílula já tinha) virou uma capacidade da própria `Abas`. */
+
+const ID_BASE = 'cadastro-cliente';
+const ABAS_DA_JANELA = ABAS.map(([id, rotulo]) => ({ id, rotulo }));
 
 function Corpo({
   carga,
@@ -70,6 +80,7 @@ function Corpo({
 
 const nada = () => undefined;
 
+// eslint-disable-next-line max-lines-per-function -- composição da janela inteira (cabeçalho, abas, corpo, rodapé); quebrar mais perderia a visão do fluxo.
 export function JanelaDoCliente({
   clienteId,
   aoFechar,
@@ -118,22 +129,35 @@ export function JanelaDoCliente({
       size="full"
       bare
       closeOnBackdrop={false}
-      className="sm:h-[88vh]"
+      // Fase 6.1: `size="full"` do Modal para em max-w-6xl (1152px) — um
+      // cadastro com 7 abas, lookups e várias seções minguava no meio de uma
+      // tela 1920 (havia mais espaço fora do modal do que dentro). Isto o
+      // deixa usar a largura de workspace sem virar edge-to-edge.
+      className="sm:h-[88vh] sm:w-[94vw] sm:max-w-[1600px]"
     >
       <Cabecalho cliente={cadastro.cliente} aoSair={sair} />
       <div className="border-hairline-light border-b bg-white px-6 py-3">
-        <Abas aba={aba} aoTrocar={setAba} comErro={abasComErro(cadastro.erros)} />
+        <Abas
+          idBase={ID_BASE}
+          abas={ABAS_DA_JANELA}
+          ativa={aba}
+          aoMudar={setAba}
+          rotulo="Cadastro de clientes"
+          comErro={abasComErro(cadastro.erros)}
+        />
       </div>
       <div className="bg-surface-soft min-h-0 flex-1 overflow-y-auto px-6 py-5">
         {/* A chave refaz a entrada a cada aba: um esmaecer curto, e não um salto. */}
         <div key={aba} className="animate-revelar motion-reduce:animate-none">
-          <Corpo
-            carga={cadastro.carga}
-            aba={aba}
-            props={props}
-            visao={visao}
-            aoAbrirCredito={aoAbrirCredito ?? nada}
-          />
+          <PainelDeAba idBase={ID_BASE} ativa={aba}>
+            <Corpo
+              carga={cadastro.carga}
+              aba={aba}
+              props={props}
+              visao={visao}
+              aoAbrirCredito={aoAbrirCredito ?? nada}
+            />
+          </PainelDeAba>
         </div>
       </div>
       <Rodape

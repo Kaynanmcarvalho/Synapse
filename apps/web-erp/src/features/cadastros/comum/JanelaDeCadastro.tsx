@@ -93,7 +93,9 @@ export function JanelaDeCadastro<A extends string>(props: PropsDaJanela<A>) {
       size="full"
       bare
       closeOnBackdrop={false}
-      className="sm:h-[90vh]"
+      // Fase 6.1: mesma correção de JanelaDoCliente — size="full" prende a
+      // janela em 1152px mesmo numa tela 1920.
+      className="sm:h-[90vh] sm:w-[94vw] sm:max-w-[1600px]"
     >
       <header className="border-hairline-light flex items-start justify-between gap-4 border-b bg-white px-6 py-4">
         <div className="flex min-w-0 items-center gap-4">

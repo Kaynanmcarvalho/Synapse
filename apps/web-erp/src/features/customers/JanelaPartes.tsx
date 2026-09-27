@@ -1,33 +1,25 @@
+import { Status, Text, type TomDeStatus } from '@synapse/sdl';
 import type { Customer } from '@synapse/types';
 import { CircleAlert, CircleCheck, LoaderCircle, Save, UserPlus, X } from 'lucide-react';
-import type { ReactNode } from 'react';
 import { formatarDocumento, formatarMoeda } from './formato';
-import { ABAS, type Aba } from './janela';
 
-/** Cabeçalho, abas e rodapé da janela do cadastro.
+/** Cabeçalho e rodapé da janela do cadastro.
  *
  *  A hierarquia vai de cima para baixo: quem é o cliente (monograma, nome e a
- *  situação que o resto do sistema lê), onde se está (abas num trilho, a aberta
- *  em relevo) e o que falta fazer (rodapé que flutua sobre a rolagem). */
+ *  situação que o resto do sistema lê) e o que falta fazer (rodapé que flutua
+ *  sobre a rolagem). As abas migraram para `Abas`/`PainelDeAba`
+ *  (`components/formulario/Formulario.tsx`, Fase 6.1) — sublinhado cobalto em
+ *  vez da pílula própria que só esta janela e `JanelaDeCadastro` tinham. */
 
 const BOTAO_CLARO =
   'bg-surface-soft text-button-sm text-ink inline-flex h-10 items-center gap-2 rounded-full px-4 transition hover:bg-[#ececee] disabled:cursor-not-allowed disabled:opacity-40';
 const BOTAO_ESCURO =
   'bg-canvas-dark text-button-sm hover:bg-charcoal shadow-cartao inline-flex h-10 items-center gap-2 rounded-full px-5 text-white transition disabled:cursor-not-allowed disabled:opacity-40';
 
-type Tom = 'neutro' | 'positivo' | 'alerta' | 'perigo';
-
-const TOM: Record<Tom, string> = {
-  neutro: 'bg-surface-soft text-charcoal',
-  positivo: 'bg-[#e6f6f1] text-[#00664d]',
-  alerta: 'bg-[#fff3e0] text-[#8a4b00]',
-  perigo: 'bg-[#fdeced] text-[#b3242f]',
-};
-
-const SITUACAO: Readonly<Record<string, readonly [string, Tom]>> = {
-  REGULAR: ['Liberado para venda', 'positivo'],
+const SITUACAO: Readonly<Record<string, readonly [string, TomDeStatus]>> = {
+  REGULAR: ['Liberado para venda', 'ok'],
   BLOCKED: ['Bloqueado para venda', 'perigo'],
-  OVERDUE: ['Inadimplente', 'alerta'],
+  OVERDUE: ['Inadimplente', 'atencao'],
 };
 
 const iniciais = (nome: string) =>
@@ -37,16 +29,6 @@ const iniciais = (nome: string) =>
     .slice(0, 2)
     .map((parte) => parte.charAt(0).toUpperCase())
     .join('');
-
-function Selo({ tom, children }: { readonly tom: Tom; readonly children: ReactNode }) {
-  return (
-    <span
-      className={`text-caption inline-flex h-6 items-center rounded-full px-2.5 font-medium ${TOM[tom]}`}
-    >
-      {children}
-    </span>
-  );
-}
 
 function Monograma({ cliente }: { readonly cliente: Customer | null }) {
   if (!cliente) {
@@ -71,15 +53,21 @@ function Monograma({ cliente }: { readonly cliente: Customer | null }) {
 
 /** Documento, cidade e o que a análise de crédito e o PDV leem deste cadastro. */
 function Resumo({ cliente }: { readonly cliente: Customer }) {
-  const [situacao, tom] = SITUACAO[cliente.financialStatus] ?? ['Liberado para venda', 'positivo'];
+  const [situacao, tom] = SITUACAO[cliente.financialStatus] ?? ['Liberado para venda', 'ok'];
   return (
     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
       <span className="text-caption text-stone mr-1 tabular-nums">
         {formatarDocumento(cliente.taxId)} · {cliente.address.city}/{cliente.address.state}
       </span>
-      <Selo tom={tom}>{situacao}</Selo>
-      <Selo tom="neutro">{cliente.active === false ? 'Inativo' : 'Ativo'}</Selo>
-      <Selo tom="neutro">Limite {formatarMoeda(cliente.creditLimit)}</Selo>
+      <Status tone={tom} variant="chip">
+        {situacao}
+      </Status>
+      <Status tone="neutro" variant="chip">
+        {cliente.active === false ? 'Inativo' : 'Ativo'}
+      </Status>
+      <Status tone="neutro" variant="chip">
+        Limite {formatarMoeda(cliente.creditLimit)}
+      </Status>
     </div>
   );
 }
@@ -121,47 +109,6 @@ export function Cabecalho({
   );
 }
 
-export function Abas({
-  aba,
-  aoTrocar,
-  comErro,
-}: {
-  readonly aba: Aba;
-  readonly aoTrocar: (aba: Aba) => void;
-  readonly comErro: readonly Aba[];
-}) {
-  return (
-    <div
-      role="tablist"
-      aria-label="Cadastro de clientes"
-      className="bg-surface-soft inline-flex max-w-full gap-0.5 overflow-x-auto rounded-full p-1"
-    >
-      {ABAS.map(([id, rotulo]) => (
-        <button
-          key={id}
-          type="button"
-          role="tab"
-          aria-selected={aba === id}
-          onClick={() => aoTrocar(id)}
-          className={`text-button-sm inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-4 transition duration-200 ${
-            aba === id
-              ? 'text-ink bg-white shadow-[0_1px_2px_rgba(25,28,31,0.08),0_6px_16px_-10px_rgba(25,28,31,0.4)]'
-              : 'text-mute hover:text-ink'
-          }`}
-        >
-          {rotulo}
-          {comErro.includes(id) ? (
-            <span
-              aria-label="Há campo para corrigir nesta aba"
-              className="h-1.5 w-1.5 rounded-full bg-[#b3242f]"
-            />
-          ) : null}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function Mensagem({
   erro,
   alterado,
@@ -173,26 +120,29 @@ function Mensagem({
 }) {
   if (erro) {
     return (
-      <span className="flex min-w-0 items-center gap-2 text-[#b3242f]">
+      <Text variant="corpo" tone="perigo" role="alert" className="flex min-w-0 items-center gap-2">
         <CircleAlert size={15} aria-hidden="true" className="shrink-0" />
         <span className="truncate">{erro}</span>
-      </span>
+      </Text>
     );
   }
   if (alterado) {
     return (
-      <span className="flex items-center gap-2 text-[#8a4b00]">
-        <span aria-hidden="true" className="bg-accent-warning h-2 w-2 shrink-0 rounded-full" />
+      <Text variant="corpo" tone="atencao" className="flex items-center gap-2">
+        <span
+          aria-hidden="true"
+          className="bg-status-atencao-indicador h-2 w-2 shrink-0 rounded-full"
+        />
         Alterações não salvas.
-      </span>
+      </Text>
     );
   }
   if (salvo) {
     return (
-      <span className="flex items-center gap-2 text-[#00664d]">
+      <Text variant="corpo" tone="ok" className="flex items-center gap-2">
         <CircleCheck size={15} aria-hidden="true" className="shrink-0" />
         Cadastro salvo.
-      </span>
+      </Text>
     );
   }
   return <span className="text-stone">Preencha os dados e salve para gerar o código.</span>;
