@@ -121,7 +121,10 @@ export default {
          *  vem da COMBINACAO de recursos ligados so aqui: `tnum` (algarismo de
          *  largura fixa, a coluna nao dança), `zero` (zero cortado, nunca se
          *  confunde com "O") e `ss01`. */
-        data: [...fonte.dado, { fontFeatureSettings: '"tnum" 1, "zero" 1, "ss01" 1' }],
+        //  Formato de tupla do Tailwind: [familias, opcoes]. Espalhar a lista
+        //  (`[...familias, opcoes]`) fazia o objeto virar "[object Object]"
+        //  dentro do font-family e o font-feature-settings nunca era gerado.
+        data: [fonte.dado, { fontFeatureSettings: '"tnum" 1, "zero" 1, "ss01" 1' }],
         code: fonte.codigo,
       },
       fontSize: texto,
