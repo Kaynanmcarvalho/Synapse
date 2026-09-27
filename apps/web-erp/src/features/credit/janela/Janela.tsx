@@ -255,6 +255,17 @@ export function Janela({
     useGeometriaDaJanela(id, abertura);
   const { iniciar } = useArrasto(area, setGeometria);
 
+  // Fase 6: fechar devolve o foco para quem abriu (a linha da fila, a lupa),
+  // como o Modal do @synapse/ui já fazia. Sem trap de foco de propósito: a
+  // Janela é espaço de trabalho, e as outras janelas e o menu continuam
+  // alcançáveis por Tab.
+  useEffect(() => {
+    const quemAbriu = document.activeElement as HTMLElement | null;
+    return () => {
+      if (quemAbriu?.isConnected) quemAbriu.focus({ preventScroll: true });
+    };
+  }, []);
+
   useEffect(() => {
     if (!ativa) return;
     const aoTeclar = (evento: KeyboardEvent) => {

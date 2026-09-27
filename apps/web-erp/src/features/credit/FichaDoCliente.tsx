@@ -1,9 +1,11 @@
 import type { PainelDeAnaliseDeCredito, PedidoDeVenda } from '@synapse/types';
 import type { AvaliacaoDoLote } from '@synapse/validation';
 import { CircleCheck, TriangleAlert } from 'lucide-react';
+import { useRef } from 'react';
 import { HistoricoDoCliente, type AbaDoHistorico } from './HistoricoDoCliente';
 import { PagamentosDoCliente } from './PagamentosDoCliente';
 import { PedidosEmAnalise } from './PedidosEmAnalise';
+import { useLargura } from './analise/useLargura';
 import { TitulosEmAberto } from './TitulosEmAberto';
 import type { Documento } from './documentos/navegacao';
 import { SnapshotDoCliente } from './ficha/SnapshotDoCliente';
@@ -11,15 +13,19 @@ import type { EstadoDoPainel } from './useAnaliseDeCredito';
 import type { Resultado } from './useFichaDoCliente';
 import { Falha } from './ui/Superficies';
 
+/** Largura da ficha a partir da qual cada quadrante (7/12 e 5/12, com os
+ *  respiros) comporta a tabela mais larga da própria parte sem rolar de lado:
+ *  Pagamentos (~666px) em 5/12 pede ~1753px de ficha. Na prática, só com a
+ *  janela maximizada em monitor de 1920. */
+const LARGURA_EM_QUADRANTES = 1760;
+
 function Esqueleto() {
   return (
-    <div className="grid h-full gap-4 p-4 lg:grid-cols-12 lg:grid-rows-2" aria-busy="true">
+    <div className="grid h-full grid-cols-1 gap-4 p-4" aria-busy="true">
       {[0, 1, 2, 3].map((indice) => (
         <div
           key={indice}
-          className={`bg-surface-soft min-h-40 animate-pulse rounded-2xl motion-reduce:animate-none ${
-            indice % 2 === 0 ? 'lg:col-span-7' : 'lg:col-span-5'
-          }`}
+          className="bg-surface-soft min-h-40 animate-pulse rounded-2xl motion-reduce:animate-none"
         />
       ))}
     </div>
@@ -79,13 +85,31 @@ function Quadros({
   readonly dados: PainelDeAnaliseDeCredito;
   readonly props: PropsDaFicha;
 }) {
+  // Fase 6: o layout segue a largura da FICHA, não a do navegador. A janela
+  // abre em 72% da tela; com `lg:` (viewport), o 7/5 ligava mesmo com a
+  // janela em ~900px e punha tabelas de 650–920px em cartões de 316–531px.
+  // Em quatro quadrantes só quando cada cartão comporta a própria tabela
+  // (maximizada em tela larga); abaixo disso, empilha — cada parte na
+  // largura inteira, a ficha rola na vertical, nenhuma coluna escondida.
+  const caixa = useRef<HTMLDivElement>(null);
+  const quadrantes = useLargura(caixa, 0) >= LARGURA_EM_QUADRANTES;
   const parte = (atraso: number, colunas: string) => ({
     style: { animationDelay: `${atraso}ms` },
-    className: `animate-subir min-h-0 min-w-0 motion-reduce:animate-none ${colunas}`,
+    className: `animate-subir min-w-0 motion-reduce:animate-none ${
+      quadrantes ? `min-h-0 ${colunas}` : ''
+    }`,
   });
   return (
-    <div className="grid min-h-0 flex-1 gap-4 p-4 lg:grid-cols-12 lg:grid-rows-[minmax(0,1.35fr)_minmax(0,1fr)]">
-      <div {...parte(0, 'lg:col-span-7')}>
+    <div
+      ref={caixa}
+      data-layout={quadrantes ? 'quadrantes' : 'empilhado'}
+      className={
+        quadrantes
+          ? 'grid min-h-0 flex-1 grid-cols-12 grid-rows-[minmax(0,1.35fr)_minmax(0,1fr)] gap-4 p-4'
+          : 'grid min-h-0 flex-1 auto-rows-max grid-cols-1 gap-4 overflow-y-auto p-4'
+      }
+    >
+      <div {...parte(0, 'col-span-7')}>
         <PedidosEmAnalise
           pedidos={dados.pedidosEmAnalise}
           avaliacoes={dados.avaliacoes}
@@ -99,7 +123,7 @@ function Quadros({
           permissoes={dados.permissoes}
         />
       </div>
-      <div {...parte(60, 'lg:col-span-5')}>
+      <div {...parte(60, 'col-span-5')}>
         <HistoricoDoCliente
           aba={props.aba}
           onTrocarAba={props.onTrocarAba}
@@ -108,10 +132,10 @@ function Quadros({
           aoAbrirDocumento={props.aoAbrirDocumento}
         />
       </div>
-      <div {...parte(120, 'lg:col-span-7')}>
+      <div {...parte(120, 'col-span-7')}>
         <TitulosEmAberto carteira={dados.carteira} aoAbrirDocumento={props.aoAbrirDocumento} />
       </div>
-      <div {...parte(180, 'lg:col-span-5')}>
+      <div {...parte(180, 'col-span-5')}>
         <PagamentosDoCliente
           carteira={dados.carteira}
           pagoEm12Meses={dados.comportamento.janelas['12M'].pontualidade.pagoCentavos}
