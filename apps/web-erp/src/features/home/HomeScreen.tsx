@@ -1,43 +1,13 @@
-import {
-  ArrowRight,
-  Boxes,
-  CircleAlert,
-  CircleCheck,
-  ClipboardCheck,
-  FileInput,
-  FileText,
-  Gauge,
-  PackageSearch,
-  Receipt,
-  RotateCw,
-  ScanLine,
-  Search,
-  type LucideIcon,
-} from 'lucide-react';
+import { Button, Divider, Kbd, Status, Surface, Text } from '@synapse/sdl';
+import { ArrowRight, RotateCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useUsuario } from '../../app/auth/AuthContext';
 import { todosOsItens } from '../../app/menu/menu.utils';
 import { ROTAS } from '../../app/rotas';
 import { useShell } from '../../app/shell/ShellContext';
+import { ACESSO_RAPIDO } from './acessoRapido';
 import type { Aviso } from './avisos';
 import { type EstadoDosAvisos, useAvisos } from './useAvisos';
-
-/** As rotinas mais usadas no balcao e na retaguarda. Vem do menu: se o tenant
- *  nao tem o modulo, o atalho some junto com a opcao. */
-const ACESSO_RAPIDO: ReadonlyArray<{
-  readonly rotulo: string;
-  /** Nome curto no atalho, quando o do menu e comprido demais para o cartao. */
-  readonly nome?: string;
-  readonly icone: LucideIcon;
-}> = [
-  { rotulo: 'Análise de Crédito', icone: ClipboardCheck },
-  { rotulo: 'Venda PDV NFC-e', icone: ScanLine },
-  { rotulo: 'Lançamento de Nota Fiscal de Entrada', icone: FileInput },
-  { rotulo: 'Balanço de Estoque', icone: PackageSearch },
-  { rotulo: 'Gerenciamento de Cobrança Bancária', nome: 'Boletos', icone: Receipt },
-  { rotulo: 'Produtos / Serviços', nome: 'Cadastro de Produtos', icone: Boxes },
-  { rotulo: 'Controle de Notas Fiscais Emitidas para meu CNPJ', icone: FileText },
-];
 
 const saudacao = (hora: number): string => {
   if (hora < 12) return 'Bom dia';
@@ -45,105 +15,59 @@ const saudacao = (hora: number): string => {
   return 'Boa noite';
 };
 
-const TITULO_DE_SECAO = 'font-display text-heading-md text-ink';
-
-function Saudacao({ nome }: { readonly nome: string }) {
+/** Uma linha, nao um bloco: a saudacao e contexto, nao e o conteudo da Home. */
+function Cabecalho({ nome }: { readonly nome: string }) {
   const agora = new Date();
   const data = new Intl.DateTimeFormat('pt-BR', {
-    weekday: 'long',
+    weekday: 'short',
     day: 'numeric',
-    month: 'long',
-    year: 'numeric',
+    month: 'short',
   }).format(agora);
 
   return (
-    <header>
-      <p className="text-body-sm text-stone">{data.charAt(0).toUpperCase() + data.slice(1)}</p>
-      <h1 className="font-display text-ink sm:text-display-lg mt-3 text-[36px] font-medium leading-none tracking-[-0.6px]">
+    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 py-4">
+      <Text variant="corpo" tone="apoio" className="capitalize">
+        {data}
+      </Text>
+      <Text variant="corpo" tone="sutil" aria-hidden="true">
+        ·
+      </Text>
+      <Text variant="corpo">
         {saudacao(agora.getHours())}, {nome}.
-      </h1>
-    </header>
-  );
-}
-
-function BarraDeBusca() {
-  const { abrirBusca } = useShell();
-  return (
-    <button
-      type="button"
-      onClick={abrirBusca}
-      className="bg-surface-soft mt-8 flex h-14 w-full items-center gap-3 rounded-full px-5 text-left transition hover:bg-[#ececee]"
-    >
-      <Search size={20} className="text-stone" aria-hidden="true" />
-      <span className="text-body-lg text-stone flex-1">O que você precisa?</span>
-      <kbd className="bg-canvas-light text-caption text-ash hidden rounded-full px-2.5 py-1 font-sans sm:inline">
-        Ctrl K
-      </kbd>
-    </button>
-  );
-}
-
-function CartaoDeAviso({ aviso }: { readonly aviso: Aviso }) {
-  return (
-    <Link
-      to={aviso.caminho}
-      className="border-hairline-light bg-canvas-light hover:border-hairline-strong group flex flex-col rounded-2xl border p-6 transition"
-    >
-      <span className="text-body-sm text-mute flex items-center gap-2">
-        <span
-          aria-hidden="true"
-          className={`h-2 w-2 rounded-full ${aviso.tom === 'critico' ? 'bg-accent-danger' : 'bg-accent-warning'}`}
-        />
-        {aviso.titulo}
-      </span>
-      <span className="font-display text-heading-lg text-ink mt-4">{aviso.valor}</span>
-      <span className="text-body-sm text-mute mt-1">{aviso.detalhe}</span>
-      <span className="text-button-sm text-ink mt-6 inline-flex items-center gap-1.5">
-        Ver
-        <ArrowRight
-          size={15}
-          aria-hidden="true"
-          className="transition group-hover:translate-x-0.5"
-        />
-      </span>
-    </Link>
-  );
-}
-
-function EstadoUnico({
-  icone: Icone,
-  titulo,
-  texto,
-  acao,
-}: {
-  readonly icone: LucideIcon;
-  readonly titulo: string;
-  readonly texto: string;
-  readonly acao?: { readonly rotulo: string; readonly executar: () => void };
-}) {
-  return (
-    <div className="border-hairline-light flex flex-col items-start gap-4 rounded-2xl border p-6 sm:flex-row sm:items-center">
-      <span className="bg-surface-soft text-ink flex h-11 w-11 shrink-0 items-center justify-center rounded-full">
-        <Icone size={20} aria-hidden="true" />
-      </span>
-      <span className="flex-1">
-        <span className="text-body-md text-ink block font-semibold">{titulo}</span>
-        <span className="text-body-sm text-mute block">{texto}</span>
-      </span>
-      {acao && (
-        <button
-          type="button"
-          onClick={acao.executar}
-          className="bg-surface-soft text-button-sm text-ink inline-flex h-10 items-center gap-2 rounded-full px-4 transition hover:bg-[#ececee]"
-        >
-          <RotateCw size={15} aria-hidden="true" /> {acao.rotulo}
-        </button>
-      )}
+      </Text>
     </div>
   );
 }
 
-function SecaoDeAvisos({
+function LinhaDeExcecao({ aviso }: { readonly aviso: Aviso }) {
+  return (
+    <Link
+      to={aviso.caminho}
+      className="focus-visible:ring-primary/70 rounded-minimo hover:bg-surface-hover duration-instantaneo group grid grid-cols-[3.5rem_1fr_auto_1rem] items-center gap-x-3 py-2.5 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset"
+    >
+      <Text variant="dado" className="text-heading-sm text-right">
+        {aviso.valor}
+      </Text>
+      <Status
+        tone={aviso.tom === 'critico' ? 'perigo' : 'atencao'}
+        variant="dot"
+        className="min-w-0"
+      >
+        <span className="truncate">{aviso.titulo}</span>
+      </Status>
+      <Text variant="corpoSecundario" className="hidden whitespace-nowrap sm:block">
+        {aviso.detalhe}
+      </Text>
+      <ArrowRight
+        size={15}
+        aria-hidden="true"
+        className="text-stone duration-instantaneo justify-self-end transition-transform group-hover:translate-x-0.5"
+      />
+    </Link>
+  );
+}
+
+function SecaoDeExcecoes({
   estado,
   onRecarregar,
 }: {
@@ -151,52 +75,72 @@ function SecaoDeAvisos({
   readonly onRecarregar: () => void;
 }) {
   return (
-    <section
-      className="mt-14"
-      aria-labelledby="titulo-avisos"
-      aria-busy={estado.status === 'carregando'}
-    >
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="titulo-avisos" className={TITULO_DE_SECAO}>
-          Avisos
-        </h2>
-        {estado.status === 'pronto' && estado.calculando && (
-          <span className="text-body-sm text-stone">
-            Indicadores financeiros em cálculo — voltam em até 5 minutos.
-          </span>
-        )}
-      </div>
-      <div className="mt-5">
-        {estado.status === 'carregando' && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {[0, 1, 2].map((indice) => (
-              <div key={indice} className="bg-surface-soft h-[178px] animate-pulse rounded-2xl" />
-            ))}
+    <section aria-labelledby="titulo-excecoes" aria-busy={estado.status === 'carregando'}>
+      <Text id="titulo-excecoes" variant="tituloSecao" as="h2">
+        Requer atenção
+      </Text>
+
+      {estado.status === 'carregando' && (
+        <div className="mt-4 space-y-2" aria-hidden="true">
+          {[0, 1, 2].map((indice) => (
+            <div key={indice} className="bg-surface-hover rounded-minimo h-11 animate-pulse" />
+          ))}
+        </div>
+      )}
+
+      {estado.status === 'erro' && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 py-3">
+          <Text variant="corpoSecundario">Não foi possível carregar os avisos agora.</Text>
+          <Button variant="quiet" density="compacta" onClick={onRecarregar}>
+            <RotateCw size={14} aria-hidden="true" /> Tentar de novo
+          </Button>
+        </div>
+      )}
+
+      {estado.status === 'pronto' && (
+        <>
+          {estado.algoIndisponivel && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <Text variant="legenda" tone="apoio">
+                Algumas informações podem estar indisponíveis agora.
+              </Text>
+              <button
+                type="button"
+                onClick={onRecarregar}
+                className="text-caption text-ink underline-offset-2 hover:underline"
+              >
+                Tentar de novo
+              </button>
+            </div>
+          )}
+
+          <div className="mt-3">
+            {estado.avisos.length > 0 &&
+              estado.avisos.map((aviso, indice) => (
+                <div key={aviso.id}>
+                  {indice > 0 && <Divider />}
+                  <LinhaDeExcecao aviso={aviso} />
+                </div>
+              ))}
+            {estado.avisos.length === 0 && !estado.algoIndisponivel && (
+              <Text variant="corpoSecundario" className="block py-3">
+                Nenhuma pendência crítica no momento.
+              </Text>
+            )}
+            {estado.avisos.length === 0 && estado.algoIndisponivel && (
+              <Text variant="corpoSecundario" className="block py-3">
+                Não foi possível confirmar todas as pendências agora.
+              </Text>
+            )}
           </div>
-        )}
-        {estado.status === 'erro' && (
-          <EstadoUnico
-            icone={CircleAlert}
-            titulo="Não foi possível carregar os avisos"
-            texto="Confira sua conexão com o servidor do Synapse."
-            acao={{ rotulo: 'Tentar de novo', executar: onRecarregar }}
-          />
-        )}
-        {estado.status === 'pronto' && estado.avisos.length === 0 && (
-          <EstadoUnico
-            icone={CircleCheck}
-            titulo="Nenhum aviso agora"
-            texto="Contas a receber, estoque, lotes e manifestos estão em dia."
-          />
-        )}
-        {estado.status === 'pronto' && estado.avisos.length > 0 && (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {estado.avisos.map((aviso) => (
-              <CartaoDeAviso key={aviso.id} aviso={aviso} />
-            ))}
-          </div>
-        )}
-      </div>
+
+          {estado.calculando && (
+            <Text variant="legenda" tone="apoio" className="mt-2 block">
+              Indicadores financeiros em cálculo — voltam em até 5 minutos.
+            </Text>
+          )}
+        </>
+      )}
     </section>
   );
 }
@@ -205,54 +149,41 @@ function AcessoRapido() {
   const { menus } = useShell();
   const disponiveis = todosOsItens(menus).filter((item) => item.situacao === 'disponivel');
   const atalhos = [
-    ...ACESSO_RAPIDO.flatMap(({ rotulo, nome, icone }) => {
-      const item = disponiveis.find((candidato) => candidato.rotulo === rotulo);
+    ...ACESSO_RAPIDO.flatMap(({ id, nome }) => {
+      const item = disponiveis.find((candidato) => candidato.id === id);
       return item
-        ? [
-            {
-              rotulo: nome ?? rotulo,
-              caminho: item.caminho,
-              local: item.trilha.slice(0, -1).join(' › '),
-              atalho: item.atalho?.rotulo,
-              icone,
-            },
-          ]
+        ? [{ rotulo: nome ?? item.rotulo, caminho: item.caminho, atalho: item.atalho?.rotulo }]
         : [];
     }),
     {
       rotulo: 'Painel de Controle',
       caminho: ROTAS.painelDeControle,
-      local: 'Indicadores do período',
       atalho: undefined,
-      icone: Gauge,
     },
   ];
 
   return (
-    <section className="mt-14" aria-labelledby="titulo-acesso-rapido">
-      <h2 id="titulo-acesso-rapido" className={TITULO_DE_SECAO}>
+    <section aria-labelledby="titulo-acesso-rapido">
+      <Text id="titulo-acesso-rapido" variant="tituloSecao" as="h2">
         Acesso rápido
-      </h2>
-      <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {atalhos.map(({ rotulo, caminho, local, atalho, icone: Icone }) => (
-          <Link
-            key={rotulo}
-            to={caminho}
-            className="border-hairline-light hover:bg-surface-soft group flex items-center gap-4 rounded-2xl border p-5 transition"
-          >
-            <span className="bg-surface-soft text-ink group-hover:bg-canvas-light flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition">
-              <Icone size={19} aria-hidden="true" />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="text-body-md text-ink block truncate font-semibold">{rotulo}</span>
-              <span className="text-body-sm text-stone block truncate">{local}</span>
-            </span>
-            {atalho && (
-              <kbd className="border-hairline-light text-caption text-ash hidden rounded-full border px-2 py-0.5 font-sans xl:inline">
-                {atalho}
-              </kbd>
-            )}
-          </Link>
+      </Text>
+      <div className="mt-3">
+        {atalhos.map(({ rotulo, caminho, atalho }, indice) => (
+          <div key={caminho}>
+            {indice > 0 && <Divider />}
+            <Link
+              to={caminho}
+              className="focus-visible:ring-primary/70 rounded-minimo hover:bg-surface-hover duration-instantaneo grid grid-cols-[1.75rem_1fr_auto] items-center gap-x-3 py-2.5 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-inset"
+            >
+              <Text variant="legenda" tone="apoio" className="tabular-nums">
+                {String(indice + 1).padStart(2, '0')}
+              </Text>
+              <Text variant="corpo" className="truncate">
+                {rotulo}
+              </Text>
+              {atalho && <Kbd className="hidden sm:inline-flex">{atalho}</Kbd>}
+            </Link>
+          </div>
         ))}
       </div>
     </section>
@@ -271,11 +202,20 @@ export function HomeScreen() {
   const { estado, recarregar } = useAvisos(caminhoDoMdfe);
 
   return (
-    <main className="mx-auto w-full max-w-[1200px] px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
-      <Saudacao nome={usuario.nome.split(' ')[0] || usuario.nome} />
-      <BarraDeBusca />
-      <SecaoDeAvisos estado={estado} onRecarregar={() => void recarregar()} />
-      <AcessoRapido />
-    </main>
+    <Surface
+      variant="pagina"
+      as="main"
+      className="max-w-conteudo-trabalho mx-auto w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
+    >
+      <Cabecalho nome={usuario.nome.split(' ')[0] || usuario.nome} />
+      <Divider />
+      <div className="py-6">
+        <SecaoDeExcecoes estado={estado} onRecarregar={() => void recarregar()} />
+      </div>
+      <Divider />
+      <div className="py-6">
+        <AcessoRapido />
+      </div>
+    </Surface>
   );
 }
