@@ -135,12 +135,16 @@ export function MenuBar({
                     : 'opacity-0 group-hover:opacity-60 group-focus-visible:opacity-60'
                 }`}
               />
-              {/* Linha de estado: cobalto = modulo da rota atual (fixa); neutra =
-               *  aberto no momento. Nunca as duas ao mesmo tempo. */}
+              {/* Assinatura Synapse (Fase 4.2) — nao e "border-bottom: 2px
+               *  blue": um segmento curto, alinhado ao mesmo `px-3` onde o
+               *  rotulo comeca (nunca centralizado no botao inteiro), do
+               *  mesmo jeito que um marcador de pagina aponta uma linha
+               *  precisa, nao a largura toda. Cobalto = modulo da rota atual
+               *  (fixo); neutro = aberto no momento. Nunca os dois juntos. */}
               <span
                 aria-hidden="true"
                 data-indicador-de-modulo=""
-                className={`duration-rapido absolute inset-x-2.5 -bottom-px h-[2px] rounded-full transition-colors ${
+                className={`duration-rapido absolute -bottom-px left-3 h-[2px] w-4 rounded-full transition-colors ${
                   ativo ? 'bg-primary' : estaAberto ? 'bg-line-media' : 'bg-transparent'
                 }`}
               />
