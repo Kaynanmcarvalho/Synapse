@@ -6,6 +6,7 @@ import { useUsuario } from '../../app/auth/AuthContext';
 import { todosOsItens } from '../../app/menu/menu.utils';
 import { ROTAS } from '../../app/rotas';
 import { useShell } from '../../app/shell/ShellContext';
+import { separarMoeda } from '../../lib/dinheiro';
 import { ACESSO_RAPIDO } from './acessoRapido';
 import type { Aviso } from './avisos';
 import { type EstadoDosAvisos, useAvisos } from './useAvisos';
@@ -39,16 +40,6 @@ function Cabecalho({ nome }: { readonly nome: string }) {
     </div>
   );
 }
-
-/** "R$" separado do valor (§16 da Fase 4.2): o prefixo e contexto, o numero e
- *  o dado — nao tem por que pesar a mesma coisa. So separa quando o valor de
- *  fato comeca com "R$ " (contagem simples como "6" continua uma peca so). */
-const separarMoeda = (
-  valor: string,
-): { readonly prefixo: string | null; readonly numero: string } =>
-  valor.startsWith('R$ ')
-    ? { prefixo: 'R$', numero: valor.slice(3) }
-    : { prefixo: null, numero: valor };
 
 /** A coluna do valor e as das linhas vizinhas so alinham de verdade se
  *  dividirem os MESMOS trilhos — por isso cada linha e um `grid-cols-subgrid`
