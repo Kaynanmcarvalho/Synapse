@@ -1,6 +1,8 @@
 /* eslint-disable max-lines, max-lines-per-function */
+import { Status, type TomDeStatus } from '@synapse/sdl';
 import { Check, FileInput, LoaderCircle, PackageCheck, Upload } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
+import { formatarMoeda } from '../customers/formato';
 import {
   checkDfeItem,
   concludeDfe,
@@ -11,8 +13,22 @@ import {
   type DfeItem,
 } from './dfe.api';
 
-const money = (cents: number) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(cents / 100);
+const money = formatarMoeda;
+
+/** As 4 situações de conferência de um DF-e já encaixam nos tons que o
+ *  Status do SDL tem — nenhum tom novo foi necessário (mesma decisão de
+ *  Boletos e Compras). A tabela de itens em conferência (`DfeItemsTable`,
+ *  abaixo) fica de fora desta migração: cada célula é um `<input>` editável
+ *  ligado à conferência fiscal item a item — a fundação de DataGrid nunca
+ *  teve um consumidor com célula editável, e forçar uma aqui seria inventar
+ *  uma capacidade nova sem um segundo consumidor real para provar a forma
+ *  certa. Ver `packages/sdl/README.md` para o registro dessa decisão. */
+const TOM_DA_SITUACAO: Record<DfeEntry['conferencia']['situacao'], TomDeStatus> = {
+  PENDENTE: 'pendente',
+  CONFERIDA: 'ok',
+  RECUSADA: 'perigo',
+  LANCADA: 'info',
+};
 
 export function DfeScreen() {
   const [entries, setEntries] = useState<DfeEntry[]>([]);
@@ -148,9 +164,9 @@ export function DfeScreen() {
               >
                 <span className="flex items-center justify-between gap-2">
                   <strong className="truncate text-sm">NF-e {entry.nota.numero}</strong>
-                  <span className="rounded-full bg-slate-100 px-2 py-1 text-[9px] font-bold">
+                  <Status tone={TOM_DA_SITUACAO[entry.conferencia.situacao]} variant="chip">
                     {entry.conferencia.situacao}
-                  </span>
+                  </Status>
                 </span>
                 <span className="mt-1 block truncate text-xs text-slate-500">
                   {entry.nota.emitente.nome}
