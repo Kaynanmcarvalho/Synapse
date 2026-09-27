@@ -21,6 +21,15 @@ import {
   Modal,
   Spinner,
 } from '@synapse/ui';
+import {
+  classesDaLinha,
+  DataGridCabecalho,
+  DataGridCelula,
+  Status,
+  SynapseSignal,
+  Text,
+  type TomDeStatus,
+} from '@synapse/sdl';
 import { devSignIn, isSignedIn } from '../../lib/dev-auth';
 import {
   createLot,
@@ -47,6 +56,21 @@ const LEVEL_TINT: Record<ExpiryAlertLevel, string> = {
   D30: 'bg-orange-50 text-orange-700',
   D15: 'bg-red-50 text-red-700',
   EXPIRED: 'bg-slate-900 text-white',
+};
+
+/** Os 5 níveis do alerta de vencimento não têm 5 tons próprios no Status do
+ *  SDL — só 8 tons no total, pensados para estado de negócio, não para uma
+ *  escala de urgência específica desta tela. D30 e D15 dividem `perigo`: a
+ *  diferença real entre eles já está no texto ("30 dias" vs "15 dias"), não
+ *  precisa de uma quinta cor para existir. `vencido` é reservado para
+ *  EXPIRED porque é exatamente o que o tom já significa em outras telas
+ *  (título vencido, na fila de crédito). */
+const TOM_DO_NIVEL: Record<ExpiryAlertLevel, TomDeStatus> = {
+  D90: 'info',
+  D60: 'atencao',
+  D30: 'perigo',
+  D15: 'perigo',
+  EXPIRED: 'vencido',
 };
 
 function LoginGate({ onSignedIn }: { readonly onSignedIn: () => void }) {
@@ -510,7 +534,69 @@ function AlertSummary({
   );
 }
 
-function ExpiryTable({
+/** A linha da tabela de vencimento — piloto de seleção fora da fila de
+ *  crédito (Fase 5.2). Auditoria encontrou algo importante: esta tela nunca
+ *  teve um estado "selecionada" persistente — `onSelect` só abre a gaveta de
+ *  detalhe, exatamente como o clique/Enter de Clientes. Não existe row style
+ *  para "linha atual" comparável ao da fila, então não há o que comparar
+ *  além do próprio row-open — mantido igual, sem inventar destaque novo. */
+function LinhaDeVencimento({
+  alert,
+  onSelect,
+}: {
+  readonly alert: ExpiringLot;
+  readonly onSelect: (alert: ExpiringLot) => void;
+}) {
+  const { lot, daysUntilExpiry, alertLevel } = alert;
+  return (
+    <tr
+      tabIndex={0}
+      onClick={() => onSelect(alert)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') onSelect(alert);
+      }}
+      className={classesDaLinha({ hairlineNaLinha: true, focoComAnel: false })}
+    >
+      <DataGridCelula papel="primary" truncar={false} className="relative">
+        <SynapseSignal gatilho="foco-do-grupo" />
+        <Text variant="corpo" className="block font-semibold">
+          {lot.productId}
+        </Text>
+        <Text variant="legenda" tone="apoio" className="font-data block">
+          Lote {lot.id.slice(0, 8)}
+        </Text>
+      </DataGridCelula>
+      <DataGridCelula papel="secondary" truncar={false}>
+        <Text variant="corpoSecundario">
+          {lot.branchId} / {lot.warehouseId}
+        </Text>
+      </DataGridCelula>
+      <DataGridCelula papel="data" alinhamento="direita" truncar={false}>
+        <Text variant="dado" className="font-semibold">
+          {lot.physical - lot.reserved}
+        </Text>
+      </DataGridCelula>
+      <DataGridCelula papel="data" alinhamento="direita" truncar={false}>
+        {alertLevel === 'EXPIRED' ? (
+          <Text variant="dado" tone="perigo" className="inline-flex items-center gap-1">
+            <AlertTriangle size={14} aria-hidden="true" /> há {Math.abs(daysUntilExpiry)} dias
+          </Text>
+        ) : (
+          <Text variant="dado" tone="sutil">
+            {daysUntilExpiry} dias
+          </Text>
+        )}
+      </DataGridCelula>
+      <DataGridCelula papel="status" alinhamento="centro" truncar={false}>
+        <Status tone={TOM_DO_NIVEL[alertLevel]} variant="chip">
+          {LEVEL_LABEL[alertLevel]}
+        </Status>
+      </DataGridCelula>
+    </tr>
+  );
+}
+
+export function ExpiryTable({
   alerts,
   onSelect,
 }: {
@@ -519,67 +605,27 @@ function ExpiryTable({
 }) {
   if (alerts.length === 0) {
     return (
-      <p className="px-6 py-10 text-center text-sm text-slate-500">
+      <Text variant="corpoSecundario" className="block px-6 py-10 text-center">
         Nenhum lote dentro da janela de alerta (90 dias).
-      </p>
+      </Text>
     );
   }
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[680px] text-left">
+      <table className="w-full min-w-[680px] border-collapse text-left">
         <thead>
-          <tr className="bg-slate-50/70 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-            <th className="px-6 py-3">Produto</th>
-            <th className="px-4 py-3">Depósito</th>
-            <th className="px-4 py-3 text-right">Saldo</th>
-            <th className="px-4 py-3 text-right">Vence em</th>
-            <th className="px-6 py-3 text-center">Alerta</th>
+          <tr className="border-hairline-light bg-surface-soft border-b">
+            <DataGridCabecalho id="produto" rotulo="Produto" />
+            <DataGridCabecalho id="deposito" rotulo="Depósito" />
+            <DataGridCabecalho id="saldo" rotulo="Saldo" alinhamento="direita" />
+            <DataGridCabecalho id="vence" rotulo="Vence em" alinhamento="direita" />
+            <DataGridCabecalho id="alerta" rotulo="Alerta" alinhamento="centro" />
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
-          {alerts.map((alert) => {
-            const { lot, daysUntilExpiry, alertLevel } = alert;
-            return (
-              <tr
-                key={lot.id}
-                tabIndex={0}
-                onClick={() => onSelect(alert)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') onSelect(alert);
-                }}
-                className="cursor-pointer text-sm outline-none transition hover:bg-slate-50/80 focus-visible:bg-blue-50/60"
-              >
-                <td className="px-6 py-4">
-                  <span className="block font-semibold text-slate-800">{lot.productId}</span>
-                  <span className="mt-0.5 block text-[11px] text-slate-400">
-                    Lote {lot.id.slice(0, 8)}
-                  </span>
-                </td>
-                <td className="px-4 py-4 text-slate-500">
-                  {lot.branchId} / {lot.warehouseId}
-                </td>
-                <td className="px-4 py-4 text-right font-bold text-slate-800">
-                  {lot.physical - lot.reserved}
-                </td>
-                <td className="px-4 py-4 text-right text-slate-500">
-                  {alertLevel === 'EXPIRED' ? (
-                    <span className="flex items-center justify-end gap-1 text-red-700">
-                      <AlertTriangle size={14} /> há {Math.abs(daysUntilExpiry)} dias
-                    </span>
-                  ) : (
-                    `${daysUntilExpiry} dias`
-                  )}
-                </td>
-                <td className="px-6 py-4 text-center">
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${LEVEL_TINT[alertLevel]}`}
-                  >
-                    {LEVEL_LABEL[alertLevel]}
-                  </span>
-                </td>
-              </tr>
-            );
-          })}
+        <tbody>
+          {alerts.map((alert) => (
+            <LinhaDeVencimento key={alert.lot.id} alert={alert} onSelect={onSelect} />
+          ))}
         </tbody>
       </table>
     </div>
