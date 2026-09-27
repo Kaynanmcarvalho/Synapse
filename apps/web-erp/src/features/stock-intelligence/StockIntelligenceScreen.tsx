@@ -1,15 +1,14 @@
 /* eslint-disable max-lines, max-lines-per-function */
+import { Text } from '@synapse/sdl';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { DataTable, type DataTableColumn } from '../../components/DataTable';
 import { CreateSuggestedPurchase } from './CreateSuggestedPurchase';
 import { SavedFiltersBar } from '../search/SavedFiltersBar';
+import { TabelaDeInteligencia } from './TabelaDeInteligencia';
 import {
-  adjustSuggestion,
   devSignIn,
   isSignedIn,
   listStockIntelligence,
   recalculateStockIntelligence,
-  type AbcClass,
   type ListFilters,
   type StockIntelligenceMetric,
 } from './stock-intelligence.api';
@@ -65,28 +64,7 @@ const icons = {
       <path d="M18.5 17a8 8 0 0 1-13.8-2M5.5 7a8 8 0 0 1 13.8 2" />
     </Icon>
   ),
-  check: (
-    <Icon className="h-3.5 w-3.5">
-      <path d="m5 12 4 4L19 6" />
-    </Icon>
-  ),
 };
-
-const ABC_STYLE: Record<AbcClass, string> = {
-  A: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200',
-  B: 'bg-amber-50 text-amber-700 ring-1 ring-amber-200',
-  C: 'bg-slate-100 text-slate-500 ring-1 ring-slate-200',
-};
-
-function AbcBadge({ value }: { readonly value: AbcClass }) {
-  return (
-    <span
-      className={`inline-flex h-6 min-w-6 items-center justify-center rounded-md px-1.5 text-[11px] font-bold ${ABC_STYLE[value]}`}
-    >
-      {value}
-    </span>
-  );
-}
 
 type FilterKey = 'all' | 'A' | 'B' | 'C' | 'deadStock' | 'excess' | 'suggested';
 
@@ -169,162 +147,11 @@ function LoginPanel({ onSignedIn }: { readonly onSignedIn: () => void }) {
   );
 }
 
-function SuggestionCell({
-  metric,
-  branchId,
-  onAdjusted,
-}: {
-  readonly metric: StockIntelligenceMetric;
-  readonly branchId: string;
-  readonly onAdjusted: (updated: StockIntelligenceMetric) => void;
-}) {
-  const [value, setValue] = useState(
-    String(metric.approvedPurchaseQty ?? metric.suggestedPurchaseQty),
-  );
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-
-  const save = async () => {
-    const quantity = Number(value);
-    if (!Number.isFinite(quantity) || quantity < 0) return;
-    setSaving(true);
-    try {
-      const updated = await adjustSuggestion(metric.productId, branchId, Math.round(quantity));
-      onAdjusted(updated);
-      setSaved(true);
-      window.setTimeout(() => setSaved(false), 1800);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const adjusted = metric.approvedPurchaseQty !== null;
-
-  return (
-    <div className="flex items-center justify-end gap-1.5">
-      <span className="text-[11px] text-slate-400">
-        sugerido <strong className="text-slate-600">{metric.suggestedPurchaseQty}</strong>
-      </span>
-      <input
-        type="number"
-        min={0}
-        value={value}
-        onChange={(event) => setValue(event.target.value)}
-        className={`h-8 w-20 rounded-lg border px-2 text-right text-xs font-bold outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 ${
-          adjusted ? 'border-blue-200 bg-blue-50 text-blue-700' : 'border-slate-200 text-slate-800'
-        }`}
-      />
-      <button
-        type="button"
-        onClick={save}
-        disabled={saving}
-        className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-emerald-50 hover:text-emerald-600 disabled:opacity-40"
-        aria-label="Aprovar quantidade"
-      >
-        {saved ? <span className="text-emerald-600">{icons.check}</span> : '✓'}
-      </button>
-    </div>
-  );
-}
-
-function stockIntelligenceColumns(
-  branchId: string,
-  setMetrics: (updater: (current: StockIntelligenceMetric[]) => StockIntelligenceMetric[]) => void,
-): DataTableColumn<StockIntelligenceMetric>[] {
-  return [
-    {
-      key: 'product',
-      header: 'Produto',
-      sortValue: (metric) => metric.productName,
-      render: (metric) => (
-        <>
-          <span className="block font-semibold text-slate-800">{metric.productName}</span>
-          <span className="mt-0.5 flex items-center gap-2 text-[11px] text-slate-400">
-            SKU {metric.sku}
-            {metric.isDeadStock && (
-              <span className="rounded-full bg-rose-50 px-1.5 py-0.5 font-bold text-rose-600">
-                parado
-              </span>
-            )}
-            {metric.isExcess && (
-              <span className="rounded-full bg-amber-50 px-1.5 py-0.5 font-bold text-amber-700">
-                excesso
-              </span>
-            )}
-          </span>
-        </>
-      ),
-    },
-    {
-      key: 'abc',
-      header: 'ABC',
-      align: 'center',
-      sortValue: (metric) => metric.abc.byRevenue,
-      render: (metric) => <AbcBadge value={metric.abc.byRevenue} />,
-    },
-    {
-      key: 'stock',
-      header: 'Estoque',
-      align: 'right',
-      sortValue: (metric) => metric.stockOnHand,
-      render: (metric) => <span className="font-medium text-slate-600">{metric.stockOnHand}</span>,
-    },
-    {
-      key: 'turnover',
-      header: 'Giro',
-      align: 'right',
-      sortValue: (metric) => metric.turnoverRate,
-      render: (metric) => (
-        <span className="font-medium text-slate-600">{metric.turnoverRate.toFixed(1)}×</span>
-      ),
-    },
-    {
-      key: 'coverage',
-      header: 'Cobertura',
-      align: 'right',
-      sortValue: (metric) => metric.coverageDays ?? Number.POSITIVE_INFINITY,
-      render: (metric) => (
-        <span className="font-medium text-slate-600">
-          {metric.coverageDays === null ? '—' : `${Math.round(metric.coverageDays)}d`}
-        </span>
-      ),
-    },
-    {
-      key: 'stockouts',
-      header: 'Rupturas',
-      align: 'right',
-      sortValue: (metric) => metric.stockoutCount,
-      render: (metric) =>
-        metric.stockoutCount > 0 ? (
-          <span className="font-bold text-rose-600">{metric.stockoutCount}</span>
-        ) : (
-          <span className="text-slate-400">—</span>
-        ),
-    },
-    {
-      key: 'suggestion',
-      header: 'Sugestão de compra',
-      align: 'right',
-      sortValue: (metric) => metric.approvedPurchaseQty ?? metric.suggestedPurchaseQty,
-      render: (metric) => (
-        <SuggestionCell
-          metric={metric}
-          branchId={branchId.trim()}
-          onAdjusted={(updated) =>
-            setMetrics((current) =>
-              current.map((item) => (item.id === updated.id ? updated : item)),
-            )
-          }
-        />
-      ),
-    },
-  ];
-}
-
 export function StockIntelligenceScreen() {
   const [signedIn, setSignedIn] = useState(false);
   const [branchId, setBranchId] = useState('matriz');
   const [filter, setFilter] = useState<FilterKey>('all');
+  const [busca, setBusca] = useState('');
   const [metrics, setMetrics] = useState<StockIntelligenceMetric[]>([]);
   const [loading, setLoading] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
@@ -471,18 +298,19 @@ export function StockIntelligenceScreen() {
           ))}
         </section>
 
-        <section className="border-hairline-light bg-canvas-light mt-5 overflow-hidden rounded-3xl border">
-          <div className="flex flex-col gap-3 border-b border-slate-100 p-5">
-            <div className="flex flex-wrap items-center gap-2">
+        <section className="border-hairline-light mt-5 border-t pt-5">
+          <div className="flex flex-col gap-3 pb-3">
+            <div className="flex flex-wrap items-center gap-1.5">
               {FILTER_OPTIONS.map((option) => (
                 <button
                   key={option.key}
                   type="button"
                   onClick={() => setFilter(option.key)}
-                  className={`rounded-full px-3.5 py-1.5 text-xs font-bold transition ${
+                  aria-pressed={filter === option.key}
+                  className={`text-caption rounded-controle duration-rapido inline-flex items-center gap-1.5 border px-3 py-1 transition-colors ${
                     filter === option.key
-                      ? 'bg-slate-950 text-white shadow'
-                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                      ? 'border-primary bg-primary text-primary-on'
+                      : 'border-hairline-light text-charcoal hover:bg-surface-hover'
                   }`}
                 >
                   {option.label}
@@ -500,21 +328,29 @@ export function StockIntelligenceScreen() {
           </div>
 
           {error && (
-            <p className="border-b border-red-100 bg-red-50 px-6 py-3 text-xs font-semibold text-red-700">
+            <Text
+              variant="corpoSecundario"
+              tone="perigo"
+              className="border-hairline-light block border-b py-3"
+            >
               {error}
-            </p>
+            </Text>
           )}
 
-          <DataTable
-            columns={stockIntelligenceColumns(branchId, setMetrics)}
-            rows={metrics}
-            rowKey={(metric) => metric.id}
-            filterValue={(metric) => `${metric.productName} ${metric.sku}`}
-            filterPlaceholder="Filtrar por nome ou SKU..."
-            emptyLabel={
+          <TabelaDeInteligencia
+            linhas={metrics}
+            branchId={branchId}
+            busca={busca}
+            aoBuscar={setBusca}
+            avisoDeVazio={
               loading
                 ? 'Carregando…'
                 : 'Nenhum indicador ainda — informe a filial e clique em "Recalcular agora".'
+            }
+            aoAjustar={(updated) =>
+              setMetrics((current) =>
+                current.map((item) => (item.id === updated.id ? updated : item)),
+              )
             }
           />
         </section>
