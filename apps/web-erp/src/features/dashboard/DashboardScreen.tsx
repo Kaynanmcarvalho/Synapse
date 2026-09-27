@@ -169,10 +169,13 @@ export function DashboardScreen() {
           {data.branches.length > 0 && (
             <section>
               <h2 className="mb-3 text-lg font-bold">Comparativo entre filiais</h2>
-              <div className="overflow-x-auto rounded-xl border">
-                <table className="w-full min-w-[720px] border-collapse">
+              {/* Fase 5.4: só esta tabela migrou para a fundação de DataGrid.
+               *  O resto da tela (filtros, cards, estoque) é redesign de tela,
+               *  não de tabela — fica para a macrofase de Screens. */}
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[720px] border-collapse text-left">
                   <thead>
-                    <tr className="border-hairline-light border-b">
+                    <tr className="border-hairline-light bg-surface-soft border-b">
                       <DataGridCabecalho id="filial" rotulo="Filial" />
                       <DataGridCabecalho id="vendas" rotulo="Vendas" alinhamento="direita" />
                       <DataGridCabecalho
@@ -192,7 +195,9 @@ export function DashboardScreen() {
                         className={classesDaLinha({ clicavel: false, focoComAnel: false })}
                       >
                         <DataGridCelula papel="primary" truncar={false}>
-                          <Text variant="corpo">{b.branchId}</Text>
+                          <Text variant="corpo" className="font-medium">
+                            {b.branchId}
+                          </Text>
                         </DataGridCelula>
                         <DataGridCelula papel="data" alinhamento="direita" truncar={false}>
                           <Text variant="dado">{b.sales}</Text>
@@ -212,6 +217,7 @@ export function DashboardScreen() {
                         />
                         <CelulaDeDinheiro
                           truncar={false}
+                          peso={b.overdueCentavos ? 'normal' : 'apagado'}
                           valorFormatado={money(b.overdueCentavos ?? 0)}
                         />
                       </tr>
