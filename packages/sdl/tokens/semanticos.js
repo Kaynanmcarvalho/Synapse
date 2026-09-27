@@ -60,9 +60,14 @@ export const canaisDoHex = (hex) => {
   return `${(numero >> 16) & 255} ${(numero >> 8) & 255} ${numero & 255}`;
 };
 
-/** Onde o conteudo se apoia. `pagina` e a folha; `painel` e o cartao que flutua
- *  sobre ela; `afundado` e o campo dentro do cartao. */
+/** Onde o conteudo se apoia. `tela` e o chao do aplicativo (a chrome e o que
+ *  fica ao redor do trabalho); `pagina` e a folha de trabalho em si, sempre um
+ *  tom mais clara que `tela` — a diferenca e minima de proposito (perceptivel
+ *  por comparacao, nao como bloco isolado), mas e ela que da profundidade sem
+ *  precisar de card. `painel` e o cartao que flutua sobre a folha; `afundado`
+ *  e o campo dentro do cartao. */
 export const superficie = {
+  tela: superficieCrua.quaseBrancoFrio,
   pagina: superficieCrua.branco,
   painel: superficieCrua.branco,
   elevado: superficieCrua.branco,

@@ -11,9 +11,13 @@ import { cn } from '../lib/cn';
  *  respiro; quando todo agrupamento ganha padding e sombra sozinho, a tela volta
  *  a ser um tabuleiro de cartoes. */
 
-export type PlanoDeSuperficie = 'pagina' | 'painel' | 'elevada' | 'afundada';
+export type PlanoDeSuperficie = 'tela' | 'pagina' | 'painel' | 'elevada' | 'afundada';
 
 const PLANO: Readonly<Record<PlanoDeSuperficie, string>> = {
+  /** O chao do aplicativo — chrome e o que fica ao redor da folha de trabalho.
+   *  Existe pra dar profundidade sem card: a folha (`pagina`) flutua um tom
+   *  mais clara por cima. */
+  tela: 'bg-surface-tela',
   /** A folha. Sem borda, sem raio: e o fundo do trabalho. */
   pagina: 'bg-surface-pagina',
   /** Apoiada na folha: linha antes de sombra. */

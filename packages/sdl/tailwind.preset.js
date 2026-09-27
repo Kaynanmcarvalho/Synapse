@@ -78,6 +78,7 @@ export default {
           deep: superficieCru.escuroProfundo,
           elevated: superficieCru.escuroElevado,
           // --- camada semantica nova
+          tela: superficie.tela,
           pagina: superficie.pagina,
           painel: superficie.painel,
           elevada: superficie.elevado,
@@ -113,10 +114,14 @@ export default {
       fontFamily: {
         sans: fonte.ui,
         display: fonte.display,
-        /** Numero, documento, SKU e chave de NF-e: mesma familia, algarismos de
-         *  largura fixa ligados. A escolha de uma familia propria fica para
-         *  quando o SDL tiver os primitivos de texto. */
-        data: [...fonte.dado, { fontFeatureSettings: '"tnum" 1, "ss01" 1' }],
+        /** Numero, documento, SKU e chave de NF-e. Fase 4.2 avaliou trocar de
+         *  familia e decidiu NAO trocar: Inter ja cobre os requisitos de fonte
+         *  de dado (variavel, 0 cortado, 1/l/I distintos, renderiza bem no
+         *  Windows, ja carregada — trocar so custaria bundle). A assinatura
+         *  vem da COMBINACAO de recursos ligados so aqui: `tnum` (algarismo de
+         *  largura fixa, a coluna nao dança), `zero` (zero cortado, nunca se
+         *  confunde com "O") e `ss01`. */
+        data: [...fonte.dado, { fontFeatureSettings: '"tnum" 1, "zero" 1, "ss01" 1' }],
         code: fonte.codigo,
       },
       fontSize: texto,
@@ -153,6 +158,11 @@ export default {
       maxWidth: Object.fromEntries(
         Object.entries(largura).map(([nome, valor]) => [`conteudo-${nome}`, valor]),
       ),
+      /** `ampla:` (1600px) — o mesmo nome que ja existia para largura de
+       *  conteudo, agora tambem como ponto de composicao: e a partir dai que a
+       *  Home passa a ter espaco de verdade para duas regioes lado a lado, em
+       *  vez do vazio da Fase 4.2 esticando uma coluna so. */
+      screens: { ampla: largura.ampla },
       spacing: Object.fromEntries(
         Object.entries(densidade).flatMap(([nome, medidas]) => [
           [`controle-${nome}`, medidas.controle],
