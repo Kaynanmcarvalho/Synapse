@@ -1,4 +1,6 @@
+import type { PedidoNaFila } from '@synapse/types';
 import {
+  avisoDeCreditoFila,
   avisoDeLotes,
   avisoDeMdfe,
   avisosDoPainel,
@@ -109,6 +111,37 @@ describe('avisoDeLotes', () => {
 
   it('avisa lote que vence hoje', () => {
     expect(avisoDeLotes([lote(0)], '/estoque')?.detalhe).toBe('um vence hoje');
+  });
+});
+
+describe('avisoDeCreditoFila', () => {
+  const pedidoEnviadoHa = (horas: number): PedidoNaFila =>
+    ({
+      pedido: { enviadoEm: new Date(Date.now() - horas * 3_600_000).toISOString() },
+    }) as PedidoNaFila;
+
+  it('fila vazia, sem aviso', () => {
+    expect(avisoDeCreditoFila([], '/x')).toBeNull();
+  });
+
+  it('dentro do prazo (nenhum acima de 2h) e atencao', () => {
+    const aviso = avisoDeCreditoFila([pedidoEnviadoHa(0.5), pedidoEnviadoHa(1)], '/x');
+    expect(aviso).toMatchObject({
+      id: 'credito-fila',
+      valor: '2',
+      detalhe: 'dentro do prazo',
+      tom: 'atencao',
+      caminho: '/x',
+    });
+  });
+
+  it('pedido acima de 2h vira critico e conta no detalhe', () => {
+    const aviso = avisoDeCreditoFila([pedidoEnviadoHa(3), pedidoEnviadoHa(0.5)], '/x');
+    expect(aviso).toMatchObject({
+      valor: '2',
+      detalhe: '1 acima de 2h',
+      tom: 'critico',
+    });
   });
 });
 

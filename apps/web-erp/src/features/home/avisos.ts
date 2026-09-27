@@ -1,6 +1,8 @@
 /** Avisos da tela inicial, montados so a partir de dados que a API devolve.
  *  Funcoes puras: a tela decide de onde buscar, aqui so se decide o que mostrar. */
 
+import type { PedidoNaFila } from '@synapse/types';
+
 export interface ResumoDoPainel {
   readonly ready: boolean;
   readonly message?: string;
@@ -105,6 +107,33 @@ export const avisoDeLotes = (lotes: readonly LoteVencendo[], caminho: string): A
     valor: String(lotes.length),
     detalhe: partes.join(' · '),
     tom: vencidos > 0 ? 'critico' : 'atencao',
+    caminho,
+  };
+};
+
+const HORAS_DE_ATENCAO = 2;
+
+/** Pedido parado na fila de credito pesa mais que a contagem sozinha: o
+ *  detalhe diz quantos ja passaram do limiar de atencao. */
+export const avisoDeCreditoFila = (
+  fila: readonly PedidoNaFila[],
+  caminho: string,
+): Aviso | null => {
+  if (fila.length === 0) return null;
+
+  const limiarMs = HORAS_DE_ATENCAO * 60 * 60 * 1000;
+  const agora = Date.now();
+  const acimaDoLimiar = fila.filter(
+    (pedido) => agora - new Date(pedido.pedido.enviadoEm).getTime() >= limiarMs,
+  ).length;
+
+  return {
+    id: 'credito-fila',
+    titulo: 'Pedidos aguardando análise de crédito',
+    valor: String(fila.length),
+    detalhe:
+      acimaDoLimiar > 0 ? `${acimaDoLimiar} acima de ${HORAS_DE_ATENCAO}h` : 'dentro do prazo',
+    tom: acimaDoLimiar > 0 ? 'critico' : 'atencao',
     caminho,
   };
 };
