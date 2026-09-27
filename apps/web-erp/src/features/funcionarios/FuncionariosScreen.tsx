@@ -1,11 +1,11 @@
 /* eslint-disable max-lines-per-function */
+import { Button, Input, Text } from '@synapse/sdl';
 import type { FuncionarioNaLista } from '@synapse/types';
-import { LoaderCircle, Plus, RotateCw, Search } from 'lucide-react';
+import { Plus, RotateCw, Search } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
-import { BOTAO_CLARO, BOTAO_ESCURO, SELO, TOM } from '../cadastros/comum/estilos';
-import { formatarTelefone } from '../customers/formato';
 import { listarFuncionarios } from './funcionarios.api';
 import { JanelaDoFuncionario } from './JanelaDoFuncionario';
+import { TabelaDeFuncionarios } from './TabelaDeFuncionarios';
 
 /** Cadastros › Funcionários › Funcionários: a lista para achar e a janela do
  *  Syndata para cadastrar. O vendedor do Ponto de Vendas e do PDV sai daqui. */
@@ -44,116 +44,62 @@ export function FuncionariosScreen() {
     <main className="mx-auto w-full max-w-[1400px] px-4 py-5">
       <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="font-display text-heading-md text-ink">Funcionários</h1>
-          <p className="text-body-sm text-stone">
+          <Text variant="tituloTela">Funcionários</Text>
+          <Text variant="corpoSecundario">
             Ficha, foto, comissão e o login de cada um. Quem é vendedor aparece no Ponto de Vendas e
             no PDV.
-          </p>
+          </Text>
         </div>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => void carregar(termo)} className={BOTAO_CLARO}>
+          <Button variant="quiet" onClick={() => void carregar(termo)}>
             <RotateCw size={14} aria-hidden="true" /> Atualizar
-          </button>
-          <button type="button" onClick={() => setAberto({ id: null })} className={BOTAO_ESCURO}>
+          </Button>
+          <Button variant="primary" onClick={() => setAberto({ id: null })}>
             <Plus size={15} aria-hidden="true" /> Novo funcionário
-          </button>
+          </Button>
         </div>
       </header>
 
-      <div className="border-hairline-light mb-3 rounded-2xl border bg-white p-3">
-        <label className="relative block">
-          <Search
-            size={15}
-            aria-hidden="true"
-            className="text-stone pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
-          />
-          <input
-            value={termo}
-            onChange={(evento) => setTermo(evento.target.value)}
-            placeholder="Código, nome, CPF, cargo ou departamento"
-            aria-label="Buscar funcionário"
-            className="border-hairline-light text-body-sm text-ink focus:border-hairline-strong h-9 w-full rounded-xl border pl-9 pr-3 outline-none"
-          />
-        </label>
-      </div>
+      <label className="relative mb-3 block">
+        <Search
+          size={15}
+          aria-hidden="true"
+          className="text-stone pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
+        />
+        <Input
+          value={termo}
+          onChange={(evento) => setTermo(evento.target.value)}
+          placeholder="Código, nome, CPF, cargo ou departamento"
+          aria-label="Buscar funcionário"
+          className="w-full pl-9"
+        />
+      </label>
 
-      <div className="border-hairline-light overflow-x-auto rounded-2xl border bg-white">
-        {erro ? <p className="text-body-sm p-4 text-[#b3242f]">{erro}</p> : null}
+      <div className="overflow-x-auto">
+        {erro ? (
+          <Text variant="corpoSecundario" tone="perigo" className="block p-4">
+            {erro}
+          </Text>
+        ) : null}
         {itens === null ? (
-          <p className="text-body-sm text-stone flex items-center gap-2 p-4">
-            <LoaderCircle size={15} className="animate-spin" aria-hidden="true" /> Carregando…
-          </p>
+          <Text variant="corpoSecundario" className="block p-4">
+            Carregando…
+          </Text>
         ) : null}
         {itens?.length === 0 && !erro ? (
-          <p className="text-body-sm text-stone p-6 text-center">
+          <Text variant="corpoSecundario" className="block p-6 text-center">
             {termo ? 'Nenhum funcionário encontrado.' : 'Nenhum funcionário cadastrado ainda.'}
-          </p>
+          </Text>
         ) : null}
         {itens?.length ? (
-          <table className="w-full min-w-[880px]">
-            <thead>
-              <tr className="text-caption text-stone border-hairline-light border-b text-left">
-                {[
-                  'Código',
-                  'Nome',
-                  'Matrícula',
-                  'Cargo',
-                  'Departamento',
-                  'Celular / Telefone',
-                  'Situação',
-                ].map((coluna) => (
-                  <th key={coluna} className="px-3 py-2 font-medium">
-                    {coluna}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {itens.map((funcionario) => (
-                <tr
-                  key={funcionario.id}
-                  tabIndex={0}
-                  onClick={() => setAberto({ id: funcionario.id })}
-                  onKeyDown={(evento) => {
-                    if (evento.key === 'Enter') setAberto({ id: funcionario.id });
-                  }}
-                  className="border-hairline-light hover:bg-surface-soft text-body-sm cursor-pointer border-b transition last:border-0"
-                >
-                  <td className="text-stone px-3 py-2 tabular-nums">{funcionario.codigo}</td>
-                  <td className="text-ink px-3 py-2 font-semibold">{funcionario.nome}</td>
-                  <td className="text-charcoal px-3 py-2">{funcionario.matricula ?? '—'}</td>
-                  <td className="text-charcoal px-3 py-2">{funcionario.cargo}</td>
-                  <td className="text-charcoal px-3 py-2">{funcionario.departamento}</td>
-                  <td className="text-charcoal px-3 py-2 tabular-nums">
-                    {formatarTelefone(funcionario.telefone) || '—'}
-                  </td>
-                  <td className="px-3 py-2">
-                    <span className="flex flex-wrap gap-1">
-                      {funcionario.vendedor ? (
-                        <span className={`${SELO} ${TOM.positivo}`}>Vendedor</span>
-                      ) : null}
-                      {funcionario.bloqueado ? (
-                        <span className={`${SELO} ${TOM.perigo}`}>Bloqueado</span>
-                      ) : null}
-                      {funcionario.demitido ? (
-                        <span className={`${SELO} ${TOM.alerta}`}>Demitido</span>
-                      ) : null}
-                      {!funcionario.bloqueado && !funcionario.demitido && !funcionario.vendedor ? (
-                        <span className={`${SELO} ${TOM.neutro}`}>Ativo</span>
-                      ) : null}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <TabelaDeFuncionarios itens={itens} aoAbrir={(id) => setAberto({ id })} />
         ) : null}
       </div>
       {cursor ? (
         <div className="mt-3 flex justify-center">
-          <button type="button" onClick={() => void carregarMais()} className={BOTAO_CLARO}>
+          <Button variant="quiet" onClick={() => void carregarMais()}>
             Carregar mais
-          </button>
+          </Button>
         </div>
       ) : null}
 
