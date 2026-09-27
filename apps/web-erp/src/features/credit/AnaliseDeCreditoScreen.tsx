@@ -1,3 +1,4 @@
+import { Button } from '@synapse/sdl';
 import type { PedidoNaFila } from '@synapse/types';
 import { RotateCw } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -46,13 +47,9 @@ function JanelaDaFila({
       subtitulo="Aguardando análise"
       abertura={ABERTURA_DA_FILA}
       acoes={
-        <button
-          type="button"
-          onClick={aoRecarregar}
-          className="bg-surface-soft text-button-sm text-ink inline-flex h-9 items-center gap-2 rounded-full px-4 transition hover:bg-[#ececee]"
-        >
+        <Button variant="quiet" onClick={aoRecarregar}>
           <RotateCw size={14} aria-hidden="true" /> Atualizar
-        </button>
+        </Button>
       }
       {...pilha}
     >

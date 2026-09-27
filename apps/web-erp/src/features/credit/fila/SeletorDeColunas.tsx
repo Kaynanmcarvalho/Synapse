@@ -1,3 +1,4 @@
+import { Button } from '@synapse/sdl';
 import { Check, Columns3, RotateCcw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { COLUNAS, TODAS_AS_COLUNAS, type IdDaColuna } from './colunas';
@@ -27,15 +28,10 @@ export function SeletorDeColunas({
 
   return (
     <div ref={caixa} className="relative">
-      <button
-        type="button"
-        onClick={() => setAberto((atual) => !atual)}
-        aria-expanded={aberto}
-        className="bg-surface-soft text-button-sm text-ink inline-flex h-9 items-center gap-2 rounded-full px-4 transition hover:bg-[#ececee]"
-      >
+      <Button variant="quiet" onClick={() => setAberto((atual) => !atual)} aria-expanded={aberto}>
         <Columns3 size={14} aria-hidden="true" /> Colunas
-        <span className="text-stone tabular-nums">{ordem.length}</span>
-      </button>
+        <span className="text-stone font-data">{ordem.length}</span>
+      </Button>
 
       {aberto && (
         <div
@@ -57,7 +53,7 @@ export function SeletorDeColunas({
                     <span
                       className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
                         marcada
-                          ? 'bg-canvas-dark border-canvas-dark text-white'
+                          ? 'bg-primary border-primary text-primary-on'
                           : 'border-hairline-strong'
                       }`}
                     >

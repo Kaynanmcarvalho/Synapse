@@ -13,13 +13,11 @@ function Dado({
   readonly tom?: 'neutro' | 'alerta' | 'forte';
 }) {
   const cor =
-    tom === 'alerta' ? 'text-accent-danger' : tom === 'forte' ? 'text-ink' : 'text-charcoal';
+    tom === 'alerta' ? 'text-status-perigo' : tom === 'forte' ? 'text-ink' : 'text-charcoal';
   return (
     <span className="flex min-w-0 flex-col">
-      <span className="text-caption text-stone font-semibold uppercase tracking-[0.06em]">
-        {rotulo}
-      </span>
-      <span className={`text-body-sm truncate font-semibold tabular-nums ${cor}`}>{valor}</span>
+      <span className="text-caption text-ink-medio font-medium">{rotulo}</span>
+      <span className={`text-body-sm font-data truncate font-semibold ${cor}`}>{valor}</span>
     </span>
   );
 }
@@ -31,26 +29,26 @@ function Totais({ linhas }: { readonly linhas: readonly PedidoNaFila[] }) {
   return (
     <div className="border-hairline-light bg-surface-soft flex flex-wrap items-center gap-x-8 gap-y-1 border-t px-5 py-2.5">
       <span className="text-caption text-stone">
-        <strong className="text-ink text-body-sm tabular-nums">{totais.pedidos}</strong> pedido(s) ·{' '}
+        <strong className="text-ink text-body-sm font-data">{totais.pedidos}</strong> pedido(s) ·{' '}
         {totais.clientes} cliente(s)
       </span>
       <span className="text-caption text-stone">
         Valor comercial{' '}
-        <strong className="text-ink text-body-sm tabular-nums">
+        <strong className="text-ink text-body-sm font-data">
           {formatarMoeda(totais.valorCentavos)}
         </strong>
       </span>
       <span className="text-caption text-stone">
         Exposição de crédito{' '}
-        <strong className="text-ink text-body-sm tabular-nums">
+        <strong className="text-ink text-body-sm font-data">
           {formatarMoeda(totais.exposicaoCentavos)}
         </strong>
       </span>
       <span className="text-caption text-stone">
         Vencido dos clientes{' '}
         <strong
-          className={`text-body-sm tabular-nums ${
-            totais.vencidoCentavos > 0 ? 'text-[#b3242f]' : 'text-ink'
+          className={`text-body-sm font-data ${
+            totais.vencidoCentavos > 0 ? 'text-status-perigo' : 'text-ink'
           }`}
         >
           {formatarMoeda(totais.vencidoCentavos)}
@@ -110,9 +108,7 @@ export function RodapeDaFila({
           aria-label="Observação do pedido selecionado"
           className="border-hairline-light min-h-[58px] rounded-xl border px-4 py-2.5"
         >
-          <span className="text-caption text-stone font-semibold uppercase tracking-[0.06em]">
-            Observação do pedido
-          </span>
+          <span className="text-caption text-ink-medio font-medium">Observação do pedido</span>
           <p className="text-body-sm text-charcoal mt-0.5 line-clamp-2">
             {pedido?.observacao?.trim() ? pedido.observacao : '—'}
           </p>

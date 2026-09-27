@@ -1,19 +1,24 @@
+import { Status, type TomDeStatus } from '@synapse/sdl';
 import type { PedidoNaFila, TipoDePedido } from '@synapse/types';
 import type { ReactNode } from 'react';
 import { formatarDocumento, formatarMoeda, ROTULO_DO_TIPO } from '../analise';
 import { Motivos } from '../ui/Etiquetas';
 import { textoDaCelula, type IdDaColuna } from './colunas';
 
-/** Como cada coluna desenha o seu dado: etiqueta no tipo e no motivo, mascara
- *  no CNPJ, numero tabular no dinheiro. O resto e texto corrido, cortado com
- *  reticencias. */
-const TOM_DO_TIPO: Record<TipoDePedido, string> = {
-  VENDA: 'border-hairline-light text-charcoal',
-  BONIFICACAO: 'border-accent-warning/40 text-[#8a4b00]',
-  TROCA: 'border-accent-link/40 text-accent-link',
-  DEVOLUCAO: 'border-accent-danger/40 text-[#b3242f]',
-  CONSIGNACAO: 'border-accent-teal/40 text-accent-green-text',
-  AMOSTRA: 'border-hairline-light text-mute',
+/** Como cada coluna desenha o seu dado: `Status` no tipo, mascara no CNPJ,
+ *  `font-data` no dinheiro e nos números. O resto é texto corrido, cortado
+ *  com reticências.
+ *
+ *  Tipo de pedido não é "bom/ruim" como os outros tons do Status — são seis
+ *  categorias que precisam ficar distintas entre si. Os oito tons do SDL dão
+ *  conta disso sem inventar cor solta (`#8a4b00`/`#b3242f`) fora do tema. */
+const TOM_DO_TIPO: Record<TipoDePedido, TomDeStatus> = {
+  VENDA: 'neutro',
+  BONIFICACAO: 'atencao',
+  TROCA: 'info',
+  DEVOLUCAO: 'perigo',
+  CONSIGNACAO: 'ok',
+  AMOSTRA: 'pendente',
 };
 
 function Impressao({
@@ -33,10 +38,10 @@ function Impressao({
         aoAlternar();
       }}
       onDoubleClick={(evento) => evento.stopPropagation()}
-      className={`text-caption inline-flex h-6 min-w-[52px] items-center justify-center rounded-full border font-semibold uppercase tracking-[0.04em] transition ${
+      className={`text-caption rounded-pequeno inline-flex h-6 min-w-[48px] items-center justify-center font-medium transition ${
         impresso
-          ? 'border-accent-teal/40 text-accent-green-text hover:bg-accent-teal/5'
-          : 'border-hairline-light text-stone hover:bg-surface-soft'
+          ? 'text-status-ok hover:bg-status-ok-fundo'
+          : 'text-ink-sutil hover:bg-surface-hover'
       }`}
     >
       {impresso ? 'Sim' : 'Não'}
@@ -45,7 +50,7 @@ function Impressao({
 }
 
 const dinheiro = (centavos: number, forte = true) => (
-  <span className={`tabular-nums ${forte ? 'text-ink font-semibold' : 'text-stone'}`}>
+  <span className={`font-data ${forte ? 'text-ink font-semibold' : 'text-stone'}`}>
     {formatarMoeda(centavos)}
   </span>
 );
@@ -53,9 +58,7 @@ const dinheiro = (centavos: number, forte = true) => (
 type Desenho = (linha: PedidoNaFila, aoAlternarImpressao: () => void) => ReactNode;
 
 const DESENHOS: Partial<Record<IdDaColuna, Desenho>> = {
-  pedido: ({ pedido }) => (
-    <span className="text-ink font-semibold tabular-nums">{pedido.numero}</span>
-  ),
+  pedido: ({ pedido }) => <span className="text-ink font-data font-semibold">{pedido.numero}</span>,
   impressao: (linha, aoAlternar) => <Impressao impresso={linha.impresso} aoAlternar={aoAlternar} />,
   cliente: ({ pedido, cliente }) => (
     <span className="flex min-w-0 items-center gap-2">
@@ -71,15 +74,13 @@ const DESENHOS: Partial<Record<IdDaColuna, Desenho>> = {
     </span>
   ),
   tipo: ({ pedido }) => (
-    <span
-      className={`text-caption inline-flex rounded-full border px-2.5 py-0.5 ${TOM_DO_TIPO[pedido.tipo]}`}
-    >
+    <Status tone={TOM_DO_TIPO[pedido.tipo]} className="text-caption">
       {ROTULO_DO_TIPO[pedido.tipo]}
-    </span>
+    </Status>
   ),
   motivo: ({ avaliacao }) => <Motivos motivos={avaliacao.motivos} maximo={1} />,
   documento: ({ pedido }) => (
-    <span className="text-charcoal tabular-nums">{formatarDocumento(pedido.clienteDocumento)}</span>
+    <span className="text-charcoal font-data">{formatarDocumento(pedido.clienteDocumento)}</span>
   ),
   valor: ({ pedido }) => dinheiro(pedido.totalCentavos),
   exposicao: ({ avaliacao }) => (
@@ -103,7 +104,7 @@ export function Celula({
   const desenho = DESENHOS[coluna];
   if (desenho) return <>{desenho(linha, aoAlternarImpressao)}</>;
   return (
-    <span className={`text-charcoal block truncate ${NUMERICAS.has(coluna) ? 'tabular-nums' : ''}`}>
+    <span className={`text-charcoal block truncate ${NUMERICAS.has(coluna) ? 'font-data' : ''}`}>
       {textoDaCelula(coluna, linha)}
     </span>
   );

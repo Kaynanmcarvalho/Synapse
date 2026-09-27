@@ -50,7 +50,7 @@ function Titulo({
       onDoubleClick={() => aoOrdenar(id)}
       aria-sort={ordenada ? (ordenacao.direcao === 'asc' ? 'ascending' : 'descending') : 'none'}
       title={`Dois cliques ordenam ${coluna.criterio}. Arraste o título para mudar a ordem; arraste a divisão para mudar a largura.`}
-      className={`text-caption text-stone relative cursor-grab select-none whitespace-nowrap px-3 py-2.5 font-semibold uppercase tracking-[0.06em] active:cursor-grabbing ${
+      className={`text-caption text-ink-medio relative cursor-grab select-none whitespace-nowrap px-3 py-2.5 font-medium active:cursor-grabbing ${
         ALINHAMENTO[coluna.alinhamento]
       } ${alvo === id ? 'bg-hairline-light' : ''}`}
     >
@@ -102,6 +102,12 @@ function Linha({
   readonly aoAlternarImpressao: () => void;
 }) {
   return (
+    // Gramatica de linha (Fase 4.4): hover so muda o plano; foco por teclado
+    // sem selecao ganha um anel discreto de acessibilidade (nao e o mesmo
+    // sinal de "atual"); selecionada usa o Synapse Signal — superficie neutra
+    // (nunca azul) + o traco de cobalto na borda esquerda, o mesmo motif da
+    // Home e da Command Window. Selecionada+focada soma o anel por cima do
+    // sinal, sem virar carnaval.
     <tr
       tabIndex={0}
       onClick={aoSelecionar}
@@ -109,17 +115,21 @@ function Linha({
       onKeyDown={aoTeclar}
       aria-selected={selecionada}
       title="Um clique seleciona · dois cliques abrem a ficha do cliente"
-      className={`border-hairline-light text-body-sm animate-revelar cursor-default border-b outline-none transition-colors duration-150 last:border-b-0 motion-reduce:animate-none ${
-        selecionada
-          ? 'bg-brand-50 ring-brand-200 relative z-[1] ring-1'
-          : 'hover:bg-surface-soft focus-visible:bg-surface-soft'
+      className={`border-hairline-light text-body-sm animate-revelar focus-visible:ring-primary/40 relative cursor-default border-b outline-none transition-colors duration-150 last:border-b-0 focus-visible:ring-1 focus-visible:ring-inset motion-reduce:animate-none ${
+        selecionada ? 'bg-surface-hover' : 'hover:bg-surface-hover'
       }`}
     >
-      {ordem.map((id) => (
+      {ordem.map((id, indice) => (
         <td
           key={id}
-          className={`truncate whitespace-nowrap px-3 py-2 ${ALINHAMENTO[COLUNAS[id].alinhamento]}`}
+          className={`relative truncate whitespace-nowrap px-3 py-2 ${ALINHAMENTO[COLUNAS[id].alinhamento]}`}
         >
+          {indice === 0 && selecionada && (
+            <span
+              aria-hidden="true"
+              className="bg-primary absolute inset-y-1.5 left-0 w-[2px] rounded-full"
+            />
+          )}
           <Celula coluna={id} linha={linha} aoAlternarImpressao={aoAlternarImpressao} />
         </td>
       ))}

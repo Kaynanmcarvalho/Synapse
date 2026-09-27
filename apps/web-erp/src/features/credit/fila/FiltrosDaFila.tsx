@@ -1,10 +1,8 @@
+import { Button, Input } from '@synapse/sdl';
 import { Eraser, Search } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ATALHOS, type Atalho } from './colunas';
 import { temFiltro, type Filtros } from './filtros';
-
-const CAMPO =
-  'border-hairline-light text-body-sm text-ink placeholder:text-stone h-9 rounded-xl border bg-canvas-light px-3 outline-none transition focus:border-hairline-strong';
 
 function Campo({
   rotulo,
@@ -17,11 +15,33 @@ function Campo({
 }) {
   return (
     <label className={`flex flex-col gap-1 ${largura}`}>
-      <span className="text-caption text-stone font-semibold uppercase tracking-[0.06em]">
-        {rotulo}
-      </span>
+      <span className="text-caption text-ink-medio font-medium">{rotulo}</span>
       {children}
     </label>
+  );
+}
+
+function CampoDeBusca({
+  busca,
+  aoBuscar,
+}: {
+  readonly busca: string;
+  readonly aoBuscar: (valor: string) => void;
+}) {
+  return (
+    <div className="relative">
+      <Search
+        size={15}
+        aria-hidden="true"
+        className="text-stone pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
+      />
+      <Input
+        value={busca}
+        onChange={(evento) => aoBuscar(evento.target.value)}
+        placeholder="Em qualquer coluna: CNPJ, cidade, bairro…"
+        className="w-full pl-9"
+      />
+    </div>
   );
 }
 
@@ -40,26 +60,24 @@ function Periodo({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-caption text-stone font-semibold uppercase tracking-[0.06em]">
-        Período
-      </span>
+      <span className="text-caption text-ink-medio font-medium">Período</span>
       <span className="flex items-center gap-2">
-        <input
+        <Input
           type="date"
           value={de}
           max={ate || undefined}
           onChange={(evento) => aoMudarDe(evento.target.value)}
           aria-label="Período: data inicial"
-          className={`${CAMPO} tabular-nums`}
+          className="font-data"
         />
         <span className="text-body-sm text-stone">até</span>
-        <input
+        <Input
           type="date"
           value={ate}
           min={de || undefined}
           onChange={(evento) => aoMudarAte(evento.target.value)}
           aria-label="Período: data final"
-          className={`${CAMPO} tabular-nums`}
+          className="font-data"
         />
       </span>
     </div>
@@ -91,26 +109,29 @@ function Atalhos({
             type="button"
             onClick={() => aoTrocar(opcao.id)}
             aria-pressed={ativo}
-            className={`text-caption inline-flex items-center gap-1.5 rounded-full border px-3 py-1 transition duration-200 ${
+            className={`text-caption rounded-controle duration-rapido inline-flex items-center gap-1.5 border px-3 py-1 transition-colors ${
               ativo
-                ? 'border-canvas-dark bg-canvas-dark shadow-cartao text-white'
-                : 'border-hairline-light text-charcoal hover:bg-surface-soft'
+                ? 'border-primary bg-primary text-primary-on'
+                : 'border-hairline-light text-charcoal hover:bg-surface-hover'
             }`}
           >
             {opcao.rotulo}
-            <span className={ativo ? 'text-white/70' : 'text-stone'}>{contagem(opcao.id)}</span>
+            <span className={ativo ? 'text-primary-on/70' : 'text-stone'}>
+              {contagem(opcao.id)}
+            </span>
           </button>
         );
       })}
 
       {podeLimpar && (
-        <button
-          type="button"
+        <Button
+          variant="quiet"
+          density="compacta"
           onClick={aoLimpar}
-          className="text-caption text-charcoal hover:bg-surface-soft animate-revelar inline-flex items-center gap-1.5 rounded-full px-3 py-1 transition motion-reduce:animate-none"
+          className="animate-revelar motion-reduce:animate-none"
         >
           <Eraser size={13} aria-hidden="true" /> Limpar filtros
-        </button>
+        </Button>
       )}
 
       <span className="ml-auto">{acoes}</span>
@@ -148,28 +169,26 @@ export function FiltrosDaFila({
     <div className="border-hairline-light bg-canvas-light sticky top-0 z-20 border-b px-5 pb-3 pt-4">
       <div className="flex flex-wrap items-end gap-3">
         <Campo rotulo="Pedido" largura="w-[92px]">
-          <input
+          <Input
             value={filtros.numero}
             onChange={(evento) => mudar('numero')(evento.target.value)}
             inputMode="numeric"
             placeholder="0000"
-            className={`${CAMPO} tabular-nums`}
+            align="right"
           />
         </Campo>
         <Campo rotulo="Cliente" largura="min-w-[180px] flex-1">
-          <input
+          <Input
             value={filtros.cliente}
             onChange={(evento) => mudar('cliente')(evento.target.value)}
             placeholder="Razão social ou nome"
-            className={CAMPO}
           />
         </Campo>
         <Campo rotulo="Representante" largura="min-w-[160px] flex-1">
-          <input
+          <Input
             value={filtros.vendedor}
             onChange={(evento) => mudar('vendedor')(evento.target.value)}
             placeholder="Vendedor"
-            className={CAMPO}
           />
         </Campo>
         <Periodo
@@ -179,15 +198,7 @@ export function FiltrosDaFila({
           aoMudarAte={mudar('ate')}
         />
         <Campo rotulo="Buscar" largura="min-w-[200px] flex-[2]">
-          <span className="bg-surface-soft flex h-9 items-center gap-2.5 rounded-xl px-3">
-            <Search size={15} className="text-stone" aria-hidden="true" />
-            <input
-              value={busca}
-              onChange={(evento) => aoBuscar(evento.target.value)}
-              placeholder="Em qualquer coluna: CNPJ, cidade, bairro…"
-              className="text-body-sm text-ink placeholder:text-stone h-full flex-1 bg-transparent outline-none"
-            />
-          </span>
+          <CampoDeBusca busca={busca} aoBuscar={aoBuscar} />
         </Campo>
       </div>
 
