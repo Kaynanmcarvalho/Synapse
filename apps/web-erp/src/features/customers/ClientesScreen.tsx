@@ -1,3 +1,4 @@
+import { Button, Divider, Surface, Text } from '@synapse/sdl';
 import { Plus, RotateCw } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -7,7 +8,12 @@ import { BarraDeFiltros, TabelaDeClientes } from './TabelaDeClientes';
 import { useListaDeClientes, type FiltrosDaTela } from './useListaDeClientes';
 
 /** Cadastro de clientes: a lista para achar, e a janela para cadastrar e
- *  corrigir. O mesmo cliente que a análise de crédito, o PDV e a busca usam. */
+ *  corrigir. O mesmo cliente que a análise de crédito, o PDV e a busca usam.
+ *
+ *  Fase 4.3: primeira tela de listagem a receber a linguagem visual da Fase
+ *  4.2 — a mesma folha (`Surface variant="pagina"`) sobre o mesmo chão
+ *  (`bg-surface-tela` do AppShell) que a Home já usa, os mesmos botões do SDL
+ *  no lugar dos botões-pílula, sem card ao redor da barra de filtros. */
 
 const SEM_FILTRO: FiltrosDaTela = { termo: '', situacao: '', ativo: '' };
 
@@ -18,39 +24,38 @@ export function ClientesScreen() {
   const lista = useListaDeClientes(filtros);
 
   return (
-    <main className="mx-auto w-full max-w-[1400px] px-4 py-5">
-      <header className="mb-4 flex flex-wrap items-end justify-between gap-3">
+    <Surface
+      variant="pagina"
+      as="main"
+      className="max-w-conteudo-trabalho mx-auto w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
+    >
+      <div className="flex flex-wrap items-end justify-between gap-3 pb-4">
         <div>
-          <h1 className="font-display text-heading-md text-ink">Clientes</h1>
-          <p className="text-body-sm text-stone">
+          <Text variant="tituloTela">Clientes</Text>
+          <Text variant="corpoSecundario" className="mt-1 block">
             O mesmo cadastro que a análise de crédito, o PDV e a busca do sistema usam.
-          </p>
+          </Text>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => void lista.carregar()}
-            className="bg-surface-soft text-button-sm text-ink inline-flex h-9 items-center gap-2 rounded-full px-4 transition hover:bg-[#ececee]"
-          >
+          <Button variant="quiet" onClick={() => void lista.carregar()}>
             <RotateCw size={14} aria-hidden="true" /> Atualizar
-          </button>
-          <button
-            type="button"
-            onClick={() => setAberta({ id: null })}
-            className="bg-canvas-dark text-button-sm hover:bg-charcoal inline-flex h-9 items-center gap-2 rounded-full px-4 text-white transition"
-          >
+          </Button>
+          <Button variant="primary" onClick={() => setAberta({ id: null })}>
             <Plus size={15} aria-hidden="true" /> Novo cliente
-          </button>
+          </Button>
         </div>
-      </header>
+      </div>
+      <Divider />
 
-      <BarraDeFiltros filtros={filtros} aoMudar={setFiltros} />
-      <TabelaDeClientes
-        estado={lista.estado}
-        busca={lista.busca}
-        aoAbrir={(id) => setAberta({ id })}
-        aoCarregarMais={() => void lista.carregarMais()}
-      />
+      <div className="pt-4">
+        <BarraDeFiltros filtros={filtros} aoMudar={setFiltros} />
+        <TabelaDeClientes
+          estado={lista.estado}
+          busca={lista.busca}
+          aoAbrir={(id) => setAberta({ id })}
+          aoCarregarMais={() => void lista.carregarMais()}
+        />
+      </div>
 
       {aberta ? (
         <JanelaDoCliente
@@ -60,6 +65,6 @@ export function ClientesScreen() {
           aoAbrirCredito={(id) => navegar(`${ROTAS.analiseDeCredito}?cliente=${id}`)}
         />
       ) : null}
-    </main>
+    </Surface>
   );
 }

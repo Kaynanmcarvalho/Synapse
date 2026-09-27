@@ -1,9 +1,14 @@
+import { Button, Input, Select, Status, Text, type TomDeStatus } from '@synapse/sdl';
 import type { ClienteNaLista } from '@synapse/types';
 import { Search } from 'lucide-react';
+import { separarMoeda } from '../../lib/dinheiro';
 import { formatarDocumento, formatarMoeda, formatarTelefone } from './formato';
 import type { EstadoDaLista, FiltrosDaTela } from './useListaDeClientes';
 
-/** A barra de filtros e a tabela da tela de clientes. */
+/** A barra de filtros e a tabela da tela de clientes — o primeiro teste da
+ *  linguagem visual da Fase 4.2 fora da Home: mesmo grid de dado, mesmo
+ *  `font-data`, mesmo `Status` do SDL, sem virar "tabela premium" (sem célula
+ *  arredondada, sem linha com sombra, sem zebra gratuita). */
 
 const ROTULO_DA_SITUACAO: Record<ClienteNaLista['situacao'], string> = {
   REGULAR: 'Liberado',
@@ -11,16 +16,15 @@ const ROTULO_DA_SITUACAO: Record<ClienteNaLista['situacao'], string> = {
   BLOCKED: 'Bloqueado',
 };
 
-const TOM_DA_SITUACAO: Record<ClienteNaLista['situacao'], string> = {
-  REGULAR: 'bg-surface-soft text-charcoal',
-  OVERDUE: 'bg-[#fdeced] text-[#b3242f]',
-  BLOCKED: 'bg-[#fdeced] text-[#b3242f]',
+/** As mesmas categorias que `Status` já nomeia — não é decisão nova, é parar
+ *  de reinventar cor de estado (`#fdeced`/`#b3242f`) fora do tema. */
+const TOM_DA_SITUACAO: Record<ClienteNaLista['situacao'], TomDeStatus> = {
+  REGULAR: 'ok',
+  OVERDUE: 'vencido',
+  BLOCKED: 'bloqueado',
 };
 
 const COLUNAS = ['Código', 'Cliente', 'CNPJ / CPF', 'Cidade', 'Telefone', 'Limite', 'Situação'];
-
-const SELECAO =
-  'border-hairline-light text-body-sm text-ink h-9 rounded-xl border bg-white px-3 outline-none';
 
 export function BarraDeFiltros({
   filtros,
@@ -30,49 +34,53 @@ export function BarraDeFiltros({
   readonly aoMudar: (filtros: FiltrosDaTela) => void;
 }) {
   return (
-    <div className="border-hairline-light mb-3 flex flex-wrap items-center gap-2 rounded-2xl border bg-white p-3">
-      <label className="relative min-w-[16rem] flex-1">
+    <div className="flex flex-wrap items-center gap-2 pb-4">
+      <div className="relative min-w-[16rem] flex-1">
         <Search
           size={15}
           aria-hidden="true"
           className="text-stone pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
         />
-        <input
+        <Input
           value={filtros.termo}
           onChange={(evento) => aoMudar({ ...filtros, termo: evento.target.value })}
           placeholder="Nome, CNPJ/CPF, cidade ou código"
           aria-label="Buscar cliente"
-          className="border-hairline-light text-body-sm text-ink focus:border-hairline-strong h-9 w-full rounded-xl border pl-9 pr-3 outline-none"
+          className="w-full pl-9"
         />
-      </label>
-      <select
+      </div>
+      <Select
         value={filtros.situacao}
         onChange={(evento) =>
           aoMudar({ ...filtros, situacao: evento.target.value as FiltrosDaTela['situacao'] })
         }
         aria-label="Situação"
-        className={SELECAO}
       >
         <option value="">Todas as situações</option>
         <option value="REGULAR">Liberado</option>
         <option value="OVERDUE">Inadimplente</option>
         <option value="BLOCKED">Bloqueado</option>
-      </select>
-      <select
+      </Select>
+      <Select
         value={filtros.ativo}
         onChange={(evento) =>
           aoMudar({ ...filtros, ativo: evento.target.value as FiltrosDaTela['ativo'] })
         }
         aria-label="Classificação"
-        className={SELECAO}
       >
         <option value="">Ativos e inativos</option>
         <option value="ativos">Só ativos</option>
         <option value="inativos">Só inativos</option>
-      </select>
+      </Select>
     </div>
   );
 }
+
+/** Todo `<td>` tem a linha de baixo, menos o primeiro: o hairline começa no
+ *  Cliente, não no Código — o mesmo inset deliberado, não um
+ *  `border-bottom: 1px solid gray` em tudo (§10 da Fase 4.3). */
+const CELULA = 'py-3 px-3 border-hairline-light border-b';
+const CELULA_LEADING = 'py-3 pl-1 pr-3';
 
 function Linha({
   cliente,
@@ -81,6 +89,7 @@ function Linha({
   readonly cliente: ClienteNaLista;
   readonly aoAbrir: () => void;
 }) {
+  const { prefixo, numero } = separarMoeda(formatarMoeda(cliente.limiteCentavos));
   return (
     <tr
       tabIndex={0}
@@ -88,34 +97,61 @@ function Linha({
       onKeyDown={(evento) => {
         if (evento.key === 'Enter') aoAbrir();
       }}
-      className="border-hairline-light hover:bg-surface-soft cursor-pointer border-b transition last:border-0"
+      className="hover:bg-surface-hover focus-visible:bg-surface-hover group cursor-pointer outline-none"
     >
-      <td className="text-body-sm text-stone px-3 py-2 tabular-nums">{cliente.codigo ?? '—'}</td>
-      <td className="px-3 py-2">
-        <span className="text-body-sm text-ink block font-semibold">{cliente.nome}</span>
+      {/* Código — LEADING: dado auxiliar, discreto, font-data. Sem hairline
+       *  embaixo: é o "entalhe" que separa o índice do resto da linha (o
+       *  mesmo raciocínio do índice operacional da Home, sem repetir o
+       *  primitive — aqui o dado já existe, não é uma posição inventada). */}
+      <td className={`${CELULA_LEADING} relative`}>
+        <span
+          aria-hidden="true"
+          className="bg-primary duration-instantaneo absolute inset-y-2 left-0 w-[2px] scale-y-0 rounded-full opacity-0 transition-all group-focus-visible:scale-y-100 group-focus-visible:opacity-100"
+        />
+        <Text variant="dado" tone="sutil" className="text-body-sm pl-2">
+          {cliente.codigo ?? '—'}
+        </Text>
+      </td>
+      <td className={CELULA}>
+        <Text variant="corpo" className="block font-medium">
+          {cliente.nome}
+        </Text>
         {cliente.razaoSocial && cliente.razaoSocial !== cliente.nome ? (
-          <span className="text-caption text-stone block truncate">{cliente.razaoSocial}</span>
+          <Text variant="legenda" tone="apoio" className="block truncate">
+            {cliente.razaoSocial}
+          </Text>
         ) : null}
       </td>
-      <td className="text-body-sm text-charcoal px-3 py-2 tabular-nums">
-        {formatarDocumento(cliente.documento)}
+      <td className={CELULA}>
+        <Text variant="dado" className="text-body-sm">
+          {formatarDocumento(cliente.documento)}
+        </Text>
       </td>
-      <td className="text-body-sm text-charcoal px-3 py-2">
-        {cliente.uf ? `${cliente.cidade}/${cliente.uf}` : cliente.cidade}
+      <td className={CELULA}>
+        <Text variant="corpoSecundario">
+          {cliente.uf ? `${cliente.cidade}/${cliente.uf}` : cliente.cidade}
+        </Text>
       </td>
-      <td className="text-body-sm text-charcoal px-3 py-2 tabular-nums">
-        {formatarTelefone(cliente.telefone)}
+      <td className={CELULA}>
+        <Text variant="dado" className="text-body-sm">
+          {formatarTelefone(cliente.telefone)}
+        </Text>
       </td>
-      <td className="text-body-sm text-ink px-3 py-2 text-right tabular-nums">
-        {formatarMoeda(cliente.limiteCentavos)}
+      <td className={`${CELULA} text-right`}>
+        <Text variant="dado" className="text-body-sm">
+          {prefixo && <span className="text-ink-apoio mr-1 font-normal">{prefixo}</span>}
+          {numero}
+        </Text>
       </td>
-      <td className="px-3 py-2">
-        <span
-          className={`text-caption inline-flex items-center rounded-full px-2 py-0.5 ${TOM_DA_SITUACAO[cliente.situacao]}`}
-        >
+      <td className={CELULA}>
+        <Status tone={TOM_DA_SITUACAO[cliente.situacao]}>
           {ROTULO_DA_SITUACAO[cliente.situacao]}
-        </span>
-        {cliente.ativo ? null : <span className="text-caption text-stone ml-2">Inativo</span>}
+        </Status>
+        {cliente.ativo ? null : (
+          <Text variant="legenda" tone="apoio" className="ml-2 inline">
+            Inativo
+          </Text>
+        )}
       </td>
     </tr>
   );
@@ -123,16 +159,24 @@ function Linha({
 
 function Aviso({ estado, busca }: { readonly estado: EstadoDaLista; readonly busca: string }) {
   if (estado.status === 'carregando') {
-    return <p className="text-body-sm text-stone py-10 text-center">Carregando clientes…</p>;
+    return (
+      <Text variant="corpoSecundario" className="block py-10 text-center">
+        Carregando clientes…
+      </Text>
+    );
   }
   if (estado.status === 'erro') {
-    return <p className="text-body-sm py-10 text-center text-[#b3242f]">{estado.mensagem}</p>;
+    return (
+      <Text variant="corpoSecundario" tone="perigo" className="block py-10 text-center">
+        {estado.mensagem}
+      </Text>
+    );
   }
   if (estado.itens.length > 0) return null;
   return (
-    <p className="text-body-sm text-stone py-10 text-center">
+    <Text variant="corpoSecundario" className="block py-10 text-center">
       {busca.trim() ? `Nenhum cliente para "${busca.trim()}".` : 'Nenhum cliente cadastrado ainda.'}
-    </p>
+    </Text>
   );
 }
 
@@ -149,14 +193,16 @@ export function TabelaDeClientes({
 }) {
   return (
     <>
-      <div className="border-hairline-light overflow-x-auto rounded-2xl border bg-white">
+      <div className="overflow-x-auto">
         <table className="w-full min-w-[48rem] border-collapse">
           <thead>
-            <tr className="border-hairline-light bg-canvas-light border-b">
-              {COLUNAS.map((coluna) => (
+            <tr>
+              {COLUNAS.map((coluna, indice) => (
                 <th
                   key={coluna}
-                  className={`text-caption text-stone px-3 py-2 font-semibold uppercase tracking-[0.06em] ${coluna === 'Limite' ? 'text-right' : 'text-left'}`}
+                  className={`text-caption text-ink-medio border-line-media whitespace-nowrap border-b py-2 font-medium ${
+                    indice === 0 ? 'pl-1 pr-3' : 'px-3'
+                  } ${coluna === 'Limite' ? 'text-right' : 'text-left'}`}
                 >
                   {coluna}
                 </th>
@@ -174,14 +220,10 @@ export function TabelaDeClientes({
         <Aviso estado={estado} busca={busca} />
       </div>
       {estado.status === 'pronto' && estado.proximoCursor ? (
-        <div className="mt-3 text-center">
-          <button
-            type="button"
-            onClick={aoCarregarMais}
-            className="bg-surface-soft text-button-sm text-ink inline-flex h-9 items-center gap-2 rounded-full px-4 transition hover:bg-[#ececee]"
-          >
+        <div className="pt-4 text-center">
+          <Button variant="quiet" onClick={aoCarregarMais}>
             Carregar mais
-          </button>
+          </Button>
         </div>
       ) : null}
     </>
