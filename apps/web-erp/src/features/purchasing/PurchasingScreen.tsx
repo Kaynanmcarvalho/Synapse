@@ -1,5 +1,15 @@
 /* eslint-disable max-lines, max-lines-per-function */
+import {
+  classesDaLinha,
+  DataGridCabecalho,
+  DataGridCelula,
+  Status,
+  Text,
+  type TomDeStatus,
+} from '@synapse/sdl';
 import { useEffect, useMemo, useState } from 'react';
+import { CelulaDeDinheiro } from '../../components/datagrid/CelulaDeDinheiro';
+import { formatarMoeda } from '../customers/formato';
 import {
   addQuote,
   createPurchaseOrder,
@@ -12,8 +22,7 @@ import {
   type PurchaseOrder,
 } from './purchasing.api';
 
-const money = (centavos: number) =>
-  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(centavos / 100);
+const money = formatarMoeda;
 
 const STATUS_LABEL: Record<PurchaseOrder['status'], string> = {
   RASCUNHO: 'Rascunho',
@@ -24,13 +33,15 @@ const STATUS_LABEL: Record<PurchaseOrder['status'], string> = {
   CANCELADO: 'Cancelado',
 };
 
-const STATUS_STYLE: Record<PurchaseOrder['status'], string> = {
-  RASCUNHO: 'bg-slate-100 text-slate-600',
-  EM_COTACAO: 'bg-amber-50 text-amber-700',
-  APROVADO: 'bg-blue-50 text-blue-700',
-  RECEBIDO_PARCIAL: 'bg-violet-50 text-violet-700',
-  RECEBIDO: 'bg-emerald-50 text-emerald-700',
-  CANCELADO: 'bg-rose-50 text-rose-700',
+/** Os 6 status do pedido de compra encaixam nos tons que o Status do SDL já
+ *  tem — nenhum tom novo foi necessário (mesma decisão de Boletos). */
+const TOM_DO_STATUS: Record<PurchaseOrder['status'], TomDeStatus> = {
+  RASCUNHO: 'neutro',
+  EM_COTACAO: 'atencao',
+  APROVADO: 'info',
+  RECEBIDO_PARCIAL: 'pendente',
+  RECEBIDO: 'ok',
+  CANCELADO: 'neutro',
 };
 
 function LoginPanel({ onSignedIn }: { readonly onSignedIn: () => void }) {
@@ -310,31 +321,38 @@ function OrderDetail({
     <div className="rounded-2xl border border-slate-200 bg-white p-5">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-bold text-slate-900">Pedido {order.id.slice(0, 8)}</h3>
-        <span
-          className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${STATUS_STYLE[order.status]}`}
-        >
-          {STATUS_LABEL[order.status]}
-        </span>
+        <Status tone={TOM_DO_STATUS[order.status]}>{STATUS_LABEL[order.status]}</Status>
       </div>
 
-      <table className="mt-3 w-full text-left text-xs">
+      <table className="mt-3 w-full border-collapse text-left">
         <thead>
-          <tr className="text-slate-400">
-            <th className="py-1 font-semibold">Produto</th>
-            <th className="py-1 text-right font-semibold">Pedido</th>
-            <th className="py-1 text-right font-semibold">Recebido</th>
-            <th className="py-1 text-right font-semibold">Custo</th>
+          <tr className="border-hairline-light border-b">
+            <DataGridCabecalho id="produto" rotulo="Produto" />
+            <DataGridCabecalho id="pedido" rotulo="Pedido" alinhamento="direita" />
+            <DataGridCabecalho id="recebido" rotulo="Recebido" alinhamento="direita" />
+            <DataGridCabecalho id="custo" rotulo="Custo" alinhamento="direita" />
           </tr>
         </thead>
         <tbody>
           {order.items.map((item) => (
-            <tr key={item.productId} className="border-t border-slate-100">
-              <td className="py-1.5 font-medium text-slate-700">{item.productId}</td>
-              <td className="py-1.5 text-right text-slate-600">{item.quantityOrdered}</td>
-              <td className="py-1.5 text-right text-slate-600">{item.quantityReceived}</td>
-              <td className="py-1.5 text-right text-slate-600">
-                {item.unitCostCentavos > 0 ? money(item.unitCostCentavos) : '—'}
-              </td>
+            <tr
+              key={item.productId}
+              className={classesDaLinha({ clicavel: false, focoComAnel: false })}
+            >
+              <DataGridCelula papel="primary" truncar={false}>
+                <Text variant="dado">{item.productId}</Text>
+              </DataGridCelula>
+              <DataGridCelula papel="data" alinhamento="direita" truncar={false}>
+                <Text variant="dado">{item.quantityOrdered}</Text>
+              </DataGridCelula>
+              <DataGridCelula papel="data" alinhamento="direita" truncar={false}>
+                <Text variant="dado">{item.quantityReceived}</Text>
+              </DataGridCelula>
+              <CelulaDeDinheiro
+                truncar={false}
+                peso="normal"
+                valorFormatado={item.unitCostCentavos > 0 ? money(item.unitCostCentavos) : '—'}
+              />
             </tr>
           ))}
         </tbody>
@@ -639,11 +657,9 @@ export function PurchasingScreen() {
                         {order.items.length} item(ns)
                       </span>
                     </span>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${STATUS_STYLE[order.status]}`}
-                    >
+                    <Status tone={TOM_DO_STATUS[order.status]} variant="chip">
                       {STATUS_LABEL[order.status]}
-                    </span>
+                    </Status>
                   </button>
                 ))}
               </div>
