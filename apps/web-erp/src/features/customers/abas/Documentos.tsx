@@ -1,6 +1,8 @@
-import { classesDaLinha, DataGridCabecalho, DataGridCelula, Text } from '@synapse/sdl';
+import { classesDaLinha, DataGridCabecalho, DataGridCelula, Status, Text } from '@synapse/sdl';
 import type { PainelDeAnaliseDeCredito } from '@synapse/types';
 import { CircleCheck, FileText, Hourglass, Paperclip } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { CelulaDeDinheiro } from '../../../components/datagrid/CelulaDeDinheiro';
 import { Bloco } from '../campos';
 import { formatarData, formatarMoeda } from '../formato';
 import type { PropsDaAba } from './aba';
@@ -12,73 +14,165 @@ import type { VisaoDeCredito } from '../useVisaoDeCredito';
  *  Anexar arquivo (contrato, ficha assinada, procuração) ainda não existe no
  *  Synapse, e a aba diz isso em vez de oferecer um botão que não grava. */
 
+/** As três tabelas desta aba são só leitura (sem abrir linha, sem ação): a
+ *  linha não é clicável, e o dinheiro fica à direita em `CelulaDeDinheiro`,
+ *  como em toda tabela da fundação de DataGrid. */
+interface Coluna {
+  readonly id: string;
+  readonly rotulo: string;
+  readonly direita?: boolean;
+}
+
 function Tabela({
   colunas,
-  linhas,
+  quantidade,
   vazio,
+  children,
 }: {
-  readonly colunas: readonly string[];
-  readonly linhas: readonly (readonly string[])[];
+  readonly colunas: readonly Coluna[];
+  readonly quantidade: number;
   readonly vazio: string;
+  readonly children: ReactNode;
 }) {
-  if (linhas.length === 0) return <p className="text-body-sm text-stone">{vazio}</p>;
+  if (quantidade === 0) return <p className="text-body-sm text-stone">{vazio}</p>;
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[32rem] border-collapse">
+      <table className="w-full min-w-[32rem] border-collapse text-left">
         <thead>
-          <tr className="border-hairline-light bg-surface-soft border-b">
+          <tr className="border-hairline-light border-b">
             {colunas.map((coluna) => (
-              <DataGridCabecalho key={coluna} id={coluna} rotulo={coluna} />
+              <DataGridCabecalho
+                key={coluna.id}
+                id={coluna.id}
+                rotulo={coluna.rotulo}
+                alinhamento={coluna.direita ? 'direita' : 'esquerda'}
+              />
             ))}
           </tr>
         </thead>
-        <tbody>
-          {linhas.map((linha, indice) => (
-            <tr key={indice} className={classesDaLinha({ clicavel: false, focoComAnel: false })}>
-              {linha.map((celula, coluna) => (
-                <DataGridCelula
-                  key={coluna}
-                  papel={coluna === 0 ? 'primary' : 'data'}
-                  truncar={false}
-                >
-                  <Text variant={coluna === 0 ? 'corpo' : 'dado'}>{celula}</Text>
-                </DataGridCelula>
-              ))}
-            </tr>
-          ))}
-        </tbody>
+        <tbody>{children}</tbody>
       </table>
     </div>
   );
 }
 
-const notas = (painel: PainelDeAnaliseDeCredito) =>
-  painel.ultimasNotas.map((nota) => [
-    `NF ${nota.numero}`,
-    formatarData(nota.emitidaEm),
-    nota.pedidoNumero ? `Pedido ${nota.pedidoNumero}` : '—',
-    formatarMoeda(nota.totalCentavos ?? 0),
-  ]);
+const LINHA = classesDaLinha({ clicavel: false, focoComAnel: false });
 
-const titulos = (painel: PainelDeAnaliseDeCredito) =>
-  painel.carteira.titulosEmAberto.map((titulo) => [
-    `${titulo.numero} · ${titulo.parcela}`,
-    formatarData(titulo.vencimento),
-    formatarMoeda(titulo.saldoCentavos),
-    titulo.diasDeAtraso > 0 ? `Vencido há ${titulo.diasDeAtraso} dia(s)` : 'A vencer',
-  ]);
+const Dado = ({ children }: { readonly children: ReactNode }) => (
+  <DataGridCelula papel="data" truncar={false}>
+    <Text variant="dado">{children}</Text>
+  </DataGridCelula>
+);
 
-const pagamentos = (painel: PainelDeAnaliseDeCredito) =>
-  painel.carteira.pagamentos.map((pagamento) => [
-    `${pagamento.numero} · ${pagamento.parcela}`,
-    formatarData(pagamento.pagoEm),
-    formatarMoeda(pagamento.valorCentavos),
-    pagamento.diasDoPagamento > 0
-      ? `${pagamento.diasDoPagamento} dia(s) após o vencimento`
-      : pagamento.diasDoPagamento < 0
-        ? `${Math.abs(pagamento.diasDoPagamento)} dia(s) antes`
-        : 'No vencimento',
-  ]);
+const Principal = ({ children }: { readonly children: ReactNode }) => (
+  <DataGridCelula papel="primary" truncar={false}>
+    <Text variant="corpo" className="font-medium">
+      {children}
+    </Text>
+  </DataGridCelula>
+);
+
+const Secundario = ({ children }: { readonly children: ReactNode }) => (
+  <DataGridCelula papel="secondary" truncar={false}>
+    <Text variant="corpoSecundario">{children}</Text>
+  </DataGridCelula>
+);
+
+const Dinheiro = ({ centavos }: { readonly centavos: number }) => (
+  <CelulaDeDinheiro truncar={false} valorFormatado={formatarMoeda(centavos)} />
+);
+
+function Notas({ painel }: { readonly painel: PainelDeAnaliseDeCredito }) {
+  return (
+    <Tabela
+      colunas={[
+        { id: 'documento', rotulo: 'Documento' },
+        { id: 'emissao', rotulo: 'Emissão' },
+        { id: 'origem', rotulo: 'Origem' },
+        { id: 'valor', rotulo: 'Valor', direita: true },
+      ]}
+      quantidade={painel.ultimasNotas.length}
+      vazio="Nenhuma nota fiscal emitida para este cliente."
+    >
+      {painel.ultimasNotas.map((nota) => (
+        <tr key={`${nota.serie}-${nota.numero}`} className={LINHA}>
+          <Principal>NF {nota.numero}</Principal>
+          <Dado>{formatarData(nota.emitidaEm)}</Dado>
+          <Secundario>{nota.pedidoNumero ? `Pedido ${nota.pedidoNumero}` : '—'}</Secundario>
+          <Dinheiro centavos={nota.totalCentavos ?? 0} />
+        </tr>
+      ))}
+    </Tabela>
+  );
+}
+
+function TitulosEmAberto({ painel }: { readonly painel: PainelDeAnaliseDeCredito }) {
+  const { titulosEmAberto } = painel.carteira;
+  return (
+    <Tabela
+      colunas={[
+        { id: 'titulo', rotulo: 'Título' },
+        { id: 'vencimento', rotulo: 'Vencimento' },
+        { id: 'saldo', rotulo: 'Saldo', direita: true },
+        { id: 'situacao', rotulo: 'Situação' },
+      ]}
+      quantidade={titulosEmAberto.length}
+      vazio="Nenhum título em aberto em nome deste cliente."
+    >
+      {titulosEmAberto.map((titulo) => (
+        <tr key={titulo.id} className={LINHA}>
+          <Dado>
+            {titulo.numero} · {titulo.parcela}
+          </Dado>
+          <Dado>{formatarData(titulo.vencimento)}</Dado>
+          <Dinheiro centavos={titulo.saldoCentavos} />
+          <DataGridCelula papel="status" truncar={false}>
+            {titulo.diasDeAtraso > 0 ? (
+              <Status tone="vencido">Vencido há {titulo.diasDeAtraso} dia(s)</Status>
+            ) : (
+              <Status tone="neutro">A vencer</Status>
+            )}
+          </DataGridCelula>
+        </tr>
+      ))}
+    </Tabela>
+  );
+}
+
+const pontualidade = (dias: number): string =>
+  dias > 0
+    ? `${dias} dia(s) após o vencimento`
+    : dias < 0
+      ? `${Math.abs(dias)} dia(s) antes`
+      : 'No vencimento';
+
+function TitulosPagos({ painel }: { readonly painel: PainelDeAnaliseDeCredito }) {
+  const { pagamentos } = painel.carteira;
+  return (
+    <Tabela
+      colunas={[
+        { id: 'titulo', rotulo: 'Título' },
+        { id: 'pago-em', rotulo: 'Pago em' },
+        { id: 'valor', rotulo: 'Valor', direita: true },
+        { id: 'pontualidade', rotulo: 'Pontualidade' },
+      ]}
+      quantidade={pagamentos.length}
+      vazio="Nenhum pagamento registrado."
+    >
+      {/* Um título pode ter mais de uma baixa parcial: o id sozinho não é chave. */}
+      {pagamentos.map((pagamento, indice) => (
+        <tr key={`${pagamento.tituloId}-${indice}`} className={LINHA}>
+          <Dado>
+            {pagamento.numero} · {pagamento.parcela}
+          </Dado>
+          <Dado>{formatarData(pagamento.pagoEm)}</Dado>
+          <Dinheiro centavos={pagamento.valorCentavos} />
+          <Secundario>{pontualidade(pagamento.diasDoPagamento)}</Secundario>
+        </tr>
+      ))}
+    </Tabela>
+  );
+}
 
 export function AbaDocumentos({ cliente, visao }: PropsDaAba & { readonly visao: VisaoDeCredito }) {
   if (!cliente) {
@@ -118,33 +212,21 @@ export function AbaDocumentos({ cliente, visao }: PropsDaAba & { readonly visao:
         icone={FileText}
         descricao="Emitidas em nome deste cliente"
       >
-        <Tabela
-          colunas={['Documento', 'Emissão', 'Origem', 'Valor']}
-          linhas={notas(visao.painel)}
-          vazio="Nenhuma nota fiscal emitida para este cliente."
-        />
+        <Notas painel={visao.painel} />
       </Bloco>
       <Bloco
         titulo={`Títulos em aberto (${visao.painel.carteira.titulosEmAberto.length})`}
         icone={Hourglass}
         descricao="A receber, parcela por parcela"
       >
-        <Tabela
-          colunas={['Título', 'Vencimento', 'Saldo', 'Situação']}
-          linhas={titulos(visao.painel)}
-          vazio="Nenhum título em aberto em nome deste cliente."
-        />
+        <TitulosEmAberto painel={visao.painel} />
       </Bloco>
       <Bloco
         titulo={`Títulos pagos (${visao.painel.carteira.pagamentos.length})`}
         icone={CircleCheck}
         descricao="Pagamentos e pontualidade"
       >
-        <Tabela
-          colunas={['Título', 'Pago em', 'Valor', 'Pontualidade']}
-          linhas={pagamentos(visao.painel)}
-          vazio="Nenhum pagamento registrado."
-        />
+        <TitulosPagos painel={visao.painel} />
       </Bloco>
       <Bloco
         titulo="Arquivos anexados"

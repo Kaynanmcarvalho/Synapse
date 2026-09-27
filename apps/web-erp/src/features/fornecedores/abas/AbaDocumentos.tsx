@@ -1,14 +1,7 @@
 /* eslint-disable max-lines-per-function */
-import {
-  classesDaLinha,
-  DataGridCabecalho,
-  DataGridCelula,
-  Status,
-  Text,
-  type TomDeStatus,
-} from '@synapse/sdl';
+import { classesDaLinha, DataGridCabecalho, DataGridCelula, Spinner, Text } from '@synapse/sdl';
 import type { DocumentosDoFornecedor, LinhaDeTituloDoFornecedor } from '@synapse/types';
-import { CircleDollarSign, LoaderCircle, PackageCheck, Wallet } from 'lucide-react';
+import { CircleDollarSign, PackageCheck, Wallet } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { CelulaDeDinheiro } from '../../../components/datagrid/CelulaDeDinheiro';
 import { Bloco } from '../../customers/campos';
@@ -27,18 +20,8 @@ const SITUACAO_DO_PEDIDO: Readonly<Record<string, string>> = {
   CANCELADO: 'Cancelado',
 };
 
-/** Mesmo domínio e mesmo mapeamento de PurchasingScreen (Fase 5.3) — o
- *  pedido de compra aqui é o mesmo PurchaseOrder, só visto pela aba do
- *  fornecedor. Reaproveitar o tom evita inventar um segundo vocabulário para
- *  o mesmo status. */
-const TOM_DO_PEDIDO: Readonly<Record<string, TomDeStatus>> = {
-  RASCUNHO: 'neutro',
-  EM_COTACAO: 'atencao',
-  APROVADO: 'info',
-  RECEBIDO_PARCIAL: 'pendente',
-  RECEBIDO: 'ok',
-  CANCELADO: 'neutro',
-};
+/** Só leitura: nenhuma linha abre documento nem tem ação. */
+const LINHA = classesDaLinha({ clicavel: false, focoComAnel: false });
 
 function Titulos({
   titulos,
@@ -50,7 +33,7 @@ function Titulos({
   if (titulos.length === 0) return <p className="text-body-sm text-stone">{vazio}</p>;
   return (
     <div className="overflow-x-auto">
-      <table className="w-full min-w-[520px] border-collapse">
+      <table className="w-full min-w-[520px] border-collapse text-left">
         <thead>
           <tr className="border-hairline-light border-b">
             <DataGridCabecalho id="descricao" rotulo="Descrição" />
@@ -62,7 +45,7 @@ function Titulos({
         </thead>
         <tbody>
           {titulos.map((titulo) => (
-            <tr key={titulo.id} className={classesDaLinha({ clicavel: false, focoComAnel: false })}>
+            <tr key={titulo.id} className={LINHA}>
               <DataGridCelula papel="primary" truncar={false}>
                 <Text variant="corpo">{titulo.descricao}</Text>
               </DataGridCelula>
@@ -70,7 +53,7 @@ function Titulos({
                 <Text variant="dado">{formatarData(titulo.vencimento)}</Text>
               </DataGridCelula>
               <DataGridCelula papel="secondary" truncar={false}>
-                <Text variant="corpo">{titulo.situacao}</Text>
+                <Text variant="corpoSecundario">{titulo.situacao}</Text>
               </DataGridCelula>
               <CelulaDeDinheiro
                 truncar={false}
@@ -114,11 +97,11 @@ export function AbaDocumentos({ fornecedorId }: { readonly fornecedorId: string 
       </p>
     );
   }
-  if (erro) return <p className="text-body-sm py-10 text-center text-[#b3242f]">{erro}</p>;
+  if (erro) return <p className="text-body-sm text-status-perigo py-10 text-center">{erro}</p>;
   if (!documentos) {
     return (
       <p className="text-body-sm text-stone flex items-center justify-center gap-2 py-10">
-        <LoaderCircle size={15} className="animate-spin" aria-hidden="true" /> Carregando…
+        <Spinner size={15} decorative /> Carregando…
       </p>
     );
   }
@@ -140,7 +123,7 @@ export function AbaDocumentos({ fornecedorId }: { readonly fornecedorId: string 
           <p className="text-body-sm text-stone">Nenhum pedido de compra com este fornecedor.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[480px] border-collapse">
+            <table className="w-full min-w-[480px] border-collapse text-left">
               <thead>
                 <tr className="border-hairline-light border-b">
                   <DataGridCabecalho id="pedido" rotulo="Pedido" />
@@ -151,24 +134,22 @@ export function AbaDocumentos({ fornecedorId }: { readonly fornecedorId: string 
               </thead>
               <tbody>
                 {documentos.pedidosDeCompra.map((pedido) => (
-                  <tr
-                    key={pedido.id}
-                    className={classesDaLinha({ clicavel: false, focoComAnel: false })}
-                  >
+                  <tr key={pedido.id} className={LINHA}>
                     <DataGridCelula papel="data" truncar={false}>
-                      <Text variant="dado">{pedido.numero}</Text>
+                      <Text variant="dado" className="font-medium">
+                        {pedido.numero}
+                      </Text>
                     </DataGridCelula>
                     <DataGridCelula papel="data" truncar={false}>
                       <Text variant="dado">{formatarData(pedido.criadoEm)}</Text>
                     </DataGridCelula>
-                    <DataGridCelula papel="status" truncar={false}>
-                      <Status tone={TOM_DO_PEDIDO[pedido.situacao] ?? 'neutro'}>
+                    <DataGridCelula papel="secondary" truncar={false}>
+                      <Text variant="corpoSecundario">
                         {SITUACAO_DO_PEDIDO[pedido.situacao] ?? pedido.situacao}
-                      </Status>
+                      </Text>
                     </DataGridCelula>
                     <CelulaDeDinheiro
                       truncar={false}
-                      peso="forte"
                       valorFormatado={formatarMoeda(pedido.totalCentavos)}
                     />
                   </tr>

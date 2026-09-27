@@ -1,12 +1,5 @@
 /* eslint-disable max-lines-per-function */
-import {
-  classesDaLinha,
-  DataGridCabecalho,
-  DataGridCelula,
-  Status,
-  Text,
-  type TomDeStatus,
-} from '@synapse/sdl';
+import { classesDaLinha, DataGridCabecalho, DataGridCelula, Spinner, Text } from '@synapse/sdl';
 import type { PedidoDoVendedor, ResumoDoVendedor } from '@synapse/types';
 import { ChartNoAxesColumn, LoaderCircle, ReceiptText } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -24,16 +17,6 @@ const SITUACAO: Readonly<Record<string, string>> = {
   REPROVADO: 'Reprovado',
   FATURADO: 'Faturado',
   CANCELADO: 'Cancelado',
-};
-
-/** Mesmo domínio e mesmo tom de HistoricoDoBalcao (Fase 5.1) — o pedido do
- *  vendedor é o mesmo PedidoDeVenda, só filtrado por funcionário. */
-const TOM_DA_SITUACAO: Readonly<Record<string, TomDeStatus>> = {
-  AGUARDANDO_ANALISE: 'atencao',
-  APROVADO: 'ok',
-  REPROVADO: 'perigo',
-  FATURADO: 'ok',
-  CANCELADO: 'neutro',
 };
 
 const dataHora = (iso: string) =>
@@ -68,10 +51,10 @@ export function AbaDocumentos({ funcionarioId }: { readonly funcionarioId: strin
       icone={ReceiptText}
       descricao="Ponto de Vendas, PDV e app do vendedor"
     >
-      {erro ? <p className="text-body-sm text-[#b3242f]">{erro}</p> : null}
+      {erro ? <p className="text-body-sm text-status-perigo">{erro}</p> : null}
       {!erro && pedidos === null ? (
         <p className="text-body-sm text-stone flex items-center gap-2">
-          <LoaderCircle size={15} className="animate-spin" aria-hidden="true" /> Carregando…
+          <Spinner size={15} decorative /> Carregando…
         </p>
       ) : null}
       {pedidos?.length === 0 ? (
@@ -79,7 +62,8 @@ export function AbaDocumentos({ funcionarioId }: { readonly funcionarioId: strin
       ) : null}
       {pedidos?.length ? (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] border-collapse">
+          {/* Só leitura: nenhuma linha abre o pedido nem tem ação. */}
+          <table className="w-full min-w-[640px] border-collapse text-left">
             <thead>
               <tr className="border-hairline-light border-b">
                 <DataGridCabecalho id="numero" rotulo="Nº" />
@@ -97,7 +81,9 @@ export function AbaDocumentos({ funcionarioId }: { readonly funcionarioId: strin
                   className={classesDaLinha({ clicavel: false, focoComAnel: false })}
                 >
                   <DataGridCelula papel="data" truncar={false}>
-                    <Text variant="dado">{pedido.numero}</Text>
+                    <Text variant="dado" className="font-medium">
+                      {pedido.numero}
+                    </Text>
                   </DataGridCelula>
                   <DataGridCelula papel="data" truncar={false}>
                     <Text variant="dado">{dataHora(pedido.enviadoEm)}</Text>
@@ -106,16 +92,15 @@ export function AbaDocumentos({ funcionarioId }: { readonly funcionarioId: strin
                     <Text variant="corpo">{pedido.clienteNome}</Text>
                   </DataGridCelula>
                   <DataGridCelula papel="secondary" truncar={false}>
-                    <Text variant="corpo">{pedido.tipo}</Text>
+                    <Text variant="corpoSecundario">{pedido.tipo}</Text>
                   </DataGridCelula>
-                  <DataGridCelula papel="status" truncar={false}>
-                    <Status tone={TOM_DA_SITUACAO[pedido.situacao] ?? 'neutro'}>
+                  <DataGridCelula papel="secondary" truncar={false}>
+                    <Text variant="corpoSecundario">
                       {SITUACAO[pedido.situacao] ?? pedido.situacao}
-                    </Status>
+                    </Text>
                   </DataGridCelula>
                   <CelulaDeDinheiro
                     truncar={false}
-                    peso="forte"
                     valorFormatado={formatarMoeda(pedido.totalCentavos)}
                   />
                 </tr>
