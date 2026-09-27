@@ -35,7 +35,12 @@ export function BarraDeFiltros({
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2 pb-4">
-      <div className="relative min-w-[16rem] flex-1">
+      {/* Sem rótulo visível — o mesmo padrão do campo de busca do header
+       *  (ícone + placeholder) — mas `<label>` de verdade em volta do `Input`
+       *  continua a associação semântica real: o clique no ícone também foca
+       *  o campo, e o nome acessível (`aria-label`) chega ao leitor de tela
+       *  como texto do próprio rótulo, não como substituto dele. */}
+      <label className="relative min-w-[16rem] flex-1">
         <Search
           size={15}
           aria-hidden="true"
@@ -48,7 +53,7 @@ export function BarraDeFiltros({
           aria-label="Buscar cliente"
           className="w-full pl-9"
         />
-      </div>
+      </label>
       <Select
         value={filtros.situacao}
         onChange={(evento) =>

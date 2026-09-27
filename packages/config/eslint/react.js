@@ -28,6 +28,14 @@ export default [
       ...jsxA11y.flatConfigs.recommended.rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       'react/prop-types': 'off',
+      // `Input`/`Select` do SDL renderizam <input>/<select> nativos por baixo;
+      // sem isto o linter não enxerga através do componente e pede pra trocar
+      // <label> por div+aria-label — perdendo a associação semântica real (o
+      // clique no rótulo focando o controle) só pra calar o aviso.
+      'jsx-a11y/label-has-associated-control': [
+        'error',
+        { controlComponents: ['Input', 'Select', 'NumberInput', 'MoneyInput', 'DocInput'] },
+      ],
     },
   },
 ];
