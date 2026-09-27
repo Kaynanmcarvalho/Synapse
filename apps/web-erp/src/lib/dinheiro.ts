@@ -16,3 +16,29 @@ export const separarMoeda = (
   PREFIXO_MOEDA.test(valor)
     ? { prefixo: 'R$', numero: valor.slice(3) }
     : { prefixo: null, numero: valor };
+
+/** Fase 6.1 — auditoria encontrou `Number(texto)` lendo o que o usuário digita
+ *  em Purchasing e Boletos: funciona hoje porque os campos são
+ *  `<input type="number">` (o navegador só aceita ponto). O dia que um desses
+ *  campos virar `MoneyInput` (texto, formato pt-BR), `Number("12,50")` vira
+ *  `NaN` — o problema que esta função resolve antes de precisar.
+ *
+ *  Regra: vírgula sozinha é decimal ("12,50" → 12.5); ponto **e** vírgula
+ *  juntos, o ponto é milhar ("1.234,56" → 1234.56); só ponto (sem vírgula)
+ *  continua decimal — é o formato que `type="number"` já entrega, e não dá
+ *  para saber se "1.234" era milhar ou 1,234 sem mais contexto. Não arredonda
+ *  nem converte para centavos: quem chama decide a unidade, como já fazia. */
+export const analisarMoeda = (texto: string | null | undefined): number | null => {
+  if (texto == null) return null;
+  const bruto = texto.trim();
+  if (bruto === '') return null;
+  const limpo = bruto.replace(/[^\d,.-]/g, '');
+  // "abc" vira "" depois do replace acima — e Number("") é 0, não NaN.
+  if (!/\d/.test(limpo)) return null;
+  const normalizado =
+    limpo.includes(',') && limpo.includes('.')
+      ? limpo.replace(/\./g, '').replace(',', '.')
+      : limpo.replace(',', '.');
+  const valor = Number(normalizado);
+  return Number.isFinite(valor) ? valor : null;
+};

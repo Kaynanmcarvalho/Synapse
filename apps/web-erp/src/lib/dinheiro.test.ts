@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { separarMoeda } from './dinheiro';
+import { analisarMoeda, separarMoeda } from './dinheiro';
 
 /** Bug real (achado pelos testes da Fase 4.3): `Intl.NumberFormat('pt-BR',
  *  {style:'currency'})` separa "R$" do valor com U+00A0 (espaço sem quebra),
@@ -20,5 +20,25 @@ describe('separarMoeda', () => {
 
   it('uma contagem simples (sem "R$") não é separada', () => {
     expect(separarMoeda('6')).toEqual({ prefixo: null, numero: '6' });
+  });
+});
+
+describe('analisarMoeda', () => {
+  it.each<[string | null | undefined, number | null]>([
+    ['12', 12],
+    ['12,5', 12.5],
+    ['12,50', 12.5],
+    ['1.234,56', 1234.56],
+    ['0,01', 0.01],
+    ['', null],
+    [null, null],
+    [undefined, null],
+    ['abc', null],
+    ['12.50', 12.5],
+    ['-12,50', -12.5],
+    ['  12,50  ', 12.5],
+    ['R$ 12,50', 12.5],
+  ])('analisarMoeda(%o) === %o', (entrada, esperado) => {
+    expect(analisarMoeda(entrada)).toBe(esperado);
   });
 });
