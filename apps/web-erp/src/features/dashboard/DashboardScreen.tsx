@@ -1,5 +1,7 @@
+import { classesDaLinha, DataGridCabecalho, DataGridCelula, Text } from '@synapse/sdl';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { CelulaDeDinheiro } from '../../components/datagrid/CelulaDeDinheiro';
 import { apiRequest } from '../../lib/dev-auth';
 
 interface Totals {
@@ -168,27 +170,50 @@ export function DashboardScreen() {
             <section>
               <h2 className="mb-3 text-lg font-bold">Comparativo entre filiais</h2>
               <div className="overflow-x-auto rounded-xl border">
-                <table className="w-full min-w-[720px] text-left text-sm">
+                <table className="w-full min-w-[720px] border-collapse">
                   <thead>
-                    <tr>
-                      {['Filial', 'Vendas', 'Faturamento', 'A receber', 'A pagar', 'Vencidos'].map(
-                        (label) => (
-                          <th key={label} className="p-3">
-                            {label}
-                          </th>
-                        ),
-                      )}
+                    <tr className="border-hairline-light border-b">
+                      <DataGridCabecalho id="filial" rotulo="Filial" />
+                      <DataGridCabecalho id="vendas" rotulo="Vendas" alinhamento="direita" />
+                      <DataGridCabecalho
+                        id="faturamento"
+                        rotulo="Faturamento"
+                        alinhamento="direita"
+                      />
+                      <DataGridCabecalho id="receber" rotulo="A receber" alinhamento="direita" />
+                      <DataGridCabecalho id="pagar" rotulo="A pagar" alinhamento="direita" />
+                      <DataGridCabecalho id="vencidos" rotulo="Vencidos" alinhamento="direita" />
                     </tr>
                   </thead>
                   <tbody>
                     {data.branches.map((b) => (
-                      <tr key={b.branchId} className="border-t">
-                        <td className="p-3">{b.branchId}</td>
-                        <td>{b.sales}</td>
-                        <td>{money(b.revenueCentavos)}</td>
-                        <td>{money(b.receivableCentavos ?? 0)}</td>
-                        <td>{money(b.payableCentavos ?? 0)}</td>
-                        <td>{money(b.overdueCentavos ?? 0)}</td>
+                      <tr
+                        key={b.branchId}
+                        className={classesDaLinha({ clicavel: false, focoComAnel: false })}
+                      >
+                        <DataGridCelula papel="primary" truncar={false}>
+                          <Text variant="corpo">{b.branchId}</Text>
+                        </DataGridCelula>
+                        <DataGridCelula papel="data" alinhamento="direita" truncar={false}>
+                          <Text variant="dado">{b.sales}</Text>
+                        </DataGridCelula>
+                        <CelulaDeDinheiro
+                          truncar={false}
+                          peso="forte"
+                          valorFormatado={money(b.revenueCentavos)}
+                        />
+                        <CelulaDeDinheiro
+                          truncar={false}
+                          valorFormatado={money(b.receivableCentavos ?? 0)}
+                        />
+                        <CelulaDeDinheiro
+                          truncar={false}
+                          valorFormatado={money(b.payableCentavos ?? 0)}
+                        />
+                        <CelulaDeDinheiro
+                          truncar={false}
+                          valorFormatado={money(b.overdueCentavos ?? 0)}
+                        />
                       </tr>
                     ))}
                   </tbody>
