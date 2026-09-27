@@ -4,12 +4,27 @@ import {
   classesDaLinha,
   DataGridCabecalho,
   DataGridCelula,
+  Divider,
+  DocInput,
+  Field,
+  Input,
+  NumberInput,
+  Select,
   Status,
+  Surface,
   Text,
   type TomDeStatus,
 } from '@synapse/sdl';
+import { RotateCw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { CelulaDeDinheiro } from '../../components/datagrid/CelulaDeDinheiro';
+import {
+  BarraDeAcoes,
+  LinhaDeCampos,
+  Secao,
+  ValoresDeLeitura,
+} from '../../components/formulario/Formulario';
+import { LARGURA_DE_CAMPO, type LarguraDeCampo } from '../../components/formulario/larguras';
 import { apiRequest } from '../../lib/dev-auth';
 import { formatarData, formatarMoeda } from '../customers/formato';
 import { type ChargeStatus, podeBaixarManualmente, podeCancelar } from './regrasDoBoleto';
@@ -207,87 +222,130 @@ export function BoletosScreen() {
     setAccountId(account.id);
     setMessage('Conta de simulação criada. Os boletos dessa conta não têm validade bancária.');
   };
+  const campo = (
+    rotulo: string,
+    valor: string,
+    mudar: (valor: string) => void,
+    largura: LarguraDeCampo,
+    tipo: 'text' | 'numero' | 'data' | 'documento' = 'text',
+  ) => (
+    <Field label={rotulo} className={LARGURA_DE_CAMPO[largura]}>
+      {tipo === 'numero' ? (
+        <NumberInput required step="0.01" value={valor} onChange={(e) => mudar(e.target.value)} />
+      ) : tipo === 'documento' ? (
+        <DocInput required value={valor} onValueChange={mudar} />
+      ) : (
+        <Input
+          required
+          type={tipo === 'data' ? 'date' : 'text'}
+          value={valor}
+          onChange={(e) => mudar(e.target.value)}
+          className={tipo === 'data' ? 'font-data' : undefined}
+        />
+      )}
+    </Field>
+  );
   return (
-    <main className="mx-auto max-w-6xl space-y-5 p-4 sm:p-8">
-      <h1 className="text-3xl font-bold">Boletos e parcelamentos</h1>
-      <p className="text-sm">
-        Emita parcelas, consulte segunda via e registre a baixa. Contas MOCK geram apenas
-        simulações.
-      </p>
+    <Surface
+      variant="pagina"
+      as="main"
+      className="max-w-conteudo-trabalho mx-auto w-full px-4 py-6 sm:px-6 lg:px-8 lg:py-8"
+    >
+      <div className="flex flex-wrap items-end justify-between gap-3 pb-4">
+        <div className="min-w-0">
+          <Text variant="tituloTela">Boletos e parcelamentos</Text>
+          <Text variant="corpoSecundario" className="mt-1">
+            Emita parcelas, consulte segunda via e registre a baixa. Contas MOCK geram apenas
+            simulações.
+          </Text>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="quiet" disabled={busy} onClick={() => void run(mockAccount)}>
+            Configurar conta de simulação
+          </Button>
+          <Button variant="quiet" disabled={busy} onClick={() => void run(refresh)}>
+            <RotateCw size={14} aria-hidden="true" /> Consultar filial
+          </Button>
+        </div>
+      </div>
+      <Divider />
+
+      {/* Form Grammar (Fase 6, piloto 2): seções por assunto do boleto —
+       *  quem recebe, o que se cobra, os encargos — separadas por linha, não
+       *  por cartão. Campos e regras de envio são exatamente os de antes. */}
       <form
         onSubmit={(e) => {
           e.preventDefault();
           void run(issue);
         }}
-        className="rounded-xl border bg-white p-5"
+        className="py-6"
+        aria-label="Emitir parcelas"
       >
-        <fieldset
-          disabled={busy}
-          className="grid gap-3 disabled:opacity-60 sm:grid-cols-2 lg:grid-cols-3"
-        >
-          <label className="grid gap-1 text-sm">
-            Conta
-            <select
-              required
-              value={accountId}
-              onChange={(e) => setAccountId(e.target.value)}
-              className="rounded border bg-transparent p-2"
-            >
-              <option value="">Selecione</option>
-              {accounts.map((a) => (
-                <option value={a.id} key={a.id}>
-                  {a.apelido} ({a.environment})
-                </option>
-              ))}
-            </select>
-          </label>
-          {(
-            [
-              ['Filial', branchId, setBranchId, 'text'],
-              ['Cliente (ID)', customerId, setCustomerId, 'text'],
-              ['Nome do pagador', payerName, setPayerName, 'text'],
-              ['CPF/CNPJ', taxId, setTaxId, 'text'],
-              ['Descrição', description, setDescription, 'text'],
-              ['Total (R$)', amount, setAmount, 'number'],
-              ['Parcelas', count, setCount, 'number'],
-              ['Primeiro vencimento', due, setDue, 'date'],
-              ['Juros mensal (%)', interest, setInterest, 'number'],
-              ['Multa (%)', fine, setFine, 'number'],
-              ['Desconto total (R$)', discount, setDiscount, 'number'],
-            ] as const
-          ).map(([label, value, setter, type]) => (
-            <label key={label} className="grid gap-1 text-sm">
-              {label}
-              <input
-                required
-                type={type}
-                step={type === 'number' ? '0.01' : undefined}
-                value={value}
-                onChange={(e) => setter(e.target.value)}
-                className="min-w-0 rounded border bg-transparent p-2"
-              />
-            </label>
-          ))}
-          <button className="rounded bg-blue-600 p-2 text-white">Emitir parcelas</button>
-          <button type="button" onClick={() => void run(refresh)} className="rounded border p-2">
-            Consultar filial
-          </button>
-          <button
-            type="button"
-            onClick={() => void run(mockAccount)}
-            className="rounded border p-2"
-          >
-            Configurar conta de simulação
-          </button>
+        <fieldset disabled={busy} className="space-y-6 disabled:opacity-60">
+          <Secao titulo="Conta e filial">
+            <LinhaDeCampos>
+              <Field label="Conta" className={LARGURA_DE_CAMPO.longo}>
+                <Select required value={accountId} onChange={(e) => setAccountId(e.target.value)}>
+                  <option value="">Selecione</option>
+                  {accounts.map((a) => (
+                    <option value={a.id} key={a.id}>
+                      {a.apelido} ({a.environment})
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              {campo('Filial', branchId, setBranchId, 'curto')}
+            </LinhaDeCampos>
+          </Secao>
+          <Secao titulo="Pagador">
+            <LinhaDeCampos>
+              {campo('Cliente (ID)', customerId, setCustomerId, 'curto')}
+              {campo('Nome do pagador', payerName, setPayerName, 'resto')}
+              {campo('CPF/CNPJ', taxId, setTaxId, 'medio', 'documento')}
+            </LinhaDeCampos>
+          </Secao>
+          <Secao titulo="Cobrança">
+            <LinhaDeCampos>
+              {campo('Descrição', description, setDescription, 'resto')}
+              {campo('Total (R$)', amount, setAmount, 'curto', 'numero')}
+              {campo('Parcelas', count, setCount, 'codigo', 'numero')}
+              {campo('Primeiro vencimento', due, setDue, 'curto', 'data')}
+            </LinhaDeCampos>
+          </Secao>
+          <Secao titulo="Encargos">
+            <LinhaDeCampos>
+              {campo('Juros mensal (%)', interest, setInterest, 'codigo', 'numero')}
+              {campo('Multa (%)', fine, setFine, 'codigo', 'numero')}
+              {campo('Desconto total (R$)', discount, setDiscount, 'curto', 'numero')}
+            </LinhaDeCampos>
+          </Secao>
         </fieldset>
+        <BarraDeAcoes>
+          <Button type="submit" variant="primary" loading={busy}>
+            Emitir parcelas
+          </Button>
+        </BarraDeAcoes>
       </form>
-      <Text variant="corpo" as="p" role="status" className="whitespace-pre-wrap">
+
+      {/* Uma linha de situação para a tela inteira: o mesmo `message` serve à
+       *  emissão, à segunda via e à baixa (erro ou sucesso), então ele fica
+       *  entre o formulário e a tabela — perto das duas origens. */}
+      <Text
+        variant="corpo"
+        as="p"
+        role="status"
+        tone="apoio"
+        className="min-h-5 whitespace-pre-wrap"
+      >
         {busy ? 'Processando…' : message}
       </Text>
+
       {selected && (
-        <form
-          className="border-hairline-light rounded-controle flex flex-wrap items-center gap-3 border p-4"
-          onSubmit={(e) => {
+        <Surface
+          variant="afundada"
+          as="form"
+          className="mt-4 flex flex-wrap items-end gap-3 p-4"
+          onSubmit={(e: React.FormEvent) => {
             e.preventDefault();
             void run(async () => {
               await apiRequest(
@@ -303,67 +361,75 @@ export function BoletosScreen() {
             });
           }}
         >
-          <Text variant="corpo" as="span">
-            Baixa manual de {formatarMoeda(selected.amountCentavos)}
-          </Text>
-          <input
-            required
-            minLength={3}
-            aria-label="Justificativa da baixa"
-            placeholder="Justificativa"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            className="border-line-fina h-controle-padrao rounded-controle text-body-sm focus:border-primary focus:ring-primary/30 border bg-transparent px-3 outline-none focus:ring-2"
+          <ValoresDeLeitura
+            itens={[
+              {
+                rotulo: 'Baixa manual de',
+                valor: formatarMoeda(selected.amountCentavos),
+                dado: true,
+              },
+            ]}
           />
-          <Button variant="primary" disabled={busy}>
+          <Field label="Justificativa da baixa" className={LARGURA_DE_CAMPO.resto}>
+            <Input required minLength={3} value={note} onChange={(e) => setNote(e.target.value)} />
+          </Field>
+          <Button type="submit" variant="primary" disabled={busy}>
             Confirmar recebimento
           </Button>
           <Button variant="quiet" type="button" onClick={() => setSelected(null)}>
             Voltar
           </Button>
-        </form>
+        </Surface>
       )}
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px] border-collapse text-left">
-          <thead>
-            <tr className="border-hairline-light bg-surface-soft border-b">
-              <DataGridCabecalho id="parcela" rotulo="Parcela" />
-              <DataGridCabecalho id="vencimento" rotulo="Vencimento" />
-              <DataGridCabecalho id="valor" rotulo="Valor" alinhamento="direita" />
-              <DataGridCabecalho id="status" rotulo="Status" />
-              <DataGridCabecalho id="acoes" rotulo="Ações" />
-            </tr>
-          </thead>
-          <tbody>
-            {charges.map((charge) => (
-              <LinhaDoBoleto
-                key={charge.id}
-                charge={charge}
-                busy={busy}
-                aoPedirSegundaVia={(c) =>
-                  void run(async () => {
-                    const bank = await apiRequest<{ linhaDigitavel: string }>(
-                      `/finance/boletos/${c.id}/second-copy`,
-                    );
-                    setMessage(`Linha digitável: ${bank.linhaDigitavel}`);
-                  })
-                }
-                aoIniciarBaixa={(c) => {
-                  setSelected(c);
-                  setNote('');
-                }}
-                aoCancelar={(c) => {
-                  if (window.confirm('Cancelar este boleto e o título vinculado?'))
+
+      <section className="mt-4" aria-label="Parcelas da filial">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[720px] border-collapse text-left">
+            <thead>
+              <tr className="border-hairline-light bg-surface-soft border-b">
+                <DataGridCabecalho id="parcela" rotulo="Parcela" />
+                <DataGridCabecalho id="vencimento" rotulo="Vencimento" />
+                <DataGridCabecalho id="valor" rotulo="Valor" alinhamento="direita" />
+                <DataGridCabecalho id="status" rotulo="Status" />
+                <DataGridCabecalho id="acoes" rotulo="Ações" />
+              </tr>
+            </thead>
+            <tbody>
+              {charges.map((charge) => (
+                <LinhaDoBoleto
+                  key={charge.id}
+                  charge={charge}
+                  busy={busy}
+                  aoPedirSegundaVia={(c) =>
                     void run(async () => {
-                      await apiRequest(`/finance/boletos/${c.id}/cancel`, { method: 'POST' });
-                      await refresh();
-                    });
-                }}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </main>
+                      const bank = await apiRequest<{ linhaDigitavel: string }>(
+                        `/finance/boletos/${c.id}/second-copy`,
+                      );
+                      setMessage(`Linha digitável: ${bank.linhaDigitavel}`);
+                    })
+                  }
+                  aoIniciarBaixa={(c) => {
+                    setSelected(c);
+                    setNote('');
+                  }}
+                  aoCancelar={(c) => {
+                    if (window.confirm('Cancelar este boleto e o título vinculado?'))
+                      void run(async () => {
+                        await apiRequest(`/finance/boletos/${c.id}/cancel`, { method: 'POST' });
+                        await refresh();
+                      });
+                  }}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {charges.length === 0 ? (
+          <Text variant="corpoSecundario" className="py-6 text-center">
+            Nenhuma parcela nesta filial.
+          </Text>
+        ) : null}
+      </section>
+    </Surface>
   );
 }
