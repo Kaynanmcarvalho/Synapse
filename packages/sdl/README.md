@@ -321,6 +321,71 @@ prometidos como prova real da fundação fora da Fila e de Clientes.
   (`stock-intelligence/colunas.ts`) — forçar os dois no mesmo utilitário
   apagaria um comportamento real que a tela já tinha antes da migração.
 
+## Ações de linha — o que é gramática comum e o que não é (Fase 5.3)
+
+`BoletosScreen` foi a primeira tela a precisar de **ações condicionais por
+status** dentro da célula `papel="action"` (segunda via / baixa manual /
+cancelar, cada uma aparecendo ou não conforme o `ChargeStatus` da parcela).
+Antes de generalizar qualquer coisa, comparamos as 4 telas que já têm algo em
+`papel="action"`:
+
+| Tela                   | Forma da ação                                               | Condicional a quê?                              |
+| ---------------------- | ----------------------------------------------------------- | ----------------------------------------------- |
+| `BoletosScreen`        | 1 a 3 botões, cada um pode sumir                            | status do negócio (5 valores)                   |
+| `HistoricoDoBalcao`    | 2 botões fixos (`BotaoDeAcao` com ícone), sempre presentes  | nada — sempre os mesmos                         |
+| `StockIntelligence`    | 1 botão de disclosure (expandir/recolher)                   | estado local de UI, não é ação sobre o dado     |
+| `TabelaAuxiliarScreen` | par de botões que trocam de rótulo/função em modo de edição | modo (visualizar vs editar), não status do dado |
+
+Os quatro _shapes_ são genuinamente diferentes — um é uma máquina de estado de
+domínio (Boletos), um é fixo, um é um disclosure de UI, um é uma troca de
+modo. Forçar um `RowActions`/`ActionMenu` comum agora obrigaria pelo menos
+três desses quatro a herdar uma semântica de "lista de ações condicionais"
+que não têm. Por isso **nenhum componente novo foi criado** — a decisão é a
+mesma tomada em Fase 5.1 para visibilidade de coluna: sem um terceiro
+consumidor com a mesma forma, abstrair é inventar.
+
+O que **é** comum, e vale registrar como princípio (não como componente):
+
+- Toda ação de linha mora em `DataGridCelula papel="action"`, nunca fora dela.
+- Toda ação usa `Button variant="quiet" density="compacta"` — nenhuma tela
+  usa botão preenchido (`variant="primary"`) dentro de uma linha de dado; um
+  botão preenchido "domina" a linha e disputa atenção com o dado.
+- Diferenciação de hierarquia (primária/destrutiva) é feita **por cor do
+  texto**, não por peso visual: `className="text-primary"` para a ação que
+  avança o fluxo, `className="text-status-perigo hover:bg-status-perigo-fundo"`
+  para a destrutiva. A cor de perigo só ganha fundo no hover/foco — nunca em
+  repouso.
+- Confirmação de ações destrutivas usa o mecanismo que a tela já tinha
+  (`window.confirm` em Boletos); a migração para o DataGrid nunca introduziu
+  nem removeu uma confirmação.
+- A regra de **quais** ações aparecem em cada status é responsabilidade da
+  tela (`regrasDoBoleto.ts`, funções puras `podeBaixarManualmente`/
+  `podeCancelar`), nunca do SDL — o DataGrid não sabe o que "boleto vencido"
+  significa, só sabe renderizar uma célula com papel `action`.
+
+### `DfeScreen` — quando a resposta certa é não migrar (Fase 5.3)
+
+A tabela de conferência de itens do DF-e (`DfeItemsTable`, em
+`apps/web-erp/src/features/inbound/DfeScreen.tsx`) foi auditada e
+propositalmente **não** migrada para a fundação de DataGrid. Cada célula da
+tabela é um `<input>` editável (produto interno, quantidade, custo, lote,
+validade) ligado à conferência item a item de uma nota fiscal — a primeira
+tabela do inventário em que a linha inteira é um formulário, não uma
+apresentação de dado. `DataGridCelula`/`classesDaLinha` foram desenhados e
+provados só para células de **leitura** (texto via `Text variant="dado"`);
+não existe um segundo consumidor com célula editável para provar que forma a
+fundação precisaria ter para isso — migrar aqui seria inventar a capacidade
+com um único caso, exatamente o que as Fases 5.1/5.2 decidiram não fazer com
+visibilidade de coluna e ordenação de 3 estados.
+
+O que foi feito, com risco zero, sem tocar a conferência: a situação de cada
+nota (`PENDENTE`/`CONFERIDA`/`RECUSADA`/`LANCADA`, antes um selo cinza único
+para os quatro valores) passou a usar `Status variant="chip"` com um tom por
+situação, e a formatação de moeda passou a usar `formatarMoeda` em vez de um
+`Intl.NumberFormat` duplicado local. A tabela editável, os botões "Concluir
+conferência"/"Lançar entrada" e toda a regra fiscal continuam exatamente como
+estavam.
+
 ## Migrando do que existe hoje
 
 | Legado                                   | Vai virar                  | Quando            |
