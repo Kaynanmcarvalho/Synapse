@@ -465,19 +465,29 @@ pilotos convertem o digitado com `Number(...)`, que devolve `NaN` para
 "12,50". Trocar o controle mudaria a regra de parse; fica como dívida
 (precisa de um parser de moeda compartilhado antes).
 
-## Overlays — taxonomia (Fase 6)
+## Overlays — taxonomia (Fase 6, revisada na 6.2/6.3)
 
-| Tipo    | Para quê                                | Implementação real hoje                                                       |
-| ------- | --------------------------------------- | ----------------------------------------------------------------------------- |
-| Modal   | decisão curta e bloqueante              | `@synapse/ui` `Modal` (trap, Esc por pilha, devolve foco); credit `Dialogo`   |
-| Drawer  | contexto lateral sem perder a tela      | `@synapse/ui` `Drawer` (StockScreen); `GavetaDoCliente` duplica sem trap/role |
-| Janela  | espaço de trabalho persistente/complexo | `credit/janela/Janela` (arrasto, resize, maximizar, geometria por usuário)    |
-| Popover | escolha contextual pequena              | sem primitive; 4 implementações locais                                        |
+| Tipo    | Para quê                                | Implementação real hoje                                                                                    |
+| ------- | --------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Modal   | decisão curta e bloqueante              | `@synapse/ui` `Modal` (trap, Esc pelo topo da pilha, devolve foco); credit `Dialogo` (idem, Fase 6.2/6.3)  |
+| Drawer  | contexto lateral sem perder a tela      | `@synapse/ui` `Drawer` (StockScreen); `GavetaDoCliente` ganhou trap/devolução de foco na Fase 6.2          |
+| Janela  | espaço de trabalho persistente/complexo | `components/janela/Janela` (arrasto, resize, maximizar, geometria por usuário, `comFundo` opcional)        |
+| Popover | escolha contextual pequena              | sem primitive; implementações locais (`BuscaDeMunicipio`, `CampoDeTabela`, ...) — contextuais de propósito |
 
-Onde o código não bate com a taxonomia (dívida, não corrigida nesta fase):
-cadastros, ficha do cliente, PDV e históricos são workspaces feitos sobre
-`Modal size="full" bare`; o credit `Dialogo` e a `GavetaDoCliente` não têm
-trap nem devolvem foco; 9 decisões ainda usam `window.confirm`.
+**Pilha de sobreposições (Fase 6.3).** `packages/ui/src/components/overlay/pilha.ts`
+é agora a única fonte de verdade de "quem está no topo" — `useOverlay`
+(Modal/Drawer), `useEscParaFechar` (credit `Dialogo`/`GavetaDoCliente`) e
+`Janela` registram-se nela. Antes, cada mecânica tinha (ou não) sua própria
+contagem, e duas sobreposições reais empilhadas (`GavetaDoCliente` aberta e
+um `Dialogo` de decisão por cima) fechavam as duas com um Esc só —
+`stopPropagation` não impede outro listener no mesmo nó e mesma fase de
+rodar. Corrigido registrando todo mundo na mesma pilha e só agindo quando
+`estaNoTopoDaPilha` é verdadeiro — não com mais `stopPropagation`.
+
+Dívida restante: `HistoricoDoBalcao`, `JanelaDeImpressao`, `MolduraDoPdv` e
+`VendasDoCaixa` continuam sobre `Modal size="full" bare` (fora do escopo do
+piloto de cadastros); ~9 decisões ainda usam `window.confirm` bruto em vez de
+um Dialogo padronizado.
 
 **Ficha de crédito.** O 7/5 da ficha ligava por breakpoint de VIEWPORT
 (`lg:`), mas a ficha vive numa Janela de 72% da tela: tabelas de 650–920px
@@ -486,6 +496,28 @@ segue a largura da própria ficha (`useLargura`, o mesmo da janela de
 análise): quatro quadrantes só quando cada um comporta a própria tabela
 (≥1760px, janela maximizada em 1920); abaixo disso, as partes empilham na
 largura inteira. A Janela passou a devolver o foco para quem a abriu.
+
+## Window Foundation v1 — STABLE (Fase 6.3)
+
+Quatro consumidores reais, mesma mecânica (`components/janela/Janela`),
+conteúdo genuinamente diferente:
+
+| Consumidor                         | `comFundo` | Chave de geometria            | Abas                         |
+| ---------------------------------- | ---------- | ----------------------------- | ---------------------------- |
+| Fila/Análise/Documentos de crédito | não        | `janela.analise-de-credito.*` | local (com contagem por aba) |
+| Cadastro de Cliente                | sim        | `janela.cadastro-cliente`     | `Abas`/`PainelDeAba`         |
+| Cadastro de Funcionário            | sim        | `janela.cadastro-funcionario` | `Abas`/`PainelDeAba`         |
+| Cadastro de Fornecedor             | sim        | `janela.cadastro-fornecedor`  | `Abas`/`PainelDeAba`         |
+
+Arrasto, resize (borda e canto), maximizar/restaurar, geometria por usuário,
+responsividade interna pela largura da própria Janela (nunca viewport) e
+devolução de foco — provados nos quatro. `comFundo` (workspace de edição
+única vs. comparação lado a lado) é uma escolha por consumidor, não uma
+divergência de mecânica. A pilha de sobreposições (acima) faz a Janela ceder
+Esc/Tab para um Modal/Dialogo aberto dentro dela sem precisar saber que ele
+existe. Critério de "não declarar por entusiasmo": são 3 domínios (crédito,
+cadastros) e 4 telas, não 2 — por isso sai de CANDIDATE para STABLE agora, e
+não antes.
 
 ## Migrando do que existe hoje
 
