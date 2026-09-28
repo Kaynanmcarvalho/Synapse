@@ -1,74 +1,70 @@
-import { Building2, Plus, ScrollText, StickyNote, Trash2, UserRound, Users } from 'lucide-react';
-import { Area, Bloco, Caixa, Campo, Grade, Texto } from '../campos';
+import { Field, Input } from '@synapse/sdl';
+import { Plus, Trash2 } from 'lucide-react';
+import { AreaDeTexto, LinhaDeCampos, Secao } from '../../../components/formulario/Formulario';
+import { Caixa } from '../campos';
 import { mascararDocumento, mascararTelefone } from '../formato';
 import type { PropsDaAba } from './aba';
+import { CampoDeTexto } from './CampoDoFormulario';
 
 /** Aba Pessoa Jurídica: quem atende, quem assina e o que o fisco pede de uma
  *  empresa. Some inteira para pessoa física — campo de sócio em cadastro de
- *  pessoa física é campo que ninguém preenche. */
+ *  pessoa física é campo que ninguém preenche.
+ *
+ *  Fase 6.2: migrado para `Secao`/`LinhaDeCampos`/`CampoDeTexto`. Nada aqui é
+ *  obrigatório no `clienteSchema` — todo o bloco `pessoaJuridica` é opcional.
+ *  `Socios` fica com layout próprio (lista de tamanho variável com
+ *  adicionar/remover): a Form Grammar não tem — e não precisa inventar agora
+ *  — uma peça de "repetidor"; só os campos de cada linha passam a usar
+ *  `Field`/`Input` do SDL. `Caixa` (checkbox-cartão) segue de `../campos`:
+ *  único arquivo que o usa, sem segundo consumidor real para justificar
+ *  promoção ao SDL (§18). */
 
-function Contatos({ formulario, mudar, erros }: PropsDaAba) {
+function Contatos(props: PropsDaAba) {
   return (
-    <Bloco
+    <Secao
       titulo="Contato na empresa"
-      icone={UserRound}
       descricao="Quem atende, quem compra e quem cuida da contabilidade"
     >
-      <Grade colunas={4}>
-        <Campo rotulo="Contato" largura={2}>
-          {({ id }) => (
-            <Texto
-              id={id}
-              valor={formulario.contatoNome}
-              maxLength={160}
-              aoMudar={(valor) => mudar('contatoNome', valor)}
-            />
-          )}
-        </Campo>
-        <Campo rotulo="Celular do contato" erro={erros.contatoCelular ?? null}>
-          {({ id, invalido }) => (
-            <Texto
-              id={id}
-              valor={formulario.contatoCelular}
-              invalido={invalido}
-              inputMode="tel"
-              aoMudar={(valor) => mudar('contatoCelular', mascararTelefone(valor))}
-            />
-          )}
-        </Campo>
-        <Campo rotulo="Comprador">
-          {({ id }) => (
-            <Texto
-              id={id}
-              valor={formulario.comprador}
-              maxLength={160}
-              aoMudar={(valor) => mudar('comprador', valor)}
-            />
-          )}
-        </Campo>
-        <Campo rotulo="Fone do comprador" erro={erros.compradorFone ?? null}>
-          {({ id, invalido }) => (
-            <Texto
-              id={id}
-              valor={formulario.compradorFone}
-              invalido={invalido}
-              inputMode="tel"
-              aoMudar={(valor) => mudar('compradorFone', mascararTelefone(valor))}
-            />
-          )}
-        </Campo>
-        <Campo rotulo="Contabilista" largura={2}>
-          {({ id }) => (
-            <Texto
-              id={id}
-              valor={formulario.contabilista}
-              maxLength={160}
-              aoMudar={(valor) => mudar('contabilista', valor)}
-            />
-          )}
-        </Campo>
-      </Grade>
-    </Bloco>
+      <LinhaDeCampos>
+        <CampoDeTexto
+          aba={props}
+          campo="contatoNome"
+          rotulo="Contato"
+          maxLength={160}
+          larguraSemantica="medio"
+        />
+        <CampoDeTexto
+          aba={props}
+          campo="contatoCelular"
+          rotulo="Celular do contato"
+          inputMode="tel"
+          mascara={mascararTelefone}
+          larguraSemantica="curto"
+        />
+        <CampoDeTexto
+          aba={props}
+          campo="comprador"
+          rotulo="Comprador"
+          maxLength={160}
+          larguraSemantica="medio"
+        />
+        <CampoDeTexto
+          aba={props}
+          campo="compradorFone"
+          rotulo="Fone do comprador"
+          inputMode="tel"
+          mascara={mascararTelefone}
+          larguraSemantica="curto"
+        />
+        <CampoDeTexto
+          aba={props}
+          campo="contabilista"
+          rotulo="Contabilista"
+          maxLength={160}
+          larguraSemantica="medio"
+        />
+      </LinhaDeCampos>
+    </Secao>
   );
 }
 
@@ -80,9 +76,8 @@ function Socios({ formulario, mudar, erros }: PropsDaAba) {
       socios.map((socio, posicao) => (posicao === indice ? { ...socio, [campo]: valor } : socio)),
     );
   return (
-    <Bloco
+    <Secao
       titulo="Sócios"
-      icone={Users}
       descricao="Quem responde pela empresa"
       acao={
         <button
@@ -102,28 +97,22 @@ function Socios({ formulario, mudar, erros }: PropsDaAba) {
           {socios.map((socio, indice) => (
             <li key={indice} className="bg-surface-soft/60 flex items-end gap-3 rounded-2xl p-3">
               <div className="min-w-0 flex-1">
-                <Campo rotulo={`Sócio ${indice + 1}`}>
-                  {({ id }) => (
-                    <Texto
-                      id={id}
-                      valor={socio.nome}
-                      maxLength={160}
-                      aoMudar={(valor) => alterar(indice, 'nome', valor)}
-                    />
-                  )}
-                </Campo>
+                <Field label={`Sócio ${indice + 1}`}>
+                  <Input
+                    value={socio.nome}
+                    maxLength={160}
+                    onChange={(e) => alterar(indice, 'nome', e.target.value)}
+                  />
+                </Field>
               </div>
               <div className="w-44">
-                <Campo rotulo="CPF">
-                  {({ id }) => (
-                    <Texto
-                      id={id}
-                      valor={socio.cpf}
-                      inputMode="numeric"
-                      aoMudar={(valor) => alterar(indice, 'cpf', mascararDocumento(valor))}
-                    />
-                  )}
-                </Campo>
+                <Field label="CPF">
+                  <Input
+                    value={socio.cpf}
+                    inputMode="numeric"
+                    onChange={(e) => alterar(indice, 'cpf', mascararDocumento(e.target.value))}
+                  />
+                </Field>
               </div>
               <button
                 type="button"
@@ -143,63 +132,46 @@ function Socios({ formulario, mudar, erros }: PropsDaAba) {
         </ul>
       )}
       {erros.socios ? <p className="text-caption mt-2 text-[#b3242f]">{erros.socios}</p> : null}
-    </Bloco>
+    </Secao>
   );
 }
 
-function Fiscal({ formulario, mudar, erros, sugestoes }: PropsDaAba) {
+function Fiscal(props: PropsDaAba) {
+  const { formulario, mudar, sugestoes } = props;
   return (
-    <Bloco
-      titulo="Atividade e regime"
-      icone={Building2}
-      descricao="Ramo, segmento e enquadramentos fiscais"
-    >
-      <Grade colunas={4}>
-        <Campo rotulo="Data de abertura" erro={erros.dataDeAbertura ?? null}>
-          {({ id, invalido }) => (
-            <Texto
-              id={id}
-              type="date"
-              valor={formulario.dataDeAbertura}
-              invalido={invalido}
-              aoMudar={(valor) => mudar('dataDeAbertura', valor)}
-            />
-          )}
-        </Campo>
-        <Campo rotulo="Ramo de atividade" largura={2}>
-          {({ id }) => (
-            <Texto
-              id={id}
-              valor={formulario.ramoDeAtividade}
-              maxLength={160}
-              sugestoes={sugestoes?.ramosDeAtividade}
-              aoMudar={(valor) => mudar('ramoDeAtividade', valor)}
-            />
-          )}
-        </Campo>
-        <Campo rotulo="Segmento">
-          {({ id }) => (
-            <Texto
-              id={id}
-              valor={formulario.segmento}
-              maxLength={120}
-              sugestoes={sugestoes?.segmentos}
-              aoMudar={(valor) => mudar('segmento', valor)}
-            />
-          )}
-        </Campo>
-        <Campo rotulo="Inscrição Suframa" erro={erros.inscricaoSuframa ?? null}>
-          {({ id, invalido }) => (
-            <Texto
-              id={id}
-              valor={formulario.inscricaoSuframa}
-              invalido={invalido}
-              maxLength={20}
-              aoMudar={(valor) => mudar('inscricaoSuframa', valor)}
-            />
-          )}
-        </Campo>
-      </Grade>
+    <Secao titulo="Atividade e regime" descricao="Ramo, segmento e enquadramentos fiscais">
+      <LinhaDeCampos>
+        <CampoDeTexto
+          aba={props}
+          campo="dataDeAbertura"
+          rotulo="Data de abertura"
+          type="date"
+          larguraSemantica="curto"
+        />
+        <CampoDeTexto
+          aba={props}
+          campo="ramoDeAtividade"
+          rotulo="Ramo de atividade"
+          maxLength={160}
+          sugestoes={sugestoes?.ramosDeAtividade}
+          larguraSemantica="resto"
+        />
+        <CampoDeTexto
+          aba={props}
+          campo="segmento"
+          rotulo="Segmento"
+          maxLength={120}
+          sugestoes={sugestoes?.segmentos}
+          larguraSemantica="medio"
+        />
+        <CampoDeTexto
+          aba={props}
+          campo="inscricaoSuframa"
+          rotulo="Inscrição Suframa"
+          maxLength={20}
+          larguraSemantica="medio"
+        />
+      </LinhaDeCampos>
       <div className="mt-5 grid gap-3 sm:grid-cols-3">
         <Caixa
           rotulo="Substituto tributário"
@@ -217,63 +189,50 @@ function Fiscal({ formulario, mudar, erros, sugestoes }: PropsDaAba) {
           aoAlternar={(marcado) => mudar('orgaoPublico', marcado)}
         />
       </div>
-    </Bloco>
+    </Secao>
   );
 }
 
-function Tare({ formulario, mudar, erros }: PropsDaAba) {
+function Tare(props: PropsDaAba) {
+  const { formulario, mudar } = props;
   return (
-    <Bloco
-      titulo="Regime especial (TARE)"
-      icone={ScrollText}
-      descricao="Termo de acordo de regime especial, de Goiás"
-    >
+    <Secao titulo="Regime especial (TARE)" descricao="Termo de acordo de regime especial, de Goiás">
       <Caixa
         rotulo="Empresa com TARE"
         marcado={formulario.temTare}
         aoAlternar={(marcado) => mudar('temTare', marcado)}
       />
       {formulario.temTare ? (
-        <div className="mt-4">
-          <Grade colunas={3}>
-            <Campo rotulo="Número do TARE" erro={erros.numeroTare ?? null}>
-              {({ id, invalido }) => (
-                <Texto
-                  id={id}
-                  valor={formulario.numeroTare}
-                  invalido={invalido}
-                  maxLength={30}
-                  aoMudar={(valor) => mudar('numeroTare', valor)}
-                />
-              )}
-            </Campo>
-            <div className="col-span-2 flex items-end">
-              <Caixa
-                rotulo="Participa do programa FOMENTAR / PRODUZIR"
-                marcado={formulario.fomentarOuProduzir}
-                aoAlternar={(marcado) => mudar('fomentarOuProduzir', marcado)}
-              />
-            </div>
-          </Grade>
-        </div>
+        <LinhaDeCampos>
+          <CampoDeTexto
+            aba={props}
+            campo="numeroTare"
+            rotulo="Número do TARE"
+            maxLength={30}
+            larguraSemantica="curto"
+          />
+          <div className="flex items-end pb-1">
+            <Caixa
+              rotulo="Participa do programa FOMENTAR / PRODUZIR"
+              marcado={formulario.fomentarOuProduzir}
+              aoAlternar={(marcado) => mudar('fomentarOuProduzir', marcado)}
+            />
+          </div>
+        </LinhaDeCampos>
       ) : null}
-    </Bloco>
+    </Secao>
   );
 }
 
 export function AbaPessoaJuridica(props: PropsDaAba) {
   if (props.formulario.tipo !== 'PJ') {
     return (
-      <Bloco
-        titulo="Pessoa jurídica"
-        icone={Building2}
-        descricao="Contato, sócios e dados fiscais da empresa"
-      >
+      <Secao titulo="Pessoa jurídica" descricao="Contato, sócios e dados fiscais da empresa">
         <p className="text-body-sm text-stone">
           Esta aba vale para cliente pessoa jurídica. Mude o tipo de pessoa na aba Principal para
           preencher contato, sócios e dados fiscais da empresa.
         </p>
-      </Bloco>
+      </Secao>
     );
   }
   return (
@@ -282,22 +241,18 @@ export function AbaPessoaJuridica(props: PropsDaAba) {
       <Socios {...props} />
       <Fiscal {...props} />
       <Tare {...props} />
-      <Bloco
+      <Secao
         titulo="Observações da empresa"
-        icone={StickyNote}
         descricao="Só para a equipe; não sai em documento para o cliente"
       >
-        <Campo rotulo="Anotação interna sobre a empresa" largura="tudo">
-          {({ id }) => (
-            <Area
-              id={id}
-              valor={props.formulario.observacaoInterna}
-              linhas={3}
-              aoMudar={(valor) => props.mudar('observacaoInterna', valor)}
-            />
-          )}
-        </Campo>
-      </Bloco>
+        <Field label="Anotação interna sobre a empresa">
+          <AreaDeTexto
+            value={props.formulario.observacaoInterna}
+            rows={3}
+            onChange={(e) => props.mudar('observacaoInterna', e.target.value)}
+          />
+        </Field>
+      </Secao>
     </div>
   );
 }

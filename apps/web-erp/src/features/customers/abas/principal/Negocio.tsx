@@ -1,5 +1,10 @@
-import { ReceiptText, StickyNote, Tags, Wallet } from 'lucide-react';
-import { Area, Bloco, Campo, Grade, Selecao, Texto } from '../../campos';
+import { Field, Select } from '@synapse/sdl';
+import {
+  AreaDeTexto,
+  LinhaDeCampos,
+  Secao,
+  ValoresDeLeitura,
+} from '../../../../components/formulario/Formulario';
 import { escreverMoeda } from '../../formato';
 import {
   OPCOES_DE_AUTORIZACAO,
@@ -12,7 +17,17 @@ import { CampoDeTexto } from '../CampoDoFormulario';
 
 /** Aba Principal, segunda metade: fisco, comercial e crédito. Limite, dias para
  *  bloqueio, situação e autorização de pagamento são lidos pela análise de
- *  crédito — é por isso que ficam juntos. */
+ *  crédito — é por isso que ficam juntos.
+ *
+ *  Fase 6.2: migrado para `Secao`/`LinhaDeCampos` (mesma gramática das duas
+ *  primeiras seções, Fase 6.1). Único obrigatório real do `clienteSchema`
+ *  aqui é `creditLimit` — indicador de IE, regime, vendedores, praça/grupo,
+ *  dias para bloqueio, situação e autorização têm todos default ou são
+ *  opcionais. "Saldo em aberto" vira `ValoresDeLeitura` (calculado pelo
+ *  financeiro, nunca editável — não é mais um input desabilitado fingindo
+ *  ser consulta). "Limite a prazo" é o primeiro uso real de `MoneyInput`
+ *  (via `CampoDeTexto moeda`): mesma string, mesma conversão por
+ *  `lerMoeda`/`escreverMoeda` de sempre, só troca o desenho do campo. */
 
 type Opcoes = ReadonlyArray<readonly [string, string]>;
 
@@ -26,51 +41,64 @@ const CLASSIFICACOES = [
 export function Fiscal(props: PropsDaAba) {
   const { formulario, mudar } = props;
   return (
-    <Bloco
-      titulo="Dados fiscais"
-      icone={ReceiptText}
-      descricao="Como a nota fiscal trata este cliente"
-    >
-      <Grade colunas={4}>
-        <Campo rotulo="Indicador da IE">
-          {({ id }) => (
-            <Selecao
-              id={id}
-              valor={formulario.indicadorDeIe}
-              aoMudar={(valor) => mudar('indicadorDeIe', valor)}
-              opcoes={OPCOES_DE_INDICADOR_IE}
-            />
-          )}
-        </Campo>
+    <Secao titulo="Dados fiscais" descricao="Como a nota fiscal trata este cliente">
+      <LinhaDeCampos>
+        <Field label="Indicador da IE" span={1} className="w-56">
+          <Select
+            value={formulario.indicadorDeIe}
+            onChange={(e) =>
+              mudar('indicadorDeIe', e.target.value as typeof formulario.indicadorDeIe)
+            }
+          >
+            {OPCOES_DE_INDICADOR_IE.map(([valor, rotulo]) => (
+              <option key={valor} value={valor}>
+                {rotulo}
+              </option>
+            ))}
+          </Select>
+        </Field>
         <CampoDeTexto
           aba={props}
           campo="inscricaoEstadual"
           rotulo="Inscrição estadual"
           inputMode="numeric"
+          larguraSemantica="medio"
         />
         <CampoDeTexto
           aba={props}
           campo="inscricaoMunicipal"
           rotulo="Inscrição municipal"
           maxLength={20}
+          larguraSemantica="medio"
         />
-        <Campo rotulo="Regime tributário (CRT)">
-          {({ id }) => (
-            <Selecao
-              id={id}
-              valor={formulario.regimeTributario}
-              aoMudar={(valor) => mudar('regimeTributario', valor)}
-              opcoes={OPCOES_DE_REGIME}
-            />
-          )}
-        </Campo>
-      </Grade>
-    </Bloco>
+        <Field label="Regime tributário (CRT)" span={1} className="w-64">
+          <Select
+            value={formulario.regimeTributario}
+            onChange={(e) =>
+              mudar('regimeTributario', e.target.value as typeof formulario.regimeTributario)
+            }
+          >
+            {OPCOES_DE_REGIME.map(([valor, rotulo]) => (
+              <option key={valor} value={valor}>
+                {rotulo}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      </LinhaDeCampos>
+    </Secao>
   );
 }
 
 /** Vendedor pela lista do cadastro de vendedores. Se o gravado não estiver mais
- *  na lista, ele aparece marcado assim — em vez de sumir calado do cadastro. */
+ *  na lista, ele aparece marcado assim — em vez de sumir calado do cadastro.
+ *
+ *  Fase 6.2 (auditoria §19-22): é uma seleção de entidade real, mas ligada —
+ *  lista fechada (poucas dezenas de vendedores), sem criar/abrir cadastro
+ *  relacionado. `CampoDeTabela` (`features/cadastros/comum`) é o lookup rico
+ *  do sistema (código + lupa + busca + criar-novo, para universos grandes
+ *  demais para uma lista). Os dois resolvem "escolher uma entidade" de
+ *  formas genuinamente diferentes — não force unificação entre eles. */
 function CampoDeVendedor({
   aba,
   campo,
@@ -89,6 +117,7 @@ function CampoDeVendedor({
         campo={campo}
         rotulo={rotulo}
         dica="Cadastro de vendedores indisponível para este usuário"
+        larguraSemantica="medio"
       />
     );
   }
@@ -98,16 +127,15 @@ function CampoDeVendedor({
       ? [[atual, `${atual} (fora da lista)`], ...vendedores]
       : vendedores;
   return (
-    <Campo rotulo={rotulo}>
-      {({ id }) => (
-        <Selecao
-          id={id}
-          valor={atual}
-          aoMudar={(valor) => aba.mudar(campo, valor)}
-          opcoes={[['', 'Sem vendedor'], ...opcoes]}
-        />
-      )}
-    </Campo>
+    <Field label={rotulo} span={1} className="w-64">
+      <Select value={atual} onChange={(e) => aba.mudar(campo, e.target.value)}>
+        {[['', 'Sem vendedor'], ...opcoes].map(([valor, texto]) => (
+          <option key={valor} value={valor}>
+            {texto}
+          </option>
+        ))}
+      </Select>
+    </Field>
   );
 }
 
@@ -117,12 +145,8 @@ export function Comercial(props: PropsDaAba) {
     ? vendedores.map((vendedor) => [vendedor.id, vendedor.name] as const)
     : null;
   return (
-    <Bloco
-      titulo="Classificação comercial"
-      icone={Tags}
-      descricao="Carteira dos vendedores e agrupamentos"
-    >
-      <Grade colunas={3}>
+    <Secao titulo="Classificação comercial" descricao="Carteira dos vendedores e agrupamentos">
+      <LinhaDeCampos>
         <CampoDeVendedor aba={props} campo="vendedor1" rotulo="Vendedor (1)" vendedores={lista} />
         <CampoDeVendedor aba={props} campo="vendedor2" rotulo="Vendedor (2)" vendedores={lista} />
         <CampoDeTexto
@@ -131,6 +155,7 @@ export function Comercial(props: PropsDaAba) {
           rotulo="Praça / região"
           maxLength={80}
           sugestoes={sugestoes?.pracas}
+          larguraSemantica="medio"
         />
         <CampoDeTexto
           aba={props}
@@ -138,6 +163,7 @@ export function Comercial(props: PropsDaAba) {
           rotulo="Grupo"
           maxLength={80}
           sugestoes={sugestoes?.grupos}
+          larguraSemantica="medio"
         />
         <CampoDeTexto
           aba={props}
@@ -145,9 +171,10 @@ export function Comercial(props: PropsDaAba) {
           rotulo="Sub-grupo"
           maxLength={80}
           sugestoes={sugestoes?.subGrupos}
+          larguraSemantica="medio"
         />
-      </Grade>
-    </Bloco>
+      </LinhaDeCampos>
+    </Secao>
   );
 }
 
@@ -162,36 +189,56 @@ function AvisoDeInadimplencia() {
   );
 }
 
+// eslint-disable-next-line max-lines-per-function -- 6 campos de crédito, cada um com seleção/máscara própria; quebrar em sub-funções esconderia a lista em vez de simplificá-la (mesmo raciocínio de `Endereco`, Fase 6.1).
 export function Credito(props: PropsDaAba) {
   const { formulario, mudar, cliente } = props;
   return (
-    <Bloco
+    <Secao
       titulo="Crédito e situação"
-      icone={Wallet}
       descricao="O que a análise de crédito lê antes de liberar um pedido"
     >
-      <Grade colunas={3}>
+      <ValoresDeLeitura
+        itens={[
+          {
+            rotulo: 'Saldo em aberto',
+            valor: `R$ ${escreverMoeda(cliente?.openCredit ?? 0)}`,
+            dado: true,
+          },
+        ]}
+      />
+      <LinhaDeCampos>
         <CampoDeTexto
           aba={props}
           campo="limite"
-          rotulo="Limite a prazo (R$)"
-          inputMode="decimal"
-          alinharADireita
+          rotulo="Limite a prazo"
+          moeda
+          larguraSemantica="curto"
+          obrigatorio
         />
-        <Campo
-          rotulo="Saldo em aberto (R$)"
-          dica={cliente ? 'Calculado pelo financeiro' : 'Só depois do primeiro pedido'}
-        >
-          {({ id }) => (
-            <Texto
-              id={id}
-              valor={escreverMoeda(cliente?.openCredit ?? 0)}
-              aoMudar={() => undefined}
-              alinharADireita
-              disabled
-            />
-          )}
-        </Campo>
+        <Field label="Situação" span={1} className="w-56">
+          <Select
+            value={formulario.situacao}
+            onChange={(e) => mudar('situacao', e.target.value as typeof formulario.situacao)}
+          >
+            {OPCOES_DE_SITUACAO.map(([valor, rotulo]) => (
+              <option key={valor} value={valor}>
+                {rotulo}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="Classificação" span={1} className="w-40">
+          <Select
+            value={formulario.ativo ? 'ativo' : 'inativo'}
+            onChange={(e) => mudar('ativo', e.target.value === 'ativo')}
+          >
+            {CLASSIFICACOES.map(([valor, rotulo]) => (
+              <option key={valor} value={valor}>
+                {rotulo}
+              </option>
+            ))}
+          </Select>
+        </Field>
         <CampoDeTexto
           aba={props}
           campo="diasParaBloqueio"
@@ -200,63 +247,49 @@ export function Credito(props: PropsDaAba) {
           inputMode="numeric"
           alinharADireita
           mascara={soNumeros}
+          larguraSemantica="curto"
         />
-        <Campo rotulo="Situação">
-          {({ id }) => (
-            <Selecao
-              id={id}
-              valor={formulario.situacao}
-              aoMudar={(valor) => mudar('situacao', valor)}
-              opcoes={OPCOES_DE_SITUACAO}
-            />
-          )}
-        </Campo>
-        <Campo rotulo="Classificação">
-          {({ id }) => (
-            <Selecao
-              id={id}
-              valor={formulario.ativo ? 'ativo' : 'inativo'}
-              aoMudar={(valor) => mudar('ativo', valor === 'ativo')}
-              opcoes={CLASSIFICACOES}
-            />
-          )}
-        </Campo>
-        <Campo
-          rotulo="Autorização de pagamento"
-          dica="Somente à vista: pedido a prazo pede aprovação excepcional."
+        <Field
+          label="Autorização de pagamento"
+          hint="Somente à vista: pedido a prazo pede aprovação excepcional."
+          span={1}
+          className="w-64"
         >
-          {({ id }) => (
-            <Selecao
-              id={id}
-              valor={formulario.autorizacaoDePagamento}
-              aoMudar={(valor) => mudar('autorizacaoDePagamento', valor)}
-              opcoes={OPCOES_DE_AUTORIZACAO}
-            />
-          )}
-        </Campo>
-      </Grade>
+          <Select
+            value={formulario.autorizacaoDePagamento}
+            onChange={(e) =>
+              mudar(
+                'autorizacaoDePagamento',
+                e.target.value as typeof formulario.autorizacaoDePagamento,
+              )
+            }
+          >
+            {OPCOES_DE_AUTORIZACAO.map(([valor, rotulo]) => (
+              <option key={valor} value={valor}>
+                {rotulo}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      </LinhaDeCampos>
       {cliente?.financialStatus === 'OVERDUE' ? <AvisoDeInadimplencia /> : null}
-    </Bloco>
+    </Secao>
   );
 }
 
 export function Observacao({ formulario, mudar }: PropsDaAba) {
   return (
-    <Bloco titulo="Observação" icone={StickyNote} descricao="Aparece para quem atende este cliente">
-      <Campo
-        rotulo="Anotação que aparece no atendimento"
-        dica="Inativo continua no histórico; a lista de clientes separa ativos e inativos."
-        largura="tudo"
+    <Secao titulo="Observação" descricao="Aparece para quem atende este cliente">
+      <Field
+        label="Anotação que aparece no atendimento"
+        hint="Inativo continua no histórico; a lista de clientes separa ativos e inativos."
       >
-        {({ id }) => (
-          <Area
-            id={id}
-            valor={formulario.observacao}
-            linhas={3}
-            aoMudar={(valor) => mudar('observacao', valor)}
-          />
-        )}
-      </Campo>
-    </Bloco>
+        <AreaDeTexto
+          value={formulario.observacao}
+          rows={3}
+          onChange={(e) => mudar('observacao', e.target.value)}
+        />
+      </Field>
+    </Secao>
   );
 }

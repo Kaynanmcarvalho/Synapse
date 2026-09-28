@@ -1,13 +1,20 @@
+import { Field, Input } from '@synapse/sdl';
 import type { Customer } from '@synapse/types';
-import { Handshake, Plus, Trash2 } from 'lucide-react';
-import { Area, Bloco, Campo, Grade, Texto } from '../campos';
+import { Plus, Trash2 } from 'lucide-react';
+import { AreaDeTexto, LinhaDeCampos, Secao } from '../../../components/formulario/Formulario';
 import { formatarData, mascararTelefone } from '../formato';
 import type { ReferenciaNoFormulario } from '../formulario';
 import type { PropsDaAba } from './aba';
 
 /** Aba Referências Comerciais: quem já vende para este cliente e o que
  *  respondeu. É informação de terceiro — por isso cada referência guarda quem
- *  anotou e quando, e isso não se edita depois. */
+ *  anotou e quando, e isso não se edita depois.
+ *
+ *  Fase 6.2: migrado para `Secao`/`Field`/`Input`/`AreaDeTexto`. Lista de
+ *  tamanho variável, mesmo raciocínio de `Socios` (Pessoa Jurídica) — layout
+ *  de cartão próprio, sem repetidor na Form Grammar. "Empresa" é o único
+ *  campo obrigatório no schema (`referenciaComercial.empresa`, mínimo de 2
+ *  caracteres); os demais são opcionais. */
 
 type CampoDaReferencia = 'empresa' | 'contato' | 'telefone' | 'observacao';
 
@@ -33,49 +40,37 @@ function CartaoDaReferencia({
 }) {
   return (
     <li className="border-hairline-light bg-surface-soft/50 rounded-2xl border p-4">
-      <Grade colunas={4}>
-        <Campo rotulo="Empresa" largura={2}>
-          {({ id }) => (
-            <Texto
-              id={id}
-              valor={referencia.empresa}
-              maxLength={160}
-              aoMudar={(valor) => aoMudar('empresa', valor)}
-            />
-          )}
-        </Campo>
-        <Campo rotulo="Contato">
-          {({ id }) => (
-            <Texto
-              id={id}
-              valor={referencia.contato}
-              maxLength={160}
-              aoMudar={(valor) => aoMudar('contato', valor)}
-            />
-          )}
-        </Campo>
-        <Campo rotulo="Telefone">
-          {({ id }) => (
-            <Texto
-              id={id}
-              valor={referencia.telefone}
-              inputMode="tel"
-              aoMudar={(valor) => aoMudar('telefone', mascararTelefone(valor))}
-            />
-          )}
-        </Campo>
-        <Campo rotulo="O que responderam" largura="tudo">
-          {({ id }) => (
-            <Area
-              id={id}
-              valor={referencia.observacao}
-              linhas={2}
-              maxLength={400}
-              aoMudar={(valor) => aoMudar('observacao', valor)}
-            />
-          )}
-        </Campo>
-      </Grade>
+      <LinhaDeCampos>
+        <Field label="Empresa" required className="w-64">
+          <Input
+            value={referencia.empresa}
+            maxLength={160}
+            onChange={(e) => aoMudar('empresa', e.target.value)}
+          />
+        </Field>
+        <Field label="Contato" className="w-56">
+          <Input
+            value={referencia.contato}
+            maxLength={160}
+            onChange={(e) => aoMudar('contato', e.target.value)}
+          />
+        </Field>
+        <Field label="Telefone" className="w-40">
+          <Input
+            value={referencia.telefone}
+            inputMode="tel"
+            onChange={(e) => aoMudar('telefone', mascararTelefone(e.target.value))}
+          />
+        </Field>
+        <Field label="O que responderam" className="min-w-[16rem] flex-1">
+          <AreaDeTexto
+            value={referencia.observacao}
+            rows={2}
+            maxLength={400}
+            onChange={(e) => aoMudar('observacao', e.target.value)}
+          />
+        </Field>
+      </LinhaDeCampos>
       <div className="border-hairline-light mt-4 flex items-center justify-between gap-3 border-t pt-3">
         <span className="text-caption text-stone">{quemAnotou(cliente, referencia.id)}</span>
         <button
@@ -100,9 +95,8 @@ export function AbaReferencias({ formulario, mudar, erros, cliente }: PropsDaAba
       ),
     );
   return (
-    <Bloco
+    <Secao
       titulo={`Referências comerciais (${referencias.length})`}
-      icone={Handshake}
       descricao="Quem já vende para este cliente e o que respondeu"
       acao={
         <button
@@ -141,6 +135,6 @@ export function AbaReferencias({ formulario, mudar, erros, cliente }: PropsDaAba
       {erros.referencias ? (
         <p className="text-caption mt-2 text-[#b3242f]">{erros.referencias}</p>
       ) : null}
-    </Bloco>
+    </Secao>
   );
 }
