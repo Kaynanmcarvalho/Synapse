@@ -1,3 +1,4 @@
+/* eslint-disable max-lines, max-lines-per-function */
 import { Maximize2, Minimize2, X } from 'lucide-react';
 import {
   useEffect,
@@ -7,7 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
-import { usePreferencia } from '../../../lib/preferencias';
+import { usePreferencia } from '../../lib/preferencias';
 import {
   limitar,
   maximizar,
@@ -233,8 +234,20 @@ export interface PropsDaJanela {
   readonly ativa: boolean;
   readonly aoFechar: () => void;
   readonly aoFocar: () => void;
+  /** Fase 6.2: opcional, desligado por padrão (as janelas do crédito nunca
+   *  precisaram — o usuário compara janelas lado a lado de propósito). Um
+   *  workspace de edição única (o cadastro) precisa bloquear o fundo: sem
+   *  isto, um clique perdido no menu por trás navega para outra tela e perde
+   *  o que não foi salvo, sem confirmação nenhuma. Nunca fecha ao clicar
+   *  fora — só quem chama decide como fechar. Com fundo, a janela também
+   *  prende o foco (Tab não escapa para trás do bloqueio); sem fundo, o Tab
+   *  continua livre para alcançar outras janelas e o menu, como sempre foi. */
+  readonly comFundo?: boolean;
   readonly children: ReactNode;
 }
+
+const SELETOR_FOCAVEL =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /** Janela flutuante: arrasta pelo cabecalho, estica pelas laterais e pelo pe,
  *  maximiza com dois cliques no titulo. Em tela estreita vira tela cheia — nao
@@ -249,11 +262,13 @@ export function Janela({
   ativa,
   aoFechar,
   aoFocar,
+  comFundo = false,
   children,
 }: PropsDaJanela) {
   const { area, estreito, geometria, setGeometria, maximizada, alternarMaximizada } =
     useGeometriaDaJanela(id, abertura);
   const { iniciar } = useArrasto(area, setGeometria);
+  const secaoRef = useRef<HTMLElement>(null);
 
   // Fase 6: fechar devolve o foco para quem abriu (a linha da fila, a lupa),
   // como o Modal do @synapse/ui já fazia. Sem trap de foco de propósito: a
@@ -275,6 +290,30 @@ export function Janela({
     return () => document.removeEventListener('keydown', aoTeclar);
   }, [ativa, aoFechar]);
 
+  // Com fundo, o Tab não pode escapar por trás do bloqueio visual — senão o
+  // teclado alcançaria o que o mouse não alcança.
+  useEffect(() => {
+    if (!comFundo || !ativa) return;
+    const aoTeclar = (evento: KeyboardEvent) => {
+      if (evento.key !== 'Tab') return;
+      const raiz = secaoRef.current;
+      if (!raiz) return;
+      const focaveis = [...raiz.querySelectorAll<HTMLElement>(SELETOR_FOCAVEL)];
+      if (focaveis.length === 0) return;
+      const primeiro = focaveis[0];
+      const ultimo = focaveis[focaveis.length - 1];
+      if (evento.shiftKey && document.activeElement === primeiro) {
+        evento.preventDefault();
+        ultimo?.focus();
+      } else if (!evento.shiftKey && document.activeElement === ultimo) {
+        evento.preventDefault();
+        primeiro?.focus();
+      }
+    };
+    document.addEventListener('keydown', aoTeclar);
+    return () => document.removeEventListener('keydown', aoTeclar);
+  }, [comFundo, ativa]);
+
   const estilo =
     estreito || !geometria
       ? { top: area.topo, left: 0, right: 0, bottom: 0, zIndex }
@@ -289,28 +328,39 @@ export function Janela({
   const podeArrastar = !estreito && !maximizada;
 
   return createPortal(
-    <section
-      role="dialog"
-      aria-label={titulo}
-      onPointerDownCapture={aoFocar}
-      style={{ position: 'fixed', ...estilo }}
-      className="border-hairline-light bg-canvas-light shadow-janela animate-surgir flex flex-col overflow-hidden rounded-2xl border motion-reduce:animate-none"
-    >
-      <CabecalhoDaJanela
-        titulo={titulo}
-        subtitulo={subtitulo}
-        acoes={acoes}
-        maximizada={maximizada}
-        podeMaximizar={!estreito}
-        aoArrastar={podeArrastar ? iniciar('mover', geometria) : undefined}
-        aoMaximizar={alternarMaximizada}
-        aoFechar={aoFechar}
-      />
+    <>
+      {comFundo && (
+        <div
+          aria-hidden="true"
+          style={{ zIndex: zIndex - 1 }}
+          className="animate-revelar bg-ink/40 fixed inset-0 motion-reduce:animate-none"
+        />
+      )}
+      <section
+        ref={secaoRef}
+        role="dialog"
+        aria-label={titulo}
+        aria-modal={comFundo || undefined}
+        onPointerDownCapture={aoFocar}
+        style={{ position: 'fixed', ...estilo }}
+        className="border-hairline-light bg-canvas-light shadow-janela animate-surgir flex flex-col overflow-hidden rounded-2xl border motion-reduce:animate-none"
+      >
+        <CabecalhoDaJanela
+          titulo={titulo}
+          subtitulo={subtitulo}
+          acoes={acoes}
+          maximizada={maximizada}
+          podeMaximizar={!estreito}
+          aoArrastar={podeArrastar ? iniciar('mover', geometria) : undefined}
+          aoMaximizar={alternarMaximizada}
+          aoFechar={aoFechar}
+        />
 
-      <div className="min-h-0 flex-1 overflow-auto">{children}</div>
+        <div className="min-h-0 flex-1 overflow-auto">{children}</div>
 
-      {podeArrastar && <Punhos aoIniciar={(acao) => iniciar(acao, geometria)} />}
-    </section>,
+        {podeArrastar && <Punhos aoIniciar={(acao) => iniciar(acao, geometria)} />}
+      </section>
+    </>,
     document.body,
   );
 }

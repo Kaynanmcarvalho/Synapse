@@ -5,7 +5,7 @@ import { useRef } from 'react';
 import { HistoricoDoCliente, type AbaDoHistorico } from './HistoricoDoCliente';
 import { PagamentosDoCliente } from './PagamentosDoCliente';
 import { PedidosEmAnalise } from './PedidosEmAnalise';
-import { useLargura } from './analise/useLargura';
+import { useLargura } from '../../components/janela/useLargura';
 import { TitulosEmAberto } from './TitulosEmAberto';
 import type { Documento } from './documentos/navegacao';
 import { SnapshotDoCliente } from './ficha/SnapshotDoCliente';

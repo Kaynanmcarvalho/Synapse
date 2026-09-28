@@ -6,8 +6,8 @@ import type {
 } from '@synapse/types';
 import { useEffect, useRef, useState } from 'react';
 import { registrarVisualizacao } from '../analise.api';
-import { Janela } from '../janela/Janela';
-import { aoAbrir, type Area } from '../janela/geometria';
+import { Janela } from '../../../components/janela/Janela';
+import { aoAbrir, type Area } from '../../../components/janela/geometria';
 import type { Pilha } from '../pilha';
 import { AbaFinanceiro } from './AbaFinanceiro';
 import { AbaHistorico } from './AbaHistorico';
@@ -18,7 +18,7 @@ import { CabecalhoDaAnalise } from './CabecalhoDaAnalise';
 import { DialogoDeDecisao } from './DialogoDeDecisao';
 import { PainelDeDecisao } from './PainelDeDecisao';
 import { useDecisao } from './useDecisao';
-import { useLargura } from './useLargura';
+import { useLargura } from '../../../components/janela/useLargura';
 
 const ABERTURA = (area: Area) => aoAbrir(area, 0.84, 0.92, 'centro');
 

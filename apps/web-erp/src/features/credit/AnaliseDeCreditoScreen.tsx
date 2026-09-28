@@ -6,9 +6,9 @@ import { useSearchParams } from 'react-router-dom';
 import { CamadaDoCliente, type ClienteEscolhido } from './CamadaDoCliente';
 import { ConteudoDaFila } from './FilaDeAnalise';
 import { Fundo } from './Fundo';
-import { Janela } from './janela/Janela';
-import { aoAbrir, type Area } from './janela/geometria';
-import { useAreaDaTela } from './janela/useAreaDaTela';
+import { Janela } from '../../components/janela/Janela';
+import { aoAbrir, type Area } from '../../components/janela/geometria';
+import { useAreaDaTela } from '../../components/janela/useAreaDaTela';
 import { usePilha, type Pilha } from './pilha';
 import { useAnaliseDeCredito, type EstadoDaFila } from './useAnaliseDeCredito';
 

@@ -1,13 +1,15 @@
 import { Status, Text, type TomDeStatus } from '@synapse/sdl';
 import type { Customer } from '@synapse/types';
-import { CircleAlert, CircleCheck, LoaderCircle, Save, UserPlus, X } from 'lucide-react';
+import { CircleAlert, CircleCheck, LoaderCircle, Save, UserPlus } from 'lucide-react';
 import { formatarDocumento, formatarMoeda } from './formato';
 
-/** Cabeçalho e rodapé da janela do cadastro.
+/** Cabeçalho e rodapé do conteúdo do cadastro — não da janela: a mecânica de
+ *  fechar/arrastar/maximizar agora é do `Janela` (Fase 6.2), então este
+ *  cabeçalho só mostra quem é o cliente (monograma, situação, limite). O
+ *  fechar mora só no X da barra de título e no "(Esc) Sair" do rodapé — dois
+ *  lugares em vez de três.
  *
- *  A hierarquia vai de cima para baixo: quem é o cliente (monograma, nome e a
- *  situação que o resto do sistema lê) e o que falta fazer (rodapé que flutua
- *  sobre a rolagem). As abas migraram para `Abas`/`PainelDeAba`
+ *  As abas migraram para `Abas`/`PainelDeAba`
  *  (`components/formulario/Formulario.tsx`, Fase 6.1) — sublinhado cobalto em
  *  vez da pílula própria que só esta janela e `JanelaDeCadastro` tinham. */
 
@@ -72,39 +74,28 @@ function Resumo({ cliente }: { readonly cliente: Customer }) {
   );
 }
 
-export function Cabecalho({
-  cliente,
-  aoSair,
-}: {
-  readonly cliente: Customer | null;
-  readonly aoSair: () => void;
-}) {
+export function Cabecalho({ cliente }: { readonly cliente: Customer | null }) {
   const titulo = cliente
     ? `${cliente.codigo ? `${cliente.codigo} · ` : ''}${cliente.name}`
     : 'Novo cliente';
   return (
-    <header className="border-hairline-light flex items-start justify-between gap-4 border-b bg-white px-6 py-5">
-      <div className="flex min-w-0 items-center gap-4">
-        <Monograma cliente={cliente} />
-        <div className="min-w-0">
-          <p className="text-caption text-stone font-semibold uppercase tracking-[0.12em]">
-            Cadastro de clientes
+    <header className="border-hairline-light flex items-start gap-4 border-b bg-white px-6 py-5">
+      <Monograma cliente={cliente} />
+      <div className="min-w-0">
+        <p className="text-caption text-stone font-semibold uppercase tracking-[0.12em]">
+          Cadastro de clientes
+        </p>
+        <h2 className="font-display text-heading-sm text-ink truncate tracking-[-0.2px]">
+          {titulo}
+        </h2>
+        {cliente ? (
+          <Resumo cliente={cliente} />
+        ) : (
+          <p className="text-caption text-stone mt-0.5">
+            O código é gerado quando o cadastro é salvo.
           </p>
-          <h2 className="font-display text-heading-sm text-ink truncate tracking-[-0.2px]">
-            {titulo}
-          </h2>
-          {cliente ? (
-            <Resumo cliente={cliente} />
-          ) : (
-            <p className="text-caption text-stone mt-0.5">
-              O código é gerado quando o cadastro é salvo.
-            </p>
-          )}
-        </div>
+        )}
       </div>
-      <button type="button" onClick={aoSair} className={BOTAO_CLARO}>
-        <X size={15} aria-hidden="true" /> Fechar
-      </button>
     </header>
   );
 }

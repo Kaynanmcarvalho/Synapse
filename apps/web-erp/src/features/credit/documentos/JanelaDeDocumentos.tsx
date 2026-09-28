@@ -1,6 +1,6 @@
 import { ArrowLeft, ChevronRight } from 'lucide-react';
-import { Janela } from '../janela/Janela';
-import { aoAbrir, type Area } from '../janela/geometria';
+import { Janela } from '../../../components/janela/Janela';
+import { aoAbrir, type Area } from '../../../components/janela/geometria';
 import type { Pilha } from '../pilha';
 import { Carregando, Falha } from '../ui/Superficies';
 import { DetalheDaNota } from './DetalheDaNota';

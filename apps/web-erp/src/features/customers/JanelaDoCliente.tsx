@@ -1,8 +1,9 @@
 import type { Customer } from '@synapse/types';
-import { Modal } from '@synapse/ui';
 import { LoaderCircle } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import { Abas, PainelDeAba } from '../../components/formulario/Formulario';
+import { Janela } from '../../components/janela/Janela';
+import { aoAbrir, type Area } from '../../components/janela/geometria';
 import { AbaControleDeVendas } from './abas/ControleDeVendas';
 import { AbaDocumentos } from './abas/Documentos';
 import { AbaOutrasInformacoes } from './abas/OutrasInformacoes';
@@ -31,10 +32,30 @@ import { useVisaoDeCredito, type VisaoDeCredito } from './useVisaoDeCredito';
  *  `JanelaDeCadastro`, duplicado). Passam a usar `Abas`/`PainelDeAba` da Form
  *  Grammar (Fase 6) — sublinhado cobalto, ArrowLeft/Right, `aria-controls` —
  *  segundo consumidor real depois do assistente fiscal. O aviso de "aba com
- *  erro" (que a pílula já tinha) virou uma capacidade da própria `Abas`. */
+ *  erro" (que a pílula já tinha) virou uma capacidade da própria `Abas`.
+ *
+ *  Fase 6.2: o Modal size="full" vira a Janela de verdade (a mesma mecânica
+ *  da análise de crédito) — arrasto, resize, maximizar e geometria lembrada
+ *  por usuário, chave própria (`cadastro-cliente`, nunca compartilhada com
+ *  crédito/análise). Abre solta (fora de uma pilha de janelas, tanto em
+ *  `ClientesScreen` quanto dentro de `CamadaDoCliente`), então usa `ativa`
+ *  fixo e `aoFocar` vazio — não há outra janela irmã para ceder o topo. Com
+ *  `comFundo`: diferente da análise (onde comparar janelas lado a lado é o
+ *  ponto), aqui um clique perdido no menu por trás não pode navegar para
+ *  outra tela e perder o que não foi salvo sem confirmação nenhuma. */
 
 const ID_BASE = 'cadastro-cliente';
 const ABAS_DA_JANELA = ABAS.map(([id, rotulo]) => ({ id, rotulo }));
+
+/** 85% da área útil: usa a tela em vez de ficar preso a 1152px (Fase 6.1) —
+ *  em 1920 isso é ~1630px de workspace de verdade; em 1280, ~1090px, ainda
+ *  confortável sem precisar maximizar. */
+const ABERTURA_DO_CADASTRO = (area: Area) => aoAbrir(area, 0.85, 0.9, 'centro');
+/** Acima do que a pilha de janelas do crédito usa (40 + profundidade): o
+ *  cadastro completo sempre abre por cima quando chamado de dentro da
+ *  análise — como já era o comportamento do Modal que ele substitui. */
+const ZINDEX_AUTONOMO = 100;
+const semFoco = () => undefined;
 
 function Corpo({
   carga,
@@ -122,54 +143,59 @@ export function JanelaDoCliente({
     cliente: cadastro.cliente,
   };
 
+  const titulo = cadastro.cliente
+    ? `${cadastro.cliente.codigo ? `${cadastro.cliente.codigo} · ` : ''}${cadastro.cliente.name}`
+    : 'Novo cliente';
+
   return (
-    <Modal
-      onClose={sair}
-      label="Cadastro de clientes"
-      size="full"
-      bare
-      closeOnBackdrop={false}
-      // Fase 6.1: `size="full"` do Modal para em max-w-6xl (1152px) — um
-      // cadastro com 7 abas, lookups e várias seções minguava no meio de uma
-      // tela 1920 (havia mais espaço fora do modal do que dentro). Isto o
-      // deixa usar a largura de workspace sem virar edge-to-edge.
-      className="sm:h-[88vh] sm:w-[94vw] sm:max-w-[1600px]"
+    <Janela
+      id="cadastro-cliente"
+      titulo={titulo}
+      subtitulo="Cadastro de clientes"
+      abertura={ABERTURA_DO_CADASTRO}
+      zIndex={ZINDEX_AUTONOMO}
+      ativa
+      comFundo
+      aoFechar={sair}
+      aoFocar={semFoco}
     >
-      <Cabecalho cliente={cadastro.cliente} aoSair={sair} />
-      <div className="border-hairline-light border-b bg-white px-6 py-3">
-        <Abas
-          idBase={ID_BASE}
-          abas={ABAS_DA_JANELA}
-          ativa={aba}
-          aoMudar={setAba}
-          rotulo="Cadastro de clientes"
-          comErro={abasComErro(cadastro.erros)}
+      <div className="flex h-full min-h-0 flex-col">
+        <Cabecalho cliente={cadastro.cliente} />
+        <div className="border-hairline-light border-b bg-white px-6 py-3">
+          <Abas
+            idBase={ID_BASE}
+            abas={ABAS_DA_JANELA}
+            ativa={aba}
+            aoMudar={setAba}
+            rotulo="Cadastro de clientes"
+            comErro={abasComErro(cadastro.erros)}
+          />
+        </div>
+        <div className="bg-surface-soft min-h-0 flex-1 overflow-y-auto px-6 py-5">
+          {/* A chave refaz a entrada a cada aba: um esmaecer curto, e não um salto. */}
+          <div key={aba} className="animate-revelar motion-reduce:animate-none">
+            <PainelDeAba idBase={ID_BASE} ativa={aba}>
+              <Corpo
+                carga={cadastro.carga}
+                aba={aba}
+                props={props}
+                visao={visao}
+                aoAbrirCredito={aoAbrirCredito ?? nada}
+              />
+            </PainelDeAba>
+          </div>
+        </div>
+        <Rodape
+          erro={cadastro.erroAoSalvar}
+          alterado={alterado}
+          salvo={Boolean(cadastro.cliente)}
+          salvando={cadastro.salvando}
+          carregando={cadastro.carga.status === 'carregando'}
+          aoLimpar={limpar}
+          aoSair={sair}
+          aoSalvar={salvarPeloTeclado}
         />
       </div>
-      <div className="bg-surface-soft min-h-0 flex-1 overflow-y-auto px-6 py-5">
-        {/* A chave refaz a entrada a cada aba: um esmaecer curto, e não um salto. */}
-        <div key={aba} className="animate-revelar motion-reduce:animate-none">
-          <PainelDeAba idBase={ID_BASE} ativa={aba}>
-            <Corpo
-              carga={cadastro.carga}
-              aba={aba}
-              props={props}
-              visao={visao}
-              aoAbrirCredito={aoAbrirCredito ?? nada}
-            />
-          </PainelDeAba>
-        </div>
-      </div>
-      <Rodape
-        erro={cadastro.erroAoSalvar}
-        alterado={alterado}
-        salvo={Boolean(cadastro.cliente)}
-        salvando={cadastro.salvando}
-        carregando={cadastro.carga.status === 'carregando'}
-        aoLimpar={limpar}
-        aoSair={sair}
-        aoSalvar={salvarPeloTeclado}
-      />
-    </Modal>
+    </Janela>
   );
 }
