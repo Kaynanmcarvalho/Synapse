@@ -1,9 +1,15 @@
-import { Field, Select } from '@synapse/sdl';
+import { Field, Input, Select } from '@synapse/sdl';
+import { LoaderCircle, Search } from 'lucide-react';
+import { useState } from 'react';
 import {
   LinhaDeCampos,
   Secao,
   ValoresDeLeitura,
 } from '../../../../components/formulario/Formulario';
+import { BuscaDeMunicipio } from '../../../cadastros/comum/BuscaDeMunicipio';
+import { buscarMunicipio, type MunicipioIbge } from '../../../cadastros/comum/cadastros.api';
+import { BOTAO_ICONE } from '../../../cadastros/comum/estilos';
+import { LARGURA_DE_CAMPO } from '../../../../components/formulario/larguras';
 import type { FormularioDoCliente } from '../../formulario';
 import { formatarData, mascararCep, mascararDocumento, mascararTelefone } from '../../formato';
 import { OPCOES_DE_TIPO, type PropsDaAba } from '../aba';
@@ -18,7 +24,15 @@ import { CampoDeTexto } from '../CampoDoFormulario';
  *  desabilitado fingindo ser consultivo). Obrigatório vem do mesmo
  *  `clienteSchema` que valida o envio — não é um "*" solto: documento, nome,
  *  logradouro, número, bairro, cidade, UF e CEP são os únicos campos que o
- *  schema não aceita vazios. */
+ *  schema não aceita vazios.
+ *
+ *  Fase 6.2 (§19-25): "Código IBGE" ganha a lupa de cidade que
+ *  `EnderecoDaFicha` (Funcionário/Fornecedor) já provou — mesma API
+ *  (`buscarMunicipio`), mesmo `BuscaDeMunicipio` (Modal com UF + busca por
+ *  nome/código), segundo consumidor real. Não é `CampoDeTabela` (não cria
+ *  cidade nova, não resolve por código de tabela auxiliar) nem `Selecao`
+ *  (universo grande demais para uma lista) — é o caso que já existe para
+ *  esta forma exata de dado, agora também em Cliente. */
 
 const maiusculas = (valor: string) => valor.toUpperCase();
 const soNumeros = (valor: string) => valor.replace(/[^0-9]/g, '');
@@ -92,8 +106,34 @@ export function Identificacao(props: PropsDaAba) {
   );
 }
 
-// eslint-disable-next-line max-lines-per-function -- 9 campos de endereço, cada um com máscara/obrigatoriedade próprias; quebrar em sub-funções esconderia a lista em vez de simplificá-la.
+// eslint-disable-next-line max-lines-per-function -- 9 campos de endereço, cada um com máscara/obrigatoriedade próprias, mais a lupa de cidade (§19-25); quebrar em sub-funções esconderia a lista em vez de simplificá-la.
 export function Endereco(props: PropsDaAba) {
+  const { formulario, mudar } = props;
+  const [buscaDeCidade, setBuscaDeCidade] = useState(false);
+  const [avisoIbge, setAvisoIbge] = useState<string | null>(null);
+  const [procurando, setProcurando] = useState(false);
+
+  const escolherMunicipio = (municipio: MunicipioIbge) => {
+    mudar('codigoIbge', municipio.codigo);
+    mudar('cidade', municipio.nome.toLocaleUpperCase('pt-BR'));
+    mudar('uf', municipio.uf);
+    setBuscaDeCidade(false);
+    setAvisoIbge(null);
+  };
+
+  const procurarPorCodigo = async () => {
+    const codigo = formulario.codigoIbge.replace(/\D/g, '');
+    if (codigo.length !== 7) return;
+    setProcurando(true);
+    try {
+      escolherMunicipio(await buscarMunicipio(codigo));
+    } catch (falha: unknown) {
+      setAvisoIbge(falha instanceof Error ? falha.message : 'Código IBGE não encontrado');
+    } finally {
+      setProcurando(false);
+    }
+  };
+
   return (
     <Secao titulo="Endereço" descricao="Onde o cliente recebe a mercadoria e a nota">
       <LinhaDeCampos>
@@ -154,16 +194,36 @@ export function Endereco(props: PropsDaAba) {
           larguraSemantica="codigo"
           obrigatorio
         />
-        <CampoDeTexto
-          aba={props}
-          campo="codigoIbge"
-          rotulo="Código IBGE"
-          dica="Exigido pela NF-e"
-          inputMode="numeric"
-          maxLength={7}
-          mascara={soNumeros}
-          larguraSemantica="curto"
-        />
+        <Field
+          label="Código IBGE"
+          hint={avisoIbge ? undefined : 'Exigido pela NF-e — ou procure pela lupa'}
+          error={avisoIbge}
+          className={LARGURA_DE_CAMPO.curto}
+        >
+          <div className="flex gap-2">
+            <Input
+              value={formulario.codigoIbge}
+              inputMode="numeric"
+              maxLength={7}
+              onChange={(e) => mudar('codigoIbge', soNumeros(e.target.value))}
+              onBlur={() => void procurarPorCodigo()}
+            />
+            <button
+              type="button"
+              onClick={() => setBuscaDeCidade(true)}
+              disabled={procurando}
+              aria-label="Procurar cidade pelo IBGE"
+              title="Procurar cidade"
+              className={BOTAO_ICONE}
+            >
+              {procurando ? (
+                <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />
+              ) : (
+                <Search size={16} aria-hidden="true" />
+              )}
+            </button>
+          </div>
+        </Field>
         <CampoDeTexto
           aba={props}
           campo="pais"
@@ -172,6 +232,13 @@ export function Endereco(props: PropsDaAba) {
           larguraSemantica="curto"
         />
       </LinhaDeCampos>
+      {buscaDeCidade ? (
+        <BuscaDeMunicipio
+          ufInicial={formulario.uf || 'GO'}
+          aoEscolher={escolherMunicipio}
+          aoFechar={() => setBuscaDeCidade(false)}
+        />
+      ) : null}
     </Secao>
   );
 }

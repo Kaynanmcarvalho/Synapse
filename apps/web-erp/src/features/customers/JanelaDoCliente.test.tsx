@@ -18,6 +18,13 @@ vi.mock('./clientes.api', () => api);
 const credito = vi.hoisted(() => ({ apiRequest: vi.fn() }));
 vi.mock('../../lib/dev-auth', () => credito);
 
+const tabelas = vi.hoisted(() => ({
+  listarMunicipios: vi.fn(),
+  buscarMunicipio: vi.fn(),
+  UFS: ['GO', 'SP'],
+}));
+vi.mock('../cadastros/comum/cadastros.api', () => tabelas);
+
 import { JanelaDoCliente } from './JanelaDoCliente';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -42,6 +49,7 @@ beforeEach(() => {
   });
   // Vendedores e painel de crédito: sem permissão, como um usuário só de cadastro.
   credito.apiRequest.mockRejectedValue(new Error('Permissão necessária: vendedor.gerenciar'));
+  tabelas.listarMunicipios.mockResolvedValue([]);
   caixa = document.createElement('div');
   document.body.appendChild(caixa);
   raiz = createRoot(caixa);
@@ -104,7 +112,7 @@ const preencherMinimo = () => {
   digitar('Cidade', 'Goiânia');
   digitar('UF', 'go');
   digitar('Telefone 1', '6232415566');
-  digitar('Limite a prazo (R$)', '15.000,00');
+  digitar('Limite a prazo', '15.000,00');
 };
 
 const gravado = (extra: Partial<Customer> = {}): Customer =>
@@ -349,5 +357,94 @@ describe('JanelaDoCliente — cliente gravado', () => {
     act(() => raiz.render(<JanelaDoCliente clienteId="cliente-1" aoFechar={() => undefined} />));
     await esperar();
     expect(document.body.textContent).toContain('Salvar o cadastro não muda isso');
+  });
+});
+
+// Fase 6.2 (§19-25) — a lupa de cidade em "Código IBGE" (aba Principal,
+// Endereço) é a prova real de gramática de lookup: mesma API/overlay que
+// `EnderecoDaFicha` (Funcionário/Fornecedor) já usa, segundo consumidor real.
+describe('JanelaDoCliente — lupa de cidade (IBGE)', () => {
+  const lupa = () =>
+    document.querySelector('[aria-label="Procurar cidade pelo IBGE"]') as HTMLButtonElement;
+
+  const esperarDebounce = async () => {
+    await act(async () => {
+      await new Promise((resolver) => setTimeout(resolver, 300));
+    });
+  };
+
+  it('digitar o código e sair do campo resolve a cidade sem abrir a busca', async () => {
+    tabelas.buscarMunicipio.mockResolvedValue({ codigo: '5208707', nome: 'Goiânia', uf: 'GO' });
+    act(() => raiz.render(<JanelaDoCliente clienteId={null} aoFechar={() => undefined} />));
+    await esperar();
+    const ibge = campo('Código IBGE');
+    digitar('Código IBGE', '5208707');
+    await act(async () => {
+      ibge.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+      await Promise.resolve();
+    });
+    expect(tabelas.buscarMunicipio).toHaveBeenCalledWith('5208707');
+    expect(campo('Cidade').value).toBe('GOIÂNIA');
+    expect(campo('UF').value).toBe('GO');
+    expect(document.body.textContent).not.toContain('Cidades (IBGE)');
+  });
+
+  it('código que a API não reconhece mostra o aviso, sem travar o campo', async () => {
+    tabelas.buscarMunicipio.mockRejectedValue(new Error('Código IBGE não encontrado'));
+    act(() => raiz.render(<JanelaDoCliente clienteId={null} aoFechar={() => undefined} />));
+    await esperar();
+    const ibge = campo('Código IBGE');
+    digitar('Código IBGE', '9999999');
+    await act(async () => {
+      ibge.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+      await Promise.resolve();
+    });
+    expect(document.body.textContent).toContain('Código IBGE não encontrado');
+  });
+
+  it('a lupa abre a busca, lista os municípios da UF e escolher preenche cidade e UF', async () => {
+    tabelas.listarMunicipios.mockResolvedValue([
+      { codigo: '5208707', nome: 'Goiânia', uf: 'GO' },
+      { codigo: '5201108', nome: 'Aparecida de Goiânia', uf: 'GO' },
+    ]);
+    act(() => raiz.render(<JanelaDoCliente clienteId={null} aoFechar={() => undefined} />));
+    await esperar();
+
+    expect(lupa().getAttribute('aria-label')).toBe('Procurar cidade pelo IBGE');
+    // jsdom não move o foco num .click() programático como um clique real —
+    // focamos primeiro para o `useOverlay` capturar o elemento certo a devolver.
+    act(() => {
+      lupa().focus();
+      lupa().click();
+    });
+    expect(document.body.textContent).toContain('Cidades (IBGE)');
+
+    await esperarDebounce();
+    const item = [...document.querySelectorAll('button')].find((botaoItem) =>
+      botaoItem.textContent?.includes('Aparecida de Goiânia'),
+    );
+    expect(item).toBeTruthy();
+    act(() => item?.click());
+
+    expect(document.body.textContent).not.toContain('Cidades (IBGE)');
+    expect(campo('Cidade').value).toBe('APARECIDA DE GOIÂNIA');
+    expect(campo('UF').value).toBe('GO');
+    expect(campo('Código IBGE').value).toBe('5201108');
+    // useOverlay devolve o foco a quem abriu — a própria lupa.
+    expect(document.activeElement).toBe(lupa());
+  });
+
+  it('Escape fecha a busca sem alterar o que já estava no cadastro', async () => {
+    act(() => raiz.render(<JanelaDoCliente clienteId={null} aoFechar={() => undefined} />));
+    await esperar();
+    digitar('Cidade', 'Anápolis');
+    act(() => lupa().click());
+    expect(document.body.textContent).toContain('Cidades (IBGE)');
+    await act(async () => {
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      await new Promise((resolver) => setTimeout(resolver, 250));
+    });
+    expect(document.body.textContent).not.toContain('Cidades (IBGE)');
+    expect(campo('Cidade').value).toBe('Anápolis');
   });
 });
