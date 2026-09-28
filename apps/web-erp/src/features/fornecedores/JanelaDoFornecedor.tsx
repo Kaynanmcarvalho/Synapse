@@ -105,6 +105,7 @@ export function JanelaDoFornecedor({
 
   return (
     <JanelaDeCadastro
+      idDaJanela="cadastro-fornecedor"
       rotuloDaTela="Cadastro de Fornecedores"
       titulo={gravado ? `${gravado.codigo ?? '—'} - ${gravado.tradeName}` : 'Novo fornecedor'}
       subtitulo={

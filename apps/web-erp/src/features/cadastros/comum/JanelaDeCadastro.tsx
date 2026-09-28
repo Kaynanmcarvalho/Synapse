@@ -1,14 +1,28 @@
 /* eslint-disable max-lines-per-function */
-import { Modal } from '@synapse/ui';
-import { CircleAlert, CircleCheck, LoaderCircle, Save, X } from 'lucide-react';
+import { CircleAlert, CircleCheck, LoaderCircle, Save } from 'lucide-react';
 import { useCallback, type ReactNode } from 'react';
+import { Abas, PainelDeAba } from '../../../components/formulario/Formulario';
+import { Janela } from '../../../components/janela/Janela';
+import { aoAbrir, type Area } from '../../../components/janela/geometria';
 import { useAtalhosDoCadastro } from '../../customers/useAtalhosDoCadastro';
 import { BOTAO_CLARO, BOTAO_ESCURO } from './estilos';
 
 /** A janela dos cadastros do Syndata (funcionários, fornecedores): cabeçalho
- *  com quem é, abas num trilho, miolo que rola sobre fundo cinza e rodapé com
- *  (F2) Salvar, (F3) Limpar e (Esc) Sair — os atalhos que a mão já conhece.
- *  Sair com alteração pendente pergunta antes. */
+ *  com quem é, abas, miolo que rola sobre fundo cinza e rodapé com (F2)
+ *  Salvar, (F3) Limpar e (Esc) Sair — os atalhos que a mão já conhece. Sair
+ *  com alteração pendente pergunta antes.
+ *
+ *  Fase 6.3: converge para a mesma `Janela` real que o Cadastro de Cliente já
+ *  usa (Fase 6.2) — arrasto, resize, maximizar, geometria por usuário e
+ *  `comFundo` (workspace de edição única, mesmo raciocínio de lá: um clique
+ *  perdido no menu por trás não pode navegar e perder o que não foi salvo).
+ *  A pílula de abas própria vira `Abas`/`PainelDeAba` (Form Grammar) — mesmo
+ *  formato de dado (`{id, rotulo}` e lista de ids com erro) que `Abas` já
+ *  espera, sem adaptador. `idDaJanela` é novo: cada cadastro precisa da sua
+ *  própria chave de geometria (nunca compartilhada entre Cliente, Funcionário
+ *  e Fornecedor). Abertura em 85%×90% da área útil — medida contra o volume
+ *  real dos formulários (a aba Principal do Fornecedor, por exemplo, tem mais
+ *  linhas que a do Cliente), não copiada às cegas. */
 
 export interface AbaDaJanela<A extends string> {
   readonly id: A;
@@ -16,6 +30,9 @@ export interface AbaDaJanela<A extends string> {
 }
 
 export interface PropsDaJanela<A extends string> {
+  /** Chave de geometria própria deste cadastro (`cadastro-funcionario`,
+   *  `cadastro-fornecedor`) — nunca a mesma entre cadastros diferentes. */
+  readonly idDaJanela: string;
   readonly rotuloDaTela: string;
   readonly titulo: string;
   readonly subtitulo?: ReactNode;
@@ -37,6 +54,12 @@ export interface PropsDaJanela<A extends string> {
   readonly acoesExtras?: ReactNode;
   readonly children: ReactNode;
 }
+
+const ABERTURA_DO_CADASTRO = (area: Area) => aoAbrir(area, 0.85, 0.9, 'centro');
+/** Acima da pilha de janelas do crédito (40 + profundidade) — estes cadastros
+ *  são sempre autônomos, nunca aninhados numa pilha de outra tela. */
+const ZINDEX_AUTONOMO = 100;
+const semFoco = () => undefined;
 
 function Mensagem({
   erro,
@@ -87,18 +110,19 @@ export function JanelaDeCadastro<A extends string>(props: PropsDaJanela<A>) {
   useAtalhosDoCadastro(aoSalvar, aoLimpar);
 
   return (
-    <Modal
-      onClose={sair}
-      label={props.rotuloDaTela}
-      size="full"
-      bare
-      closeOnBackdrop={false}
-      // Fase 6.1: mesma correção de JanelaDoCliente — size="full" prende a
-      // janela em 1152px mesmo numa tela 1920.
-      className="sm:h-[90vh] sm:w-[94vw] sm:max-w-[1600px]"
+    <Janela
+      id={props.idDaJanela}
+      titulo={props.titulo}
+      subtitulo={props.rotuloDaTela}
+      abertura={ABERTURA_DO_CADASTRO}
+      zIndex={ZINDEX_AUTONOMO}
+      ativa
+      comFundo
+      aoFechar={sair}
+      aoFocar={semFoco}
     >
-      <header className="border-hairline-light flex items-start justify-between gap-4 border-b bg-white px-6 py-4">
-        <div className="flex min-w-0 items-center gap-4">
+      <div className="flex h-full min-h-0 flex-col">
+        <header className="border-hairline-light flex items-start gap-4 border-b bg-white px-6 py-4">
           {props.avatar}
           <div className="min-w-0">
             <p className="text-caption text-stone font-semibold uppercase tracking-[0.12em]">
@@ -109,106 +133,85 @@ export function JanelaDeCadastro<A extends string>(props: PropsDaJanela<A>) {
             </h2>
             {props.subtitulo}
           </div>
-        </div>
-        <button type="button" onClick={sair} className={BOTAO_CLARO}>
-          <X size={15} aria-hidden="true" /> Fechar
-        </button>
-      </header>
+        </header>
 
-      <div className="border-hairline-light border-b bg-white px-6 py-3">
-        <div
-          role="tablist"
-          aria-label={props.rotuloDaTela}
-          className="bg-surface-soft inline-flex max-w-full gap-0.5 overflow-x-auto rounded-full p-1"
-        >
-          {props.abas.map(({ id, rotulo }) => (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              aria-selected={props.aba === id}
-              onClick={() => props.aoTrocarAba(id)}
-              className={`text-button-sm inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-4 transition duration-200 ${
-                props.aba === id
-                  ? 'text-ink bg-white shadow-[0_1px_2px_rgba(25,28,31,0.08),0_6px_16px_-10px_rgba(25,28,31,0.4)]'
-                  : 'text-mute hover:text-ink'
-              }`}
-            >
-              {rotulo}
-              {props.abasComErro.includes(id) ? (
-                <span
-                  aria-label="Há campo para corrigir nesta aba"
-                  className="h-1.5 w-1.5 rounded-full bg-[#b3242f]"
-                />
-              ) : null}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-surface-soft min-h-0 flex-1 overflow-y-auto px-6 py-5">
-        {props.carregando ? (
-          <p
-            role="status"
-            className="text-body-sm text-stone flex items-center justify-center gap-2 py-16"
-          >
-            <LoaderCircle
-              size={16}
-              aria-hidden="true"
-              className="animate-spin motion-reduce:animate-none"
-            />
-            Carregando cadastro…
-          </p>
-        ) : props.erroDeCarga ? (
-          <p className="text-body-sm py-16 text-center text-[#b3242f]">{props.erroDeCarga}</p>
-        ) : (
-          <div key={props.aba} className="animate-revelar motion-reduce:animate-none">
-            {props.children}
-          </div>
-        )}
-      </div>
-
-      <footer className="border-hairline-light relative z-10 flex flex-wrap items-center justify-between gap-3 border-t bg-white px-6 py-3.5 shadow-[0_-12px_24px_-20px_rgba(25,28,31,0.35)]">
-        <div className="text-body-sm min-w-0" role="status">
-          <Mensagem
-            erro={props.erro}
-            alterado={alterado}
-            salvo={props.salvo}
-            dicaDeNovo={props.dicaDeNovo}
+        <div className="border-hairline-light border-b bg-white px-6 py-3">
+          <Abas
+            idBase={props.idDaJanela}
+            abas={props.abas}
+            ativa={props.aba}
+            aoMudar={props.aoTrocarAba}
+            rotulo={props.rotuloDaTela}
+            comErro={props.abasComErro}
           />
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
-          {props.acoesExtras}
-          <button
-            type="button"
-            onClick={aoLimpar}
-            disabled={!alterado || props.salvando}
-            className={BOTAO_CLARO}
-          >
-            (F3) Limpar
-          </button>
-          <button type="button" onClick={sair} className={BOTAO_CLARO}>
-            (Esc) Sair
-          </button>
-          <button
-            type="button"
-            onClick={aoSalvar}
-            disabled={props.salvando || props.carregando}
-            className={BOTAO_ESCURO}
-          >
-            {props.salvando ? (
+
+        <div className="bg-surface-soft min-h-0 flex-1 overflow-y-auto px-6 py-5">
+          {props.carregando ? (
+            <p
+              role="status"
+              className="text-body-sm text-stone flex items-center justify-center gap-2 py-16"
+            >
               <LoaderCircle
-                size={15}
+                size={16}
                 aria-hidden="true"
                 className="animate-spin motion-reduce:animate-none"
               />
-            ) : (
-              <Save size={15} aria-hidden="true" />
-            )}
-            {props.salvando ? 'Salvando…' : '(F2) Salvar'}
-          </button>
+              Carregando cadastro…
+            </p>
+          ) : props.erroDeCarga ? (
+            <p className="text-body-sm py-16 text-center text-[#b3242f]">{props.erroDeCarga}</p>
+          ) : (
+            <div key={props.aba} className="animate-revelar motion-reduce:animate-none">
+              <PainelDeAba idBase={props.idDaJanela} ativa={props.aba}>
+                {props.children}
+              </PainelDeAba>
+            </div>
+          )}
         </div>
-      </footer>
-    </Modal>
+
+        <footer className="border-hairline-light relative z-10 flex flex-wrap items-center justify-between gap-3 border-t bg-white px-6 py-3.5 shadow-[0_-12px_24px_-20px_rgba(25,28,31,0.35)]">
+          <div className="text-body-sm min-w-0" role="status">
+            <Mensagem
+              erro={props.erro}
+              alterado={alterado}
+              salvo={props.salvo}
+              dicaDeNovo={props.dicaDeNovo}
+            />
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {props.acoesExtras}
+            <button
+              type="button"
+              onClick={aoLimpar}
+              disabled={!alterado || props.salvando}
+              className={BOTAO_CLARO}
+            >
+              (F3) Limpar
+            </button>
+            <button type="button" onClick={sair} className={BOTAO_CLARO}>
+              (Esc) Sair
+            </button>
+            <button
+              type="button"
+              onClick={aoSalvar}
+              disabled={props.salvando || props.carregando}
+              className={BOTAO_ESCURO}
+            >
+              {props.salvando ? (
+                <LoaderCircle
+                  size={15}
+                  aria-hidden="true"
+                  className="animate-spin motion-reduce:animate-none"
+                />
+              ) : (
+                <Save size={15} aria-hidden="true" />
+              )}
+              {props.salvando ? 'Salvando…' : '(F2) Salvar'}
+            </button>
+          </div>
+        </footer>
+      </div>
+    </Janela>
   );
 }

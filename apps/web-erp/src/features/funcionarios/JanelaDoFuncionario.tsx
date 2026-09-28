@@ -81,6 +81,7 @@ export function JanelaDoFuncionario({
 
   return (
     <JanelaDeCadastro
+      idDaJanela="cadastro-funcionario"
       rotuloDaTela="Cadastro de Funcionários"
       titulo={gravado ? `${gravado.codigo} - ${gravado.nome}` : 'Novo funcionário'}
       subtitulo={
