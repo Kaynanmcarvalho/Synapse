@@ -7,6 +7,11 @@ import { Situacao } from '../ui/Etiquetas';
 import { BOTAO_ESCURO, Dado, Dados } from '../ui/Superficies';
 import { useEscParaFechar } from '../ui/useEscParaFechar';
 
+/** Mesma lista de `Dialogo` (`ui/Superficies.tsx`) e da Janela
+ *  (`components/janela/Janela.tsx`) — elementos alcançáveis por Tab. */
+const SELETOR_FOCAVEL =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 const SITUACAO_FINANCEIRA: Record<
   FinancialStatus,
   { texto: string; tom: 'positivo' | 'atencao' | 'critico' }
@@ -98,6 +103,7 @@ function Conteudo({
 /** Gaveta lateral com o cadastro que ja veio na ficha: o analista confere
  *  contato, endereco e limite sem sair da analise. Editar abre o cadastro
  *  completo, que e o formulario real. */
+// eslint-disable-next-line max-lines-per-function -- markup da gaveta inteira (cabeçalho, conteúdo, rodapé) mais os três efeitos de foco (§32-33); quebrar em sub-funções esconderia o fluxo em vez de simplificá-lo.
 export function GavetaDoCliente({
   nome,
   cadastro,
@@ -113,7 +119,38 @@ export function GavetaDoCliente({
 }) {
   const painel = useRef<HTMLElement>(null);
   useEscParaFechar(aoFechar);
+
+  // Precisa rodar ANTES do efeito que foca o painel abaixo: se captura
+  // depois, "quem abriu" já seria o próprio painel (desmontado ao fechar),
+  // e o foco largava em BODY em vez de voltar pra quem tinha foco de verdade.
+  useEffect(() => {
+    const anterior = document.activeElement as HTMLElement | null;
+    return () => anterior?.focus?.({ preventScroll: true });
+  }, []);
+
   useEffect(() => painel.current?.focus(), []);
+
+  useEffect(() => {
+    const aoTeclar = (evento: KeyboardEvent) => {
+      if (evento.key !== 'Tab') return;
+      const raiz = painel.current;
+      if (!raiz) return;
+      const focaveis = [...raiz.querySelectorAll<HTMLElement>(SELETOR_FOCAVEL)];
+      if (focaveis.length === 0) return;
+      const primeiro = focaveis[0];
+      const ultimo = focaveis[focaveis.length - 1];
+      const ativo = document.activeElement;
+      if (evento.shiftKey && (ativo === primeiro || ativo === raiz)) {
+        evento.preventDefault();
+        ultimo?.focus();
+      } else if (!evento.shiftKey && (ativo === ultimo || ativo === raiz)) {
+        evento.preventDefault();
+        primeiro?.focus();
+      }
+    };
+    document.addEventListener('keydown', aoTeclar);
+    return () => document.removeEventListener('keydown', aoTeclar);
+  }, []);
 
   return createPortal(
     <div className="fixed inset-0 z-[80] flex justify-end">

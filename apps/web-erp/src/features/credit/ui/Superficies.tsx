@@ -110,6 +110,11 @@ export function Ausente({ texto }: { readonly texto: string }) {
 
 /** Dialogo modal por cima de tudo. Esc fecha; o foco vai para o primeiro campo
  *  ou botao que o conteudo marcar com `data-autofoco`. */
+/** Elementos alcançáveis por Tab, na mesma lista usada pela Janela
+ *  (`components/janela/Janela.tsx`) para a armadilha de foco. */
+const SELETOR_FOCAVEL =
+  'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export function Dialogo({
   rotulo,
   aoFechar,
@@ -123,8 +128,38 @@ export function Dialogo({
 }) {
   const caixa = useRef<HTMLDivElement>(null);
   useEscParaFechar(aoFechar);
+
+  // Precisa rodar ANTES do efeito de autofoco abaixo: se captura depois,
+  // "quem abriu" já seria o próprio diálogo, e fechar devolveria o foco pra
+  // ele mesmo (desmontado) em vez de para o que tinha foco de verdade.
+  useEffect(() => {
+    const anterior = document.activeElement as HTMLElement | null;
+    return () => anterior?.focus?.({ preventScroll: true });
+  }, []);
+
   useEffect(() => {
     caixa.current?.querySelector<HTMLElement>('[data-autofoco]')?.focus();
+  }, []);
+
+  useEffect(() => {
+    const aoTeclar = (evento: KeyboardEvent) => {
+      if (evento.key !== 'Tab') return;
+      const raiz = caixa.current;
+      if (!raiz) return;
+      const focaveis = [...raiz.querySelectorAll<HTMLElement>(SELETOR_FOCAVEL)];
+      if (focaveis.length === 0) return;
+      const primeiro = focaveis[0];
+      const ultimo = focaveis[focaveis.length - 1];
+      if (evento.shiftKey && document.activeElement === primeiro) {
+        evento.preventDefault();
+        ultimo?.focus();
+      } else if (!evento.shiftKey && document.activeElement === ultimo) {
+        evento.preventDefault();
+        primeiro?.focus();
+      }
+    };
+    document.addEventListener('keydown', aoTeclar);
+    return () => document.removeEventListener('keydown', aoTeclar);
   }, []);
 
   return createPortal(
