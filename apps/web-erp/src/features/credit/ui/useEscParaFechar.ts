@@ -1,13 +1,34 @@
-import { useEffect } from 'react';
+import { estaNoTopoDaPilha, registrarSobreposicao } from '@synapse/ui';
+import { useEffect, useRef } from 'react';
 
-/** Esc fecha o que esta por cima — e so ele. Escuta na fase de captura e para
- *  a propagacao, entao a janela flutuante que esta embaixo (que tambem fecha
- *  com Esc) continua aberta. */
+/** Esc fecha o que esta por cima — e so ele.
+ *
+ *  Fase 6.3: `stopPropagation` sozinho nao bastava — ele nao impede outro
+ *  listener no MESMO `document`, na MESMA fase de rodar tambem (so
+ *  `stopImmediatePropagation` faria isso, e nenhum consumidor sabia se havia
+ *  outro para poder chamar isso com seguranca). Duas sobreposicoes reais —
+ *  a GavetaDoCliente aberta e um Dialogo de decisao por cima — fechavam as
+ *  duas com um Esc so. Agora registra na pilha global de sobreposicoes
+ *  (`@synapse/ui`, a mesma que Modal/Drawer ja usavam) e so fecha quando
+ *  esta realmente no topo dela. */
 export const useEscParaFechar = (aoFechar: () => void, ativo = true): void => {
+  const marca = useRef<symbol | null>(null);
+
+  useEffect(() => {
+    if (!ativo) return undefined;
+    const { marca: minha, sair } = registrarSobreposicao();
+    marca.current = minha;
+    return () => {
+      marca.current = null;
+      sair();
+    };
+  }, [ativo]);
+
   useEffect(() => {
     if (!ativo) return undefined;
     const aoTeclar = (evento: KeyboardEvent) => {
       if (evento.key !== 'Escape') return;
+      if (!marca.current || !estaNoTopoDaPilha(marca.current)) return;
       evento.stopPropagation();
       aoFechar();
     };

@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { estaNoTopoDaPilha, registrarSobreposicao } from '@synapse/ui';
 import { usePreferencia } from '../../lib/preferencias';
 import {
   limitar,
@@ -269,6 +270,7 @@ export function Janela({
     useGeometriaDaJanela(id, abertura);
   const { iniciar } = useArrasto(area, setGeometria);
   const secaoRef = useRef<HTMLElement>(null);
+  const marca = useRef<symbol | null>(null);
 
   // Fase 6: fechar devolve o foco para quem abriu (a linha da fila, a lupa),
   // como o Modal do @synapse/ui já fazia. Sem trap de foco de propósito: a
@@ -281,21 +283,42 @@ export function Janela({
     };
   }, []);
 
+  // Fase 6.3: entra na mesma pilha global de sobreposições que Modal/Dialogo
+  // já usam — só enquanto `ativa` (a pilha de crédito já garante que só uma
+  // Janela é ativa por vez; isto garante que um Modal/Dialogo aberto DENTRO
+  // dela vira o topo de verdade, e não só "por acidente" da ordem de fase do
+  // evento). Sem isto, o Esc e o Tab abaixo agiam mesmo com algo por cima.
   useEffect(() => {
-    if (!ativa) return;
+    if (!ativa) return undefined;
+    const { marca: minha, sair } = registrarSobreposicao();
+    marca.current = minha;
+    return () => {
+      marca.current = null;
+      sair();
+    };
+  }, [ativa]);
+
+  useEffect(() => {
+    if (!ativa) return undefined;
     const aoTeclar = (evento: KeyboardEvent) => {
-      if (evento.key === 'Escape') aoFechar();
+      if (evento.key !== 'Escape') return;
+      if (!marca.current || !estaNoTopoDaPilha(marca.current)) return;
+      aoFechar();
     };
     document.addEventListener('keydown', aoTeclar);
     return () => document.removeEventListener('keydown', aoTeclar);
   }, [ativa, aoFechar]);
 
   // Com fundo, o Tab não pode escapar por trás do bloqueio visual — senão o
-  // teclado alcançaria o que o mouse não alcança.
+  // teclado alcançaria o que o mouse não alcança. Só quando a Janela está no
+  // topo: um Modal/Dialogo aberto dentro dela (DOM descendente do `secaoRef`,
+  // já que nada aqui usa portal) tem seu próprio trap, e o dela sozinho deve
+  // valer enquanto ele estiver por cima.
   useEffect(() => {
-    if (!comFundo || !ativa) return;
+    if (!comFundo || !ativa) return undefined;
     const aoTeclar = (evento: KeyboardEvent) => {
       if (evento.key !== 'Tab') return;
+      if (!marca.current || !estaNoTopoDaPilha(marca.current)) return;
       const raiz = secaoRef.current;
       if (!raiz) return;
       const focaveis = [...raiz.querySelectorAll<HTMLElement>(SELETOR_FOCAVEL)];

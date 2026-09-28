@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { estaNoTopoDaPilha, registrarSobreposicao } from './pilha';
 
 /** Duracao da animacao de saida; precisa casar com `animate-*-out` do preset. */
 const EXIT_MS = 200;
@@ -15,12 +16,6 @@ const FOCUSABLE = [
 /** Fechar de dentro do conteudo (um botao no rodape, por exemplo) sem que o
  *  componente precise receber a funcao por prop em cada nivel. */
 const CloseContext = createContext<() => void>(() => {});
-
-/** As sobreposições abertas, da mais antiga à mais nova. Esc e Tab são só da
- *  que está por cima: a lupa aberta dentro de uma ficha fecha a lupa, e não a
- *  ficha inteira. */
-const abertas: symbol[] = [];
-const estaPorCima = (marca: symbol) => abertas[abertas.length - 1] === marca;
 
 export const OverlayCloseProvider = CloseContext.Provider;
 
@@ -55,15 +50,12 @@ export const useOverlay = ({ onClose, closeOnBackdrop = true }: OverlayOptions):
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [closing, setClosing] = useState(false);
   const closingRef = useRef(false);
-  const marca = useRef(Symbol('overlay'));
+  const marca = useRef<symbol | null>(null);
 
   useEffect(() => {
-    const minha = marca.current;
-    abertas.push(minha);
-    return () => {
-      const indice = abertas.lastIndexOf(minha);
-      if (indice >= 0) abertas.splice(indice, 1);
-    };
+    const { marca: minha, sair } = registrarSobreposicao();
+    marca.current = minha;
+    return sair;
   }, []);
 
   const requestClose = useCallback(() => {
@@ -88,7 +80,7 @@ export const useOverlay = ({ onClose, closeOnBackdrop = true }: OverlayOptions):
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (!estaPorCima(marca.current)) return;
+      if (!marca.current || !estaNoTopoDaPilha(marca.current)) return;
       const panel = panelRef.current;
       if (event.key === 'Escape') {
         event.stopPropagation();
