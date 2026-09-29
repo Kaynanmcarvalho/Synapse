@@ -12,7 +12,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObje
 import { createPortal } from 'react-dom';
 import { Celula, LinhaDaTabela, Tabela, type ColunaDaTabela } from '../Tabela';
 import { formatarData, formatarMoeda, hojeLocal } from '../analise';
-import { useEscParaFechar } from '../ui/useEscParaFechar';
+import { useEscParaFechar } from '../../../components/dialogo/useEscParaFechar';
 import { diferencaParaMedia, referenciasDoCliente } from './referencias';
 
 const COLUNAS: readonly ColunaDaTabela[] = [

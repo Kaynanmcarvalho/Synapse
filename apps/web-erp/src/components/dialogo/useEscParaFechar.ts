@@ -10,7 +10,12 @@ import { useEffect, useRef } from 'react';
  *  a GavetaDoCliente aberta e um Dialogo de decisao por cima — fechavam as
  *  duas com um Esc so. Agora registra na pilha global de sobreposicoes
  *  (`@synapse/ui`, a mesma que Modal/Drawer ja usavam) e so fecha quando
- *  esta realmente no topo dela. */
+ *  esta realmente no topo dela.
+ *
+ *  Fase 6.4: movido de `features/credit/ui` para cá — o hook nunca teve
+ *  nenhuma dependência do domínio de crédito (só `@synapse/ui`), só morava
+ *  ali por ter nascido junto do primeiro `Dialogo`. `features/credit/ui`
+ *  reexporta a partir daqui para não quebrar os consumidores existentes. */
 export const useEscParaFechar = (aoFechar: () => void, ativo = true): void => {
   const marca = useRef<symbol | null>(null);
 

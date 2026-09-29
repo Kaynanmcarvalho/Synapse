@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom';
 import { formatarDataHora, formatarDocumento, formatarMoeda } from '../analise';
 import { Situacao } from '../ui/Etiquetas';
 import { BOTAO_ESCURO, Dado, Dados } from '../ui/Superficies';
-import { useEscParaFechar } from '../ui/useEscParaFechar';
+import { useEscParaFechar } from '../../../components/dialogo/useEscParaFechar';
 
 /** Mesma lista de `Dialogo` (`ui/Superficies.tsx`) e da Janela
  *  (`components/janela/Janela.tsx`) — elementos alcançáveis por Tab. */
