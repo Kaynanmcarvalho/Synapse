@@ -30,6 +30,7 @@ import {
   Text,
   type TomDeStatus,
 } from '@synapse/sdl';
+import { Secao, ValoresDeLeitura } from '../../components/formulario/Formulario';
 import { devSignIn, isSignedIn } from '../../lib/dev-auth';
 import {
   createLot,
@@ -48,14 +49,6 @@ const LEVEL_LABEL: Record<ExpiryAlertLevel, string> = {
   D30: '30 dias',
   D15: '15 dias',
   EXPIRED: 'Vencido',
-};
-
-const LEVEL_TINT: Record<ExpiryAlertLevel, string> = {
-  D90: 'bg-blue-50 text-blue-700',
-  D60: 'bg-amber-50 text-amber-700',
-  D30: 'bg-orange-50 text-orange-700',
-  D15: 'bg-red-50 text-red-700',
-  EXPIRED: 'bg-slate-900 text-white',
 };
 
 /** Os 5 níveis do alerta de vencimento não têm 5 tons próprios no Status do
@@ -386,7 +379,18 @@ function QuickAdjustDrawer({
   );
 }
 
-function LotDetailDrawer({
+/** Gaveta de consulta — Fase 6.4, laboratório definitivo de Drawer. Era um
+ *  card escuro + grade de saldo + `dl` cru, cada um com sua própria paleta
+ *  Tailwind solta; a tabela ao lado (`LinhaDeVencimento`, acima) já usava
+ *  `Status`/`Text`/`font-data` do SDL havia fases. Agora a gaveta usa
+ *  exatamente o mesmo vocabulário — `TOM_DO_NIVEL`/`LEVEL_LABEL` são os
+ *  MESMOS que a linha da tabela usa, não uma segunda paleta — e `Secao`/
+ *  `ValoresDeLeitura` da Form Grammar (Fase 6) para as seções e os pares
+ *  rótulo/valor. Puramente consultivo: nenhum campo editável, nenhuma ação
+ *  nova — a versão antiga também não tinha nenhuma. A mecânica do Drawer
+ *  (`@synapse/ui`) não muda: pilha de sobreposições, foco preso e devolvido,
+ *  Esc só no topo — tudo isso já vinha de `useOverlay` (Fase 6.3). */
+export function LotDetailDrawer({
   alert,
   onClose,
 }: {
@@ -396,13 +400,19 @@ function LotDetailDrawer({
   const { lot, daysUntilExpiry, alertLevel } = alert;
   const [balance, setBalance] = useState<LotBalance | null>(null);
   const [loading, setLoading] = useState(true);
+  const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     setLoading(true);
+    setErro(null);
     getLotBalance(lot.branchId, lot.warehouseId, lot.productId)
       .then((result) => {
         if (active) setBalance(result);
+      })
+      .catch((cause: unknown) => {
+        if (active)
+          setErro(cause instanceof Error ? cause.message : 'Não foi possível ler o saldo');
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -419,59 +429,56 @@ function LotDetailDrawer({
       title={lot.productId}
       description={`Lote ${lot.id.slice(0, 8)}`}
     >
-      <div className="flex items-center justify-between rounded-2xl bg-slate-950 p-5 text-white">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Vencimento</p>
-          <p className="mt-1 text-lg font-semibold">
+      <div className="flex flex-col gap-5">
+        <Secao
+          titulo="Situação"
+          acao={
+            <Status tone={TOM_DO_NIVEL[alertLevel]} variant="chip">
+              {LEVEL_LABEL[alertLevel]}
+            </Status>
+          }
+        >
+          <Text
+            variant="dado"
+            {...(alertLevel === 'EXPIRED' ? { tone: 'perigo' as const } : {})}
+            className="text-heading-sm block font-semibold"
+          >
             {alertLevel === 'EXPIRED'
               ? `Vencido há ${Math.abs(daysUntilExpiry)} dias`
               : `Em ${daysUntilExpiry} dias`}
-          </p>
-        </div>
-        <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${LEVEL_TINT[alertLevel]}`}>
-          {LEVEL_LABEL[alertLevel]}
-        </span>
+          </Text>
+        </Secao>
+
+        <Secao titulo="Saldo" descricao="Físico, reservado e disponível para venda">
+          {loading ? (
+            <p role="status" className="text-body-sm text-stone flex items-center gap-2 py-1">
+              <Spinner /> Carregando saldo…
+            </p>
+          ) : erro ? (
+            <Text variant="corpo" tone="perigo" role="alert">
+              {erro}
+            </Text>
+          ) : balance ? (
+            <ValoresDeLeitura
+              itens={[
+                { rotulo: 'Físico', valor: balance.physical, dado: true },
+                { rotulo: 'Reservado', valor: balance.reserved, dado: true },
+                { rotulo: 'Disponível', valor: balance.available, dado: true },
+              ]}
+            />
+          ) : null}
+        </Secao>
+
+        <Secao titulo="Detalhes do lote">
+          <ValoresDeLeitura
+            itens={[
+              { rotulo: 'Fabricação', valor: lot.manufacturedAt },
+              { rotulo: 'Validade', valor: lot.expiresAt },
+              { rotulo: 'Quantidade inicial', valor: lot.initialQuantity, dado: true },
+            ]}
+          />
+        </Secao>
       </div>
-
-      {loading ? (
-        <div className="mt-6 flex justify-center">
-          <Spinner />
-        </div>
-      ) : (
-        balance && (
-          <div className="mt-6 grid grid-cols-3 gap-px overflow-hidden rounded-2xl bg-slate-100">
-            {(
-              [
-                ['Físico', balance.physical],
-                ['Reservado', balance.reserved],
-                ['Disponível', balance.available],
-              ] as const
-            ).map(([label, value]) => (
-              <div key={label} className="bg-white p-4">
-                <span className="block text-[10px] font-bold uppercase tracking-[0.14em] text-slate-400">
-                  {label}
-                </span>
-                <span className="mt-1 block text-xl font-bold text-slate-950">{value}</span>
-              </div>
-            ))}
-          </div>
-        )
-      )}
-
-      <dl className="mt-6 space-y-3 text-sm">
-        <div className="flex justify-between border-b border-slate-100 pb-3">
-          <dt className="text-slate-500">Fabricação</dt>
-          <dd className="font-semibold text-slate-800">{lot.manufacturedAt}</dd>
-        </div>
-        <div className="flex justify-between border-b border-slate-100 pb-3">
-          <dt className="text-slate-500">Validade</dt>
-          <dd className="font-semibold text-slate-800">{lot.expiresAt}</dd>
-        </div>
-        <div className="flex justify-between">
-          <dt className="text-slate-500">Quantidade inicial</dt>
-          <dd className="font-semibold text-slate-800">{lot.initialQuantity}</dd>
-        </div>
-      </dl>
     </Drawer>
   );
 }
