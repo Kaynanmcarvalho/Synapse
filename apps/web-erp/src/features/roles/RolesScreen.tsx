@@ -1,6 +1,7 @@
 /* eslint-disable max-lines, max-lines-per-function */
 import { PERMISSIONS, type Permission, type PermissionGrant } from '@synapse/types';
 import { useEffect, useId, useMemo, useState } from 'react';
+import { BOTAO_ALERTA, BOTAO_CLARO, Dialogo } from '../../components/dialogo/Dialogo';
 import {
   criarCargo,
   excluirCargo,
@@ -34,6 +35,41 @@ interface EstadoDoFormulario {
 }
 
 const vazio: EstadoDoFormulario = { cargo: null, nome: '', grants: [] };
+
+/** Piloto da Decision Grammar (Fase 6.4) — trocou `window.confirm` por este
+ *  Dialogo porque `remover` já era assíncrono e não tinha atalho de teclado
+ *  nem outra sobreposição concorrente: o caso mecanicamente mais seguro dos
+ *  nove confirms do app para provar o padrão pela primeira vez fora do
+ *  crédito. Título + explicação da consequência + Cancelar (BOTAO_CLARO) +
+ *  ação primária destrutiva (BOTAO_ALERTA) — mesma gramática de
+ *  `ConfirmarLiberacao`/`DialogoDeDecisao`, sem inventar nada novo. */
+function ConfirmarExclusaoDeCargo({
+  cargo,
+  aoConfirmar,
+  aoCancelar,
+}: {
+  readonly cargo: RoleView;
+  readonly aoConfirmar: () => void;
+  readonly aoCancelar: () => void;
+}) {
+  const titulo = `Excluir "${cargo.name}"?`;
+  return (
+    <Dialogo rotulo={titulo} aoFechar={aoCancelar}>
+      <h2 className="font-display text-heading-sm text-ink">{titulo}</h2>
+      <p className="text-body-sm text-mute mt-1">
+        Quem tiver este cargo perde essas permissões agora.
+      </p>
+      <div className="mt-5 flex justify-end gap-2">
+        <button type="button" onClick={aoCancelar} className={BOTAO_CLARO}>
+          Cancelar
+        </button>
+        <button type="button" data-autofoco onClick={aoConfirmar} className={BOTAO_ALERTA}>
+          Excluir cargo
+        </button>
+      </div>
+    </Dialogo>
+  );
+}
 
 function Cabecalho({ aoNovo }: { readonly aoNovo: () => void }) {
   return (
@@ -154,6 +190,7 @@ export function RolesScreen() {
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState<RoleView | null>(null);
   const nomeId = useId();
 
   const carregar = async () => {
@@ -229,9 +266,7 @@ export function RolesScreen() {
   };
 
   const remover = async (cargo: RoleView) => {
-    if (!window.confirm(`Excluir "${cargo.name}"? Quem tiver este cargo perde essas permissões.`)) {
-      return;
-    }
+    setConfirmandoExclusao(null);
     try {
       await excluirCargo(cargo.id);
       await carregar();
@@ -264,7 +299,7 @@ export function RolesScreen() {
         <ListaDeCargos
           cargos={cargos}
           aoAbrir={(cargo) => setForm({ cargo, nome: cargo.name, grants: cargo.permissions })}
-          aoExcluir={(cargo) => void remover(cargo)}
+          aoExcluir={(cargo) => setConfirmandoExclusao(cargo)}
         />
       ) : (
         <form
@@ -347,6 +382,14 @@ export function RolesScreen() {
             </button>
           </div>
         </form>
+      )}
+
+      {confirmandoExclusao && (
+        <ConfirmarExclusaoDeCargo
+          cargo={confirmandoExclusao}
+          aoConfirmar={() => void remover(confirmandoExclusao)}
+          aoCancelar={() => setConfirmandoExclusao(null)}
+        />
       )}
     </main>
   );
