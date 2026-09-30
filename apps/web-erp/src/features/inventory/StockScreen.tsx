@@ -32,6 +32,7 @@ import {
   ValoresDeLeitura,
 } from '../../components/formulario/Formulario';
 import { LARGURA_DE_CAMPO } from '../../components/formulario/larguras';
+import { Indicador } from '../../components/indicadores/Indicador';
 import { devSignIn, isSignedIn } from '../../lib/dev-auth';
 import {
   createLot,
@@ -493,42 +494,6 @@ export function LotDetailDrawer({
         </Secao>
       </div>
     </Drawer>
-  );
-}
-
-/** Faixa de indicadores — mesmos três números que a tela sempre teve (nenhum
- *  inventado), agora na gramática já comprovada em `SnapshotDoCliente`
- *  (crédito): `dl` com `divide-x`/hairline, número tabular grande, `apoio`
- *  discreto embaixo — nunca um card isolado com ícone dentro de círculo. A
- *  cor só aparece quando o número exige atenção (vencidos/críticos > 0). */
-function Indicador({
-  rotulo,
-  valor,
-  apoio,
-  atencao = false,
-}: {
-  readonly rotulo: string;
-  readonly valor: number;
-  readonly apoio: string;
-  readonly atencao?: boolean;
-}) {
-  return (
-    <div className="min-w-0 px-5 first:pl-0">
-      <Text variant="rotulo" as="dt">
-        {rotulo}
-      </Text>
-      <Text
-        variant="dado"
-        as="dd"
-        {...(atencao ? { tone: 'perigo' as const } : {})}
-        className="text-heading-md mt-1 block font-semibold"
-      >
-        {valor}
-      </Text>
-      <Text variant="legenda" as="dd" tone="sutil" className="mt-0.5 block">
-        {apoio}
-      </Text>
-    </div>
   );
 }
 
