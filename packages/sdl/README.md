@@ -519,54 +519,90 @@ existe. Critério de "não declarar por entusiasmo": são 3 domínios (crédito,
 cadastros) e 4 telas, não 2 — por isso sai de CANDIDATE para STABLE agora, e
 não antes.
 
-## Screen Composition Principles — CANDIDATE (Fase 7.1)
+## Screen Composition Principles — STABLE (Fase 7.2)
 
-Fase 7 redesenhou Estoque; Fase 7.1 redesenhou Boletos. As duas são o
-primeiro par de telas inteiras pensadas como composição (não só como
-inventário de componentes SDL), e a pergunta que a Fase 7.1 fez foi: o que
-realmente se repetiu entre elas, sem forçar as duas a ficarem iguais?
+Fase 7 redesenhou Estoque (consulta pura); Fase 7.1 redesenhou Boletos
+(emissão + consulta simultâneas); Fase 7.2 redesenhou o Dashboard (análise e
+apresentação de informação — nem consulta, nem emissão). São três problemas
+de tela genuinamente diferentes, não três variações do mesmo. A pergunta que
+guiou as três fases foi a mesma: o que realmente se repete, sem forçar as
+telas a ficarem iguais?
 
-**Repetiu de verdade:**
+**Repetiu de verdade, agora confirmado num terceiro domínio:**
 
 - **Header operacional compacto**: `Text variant="tituloTela"` + subtítulo
   em `corpoSecundario`, ações globais como `Button` alinhados à direita —
-  sem ícone decorativo, sem card em volta, sem saudação.
+  sem ícone decorativo, sem card em volta, sem saudação. O Dashboard segue
+  a régua exata de Estoque e Boletos.
 - **Três estados de dado explícitos, nunca dois**: carregando / erro /
-  vazio são três ramos de código diferentes, não uma inferência por
-  `dados.length === 0`. A Fase 7 corrigiu Estoque exatamente por faltar o
-  ramo de erro; a Fase 7.1 corrigiu Boletos por sobrepor o ramo de vazio ao
-  de erro. O sintoma é o mesmo: tratar "a busca falhou" como "não há nada".
-- **Linha antes de card**: regiões se separam por `Divider`/hairline, nunca
-  por uma segunda superfície com borda arredondada dentro da primeira.
-- **Overlays continuam com a mesma infraestrutura**: o `Dialogo` que a
-  Decision Grammar comprovou em Cargos (Fase 6.4) é o mesmo que a baixa
-  manual de Boletos usa agora — nenhuma tela reimplementa foco/Esc/pilha.
+  vazio são ramos de código diferentes, não uma inferência por
+  `dados.length === 0`. A Fase 7 corrigiu Estoque por faltar o ramo de
+  erro; a Fase 7.1 corrigiu Boletos por sobrepor vazio a erro; a Fase 7.2
+  foi além no Dashboard, que tem **quatro** ramos reais (`carregando` /
+  `erro` / `ready: false` do backend / `ready: true` sem indicador) porque
+  a API distingue "ainda não calculou" de "calculou e deu zero" — o
+  princípio não é "três ramos sempre", é "um ramo por estado real que o
+  backend expõe, nunca inferido".
+- **Linha antes de card**: regiões se separam por `Divider`/hairline
+  (`divide-x`/`divide-y`), nunca por uma segunda superfície com borda
+  arredondada dentro da primeira. A faixa de indicadores e a lista de
+  estoque do Dashboard usam a mesma gramática de hairline de Estoque.
 - **A fundação de tabela nunca muda por causa da composição em volta**:
-  `ExpiryTable` e `LinhaDoBoleto`/`DataGridCelula` saíram intocados dos dois
-  redesigns.
+  `ExpiryTable`, `LinhaDoBoleto`/`DataGridCelula` e a tabela comparativa do
+  Dashboard saíram intocadas dos três redesigns — só a legenda e o lugar na
+  composição mudam.
+- **Overlays, quando existem, usam sempre a mesma infraestrutura** — mas
+  isso só se prova em telas que têm overlay. O `Dialogo` que a Decision
+  Grammar comprovou em Cargos (Fase 6.4) é o mesmo que a baixa manual de
+  Boletos usa; o Dashboard não tem nenhuma ação destrutiva ou de criação,
+  então não tem overlay nenhum — e isso não é uma exceção ao princípio, é
+  a confirmação de que overlay é uma decisão por conteúdo (existe ação que
+  precisa de foco/Esc/pilha?), não um item obrigatório de checklist de
+  tela.
 
-**NÃO repetiu — e não devia:**
+**NÃO repetiu — e não devia, em nenhum dos três:**
 
-- Estoque ganhou busca + pílulas de filtro porque é uma tela de consulta
-  pura, com um universo de registros para localizar. Boletos **não**
-  ganhou busca — a auditoria da Fase 5.3 já dizia que a tabela original não
-  tinha filtro, e a Fase 7.1 confirmou que não havia dado ou necessidade
-  real que justificasse inventar um agora.
-- Estoque é uma coluna (uma tabela, um Drawer de detalhe). Boletos virou
-  duas colunas (emissão à esquerda, consulta à direita) porque tem dois
-  trabalhos genuinamente diferentes — copiar a coluna única de Estoque
-  teria empurrado a tabela de Boletos para fora do primeiro viewport.
-- Estoque tem faixa de indicadores (3 números reais, já existentes,
-  reformatados). Boletos não tem — não havia indicador real que valesse a
-  pena destacar, e a Fase 7.1 preferiu não inventar um só para ecoar
-  Estoque (ver "Não inventar indicadores", regra que vale para qualquer
-  tela futura).
+- Estoque ganhou busca + pílulas de filtro (client-side, sobre um universo
+  já carregado) porque é consulta pura. Boletos não ganhou busca — não
+  havia necessidade real. O Dashboard tem filtros, mas são de uma
+  **terceira natureza**: cada filtro dispara uma nova consulta ao backend
+  (`from`/`to`/`profile`/`branchId`/`sellerId` viram query string), porque
+  os números são agregados no servidor, não uma lista para filtrar no
+  cliente. Três telas, três relações diferentes entre filtro e dado —
+  nenhuma é "a forma certa", cada uma responde ao que o dado realmente é.
+- Estoque é uma coluna. Boletos é duas colunas (emissão + consulta lado a
+  lado). O Dashboard é uma coluna de **seções empilhadas** (resultados →
+  ranking → comparativo → estoque), a terceira forma de layout macro —
+  porque não há dois trabalhos simultâneos como em Boletos, nem um
+  par busca+tabela como em Estoque, e sim uma sequência de leitura do mais
+  agregado ao mais detalhado.
+- Estoque tem faixa de indicadores com 3 números já existentes. O Dashboard
+  também tem — mas o Dashboard foi além: precisou de um **gráfico**
+  (`RankingDeFiliais`, barras de proporção em CSS puro, sem biblioteca
+  nova) porque "quais filiais faturam mais" é uma pergunta real que uma
+  tabela de N linhas responde pior que uma lista ordenada com barra. Nem
+  Estoque nem Boletos precisaram disso — não é gramática obrigatória, é a
+  resposta à pergunta que aquele dado específico permite fazer.
 
-**Por que CANDIDATE, não STABLE**: são 2 telas. O critério já usado aqui
-(Window Foundation virou STABLE só na 4ª tela real) se aplica igual: mais
-uma tela real — que confirme os cinco pontos acima ou mostre onde eles
-não se sustentam — decide se isso vira STABLE ou se alguns desses pontos
-eram coincidência de só dois casos.
+**Por que STABLE agora**: são 3 telas, 3 domínios genuinamente diferentes
+(consulta / emissão+consulta / análise), o mesmo padrão que já elevou Window
+Foundation de CANDIDATE a STABLE (lá, 3 domínios e 4 telas). Os cinco pontos
+que se repetiram resistiram ao teste do terceiro caso — inclusive o ponto
+sobre overlays, que o Dashboard não usa e isso só reforça que é uma decisão
+condicional, não uma coincidência dos dois primeiros casos. Os pontos que
+não se repetiram (filtro client-side vs. server-side, uma coluna vs. duas
+vs. seções empilhadas, gráfico vs. sem gráfico) são exatamente onde o
+princípio diz para as telas divergirem: no que depende da natureza do dado.
+
+**O que isto NÃO é, e não deve virar**: não existe (nem deve ser criado) um
+`PageTemplate`, `PageBuilder`, `ScreenGrid` ou qualquer motor de composição
+de layout dirigido por configuração/JSON. "STABLE" aqui documenta como
+decidir a composição de uma tela nova — que estados tornar explícitos, quando
+reaproveitar overlay, quando um filtro é client-side ou dispara nova consulta,
+quando um indicador vira gráfico — não um esqueleto de componentes que toda
+tela deveria herdar ou instanciar. As três telas citadas têm três estruturas
+de composição visivelmente diferentes; é isso que está sendo declarado
+estável, não uma estrutura única.
 
 ## Migrando do que existe hoje
 
