@@ -3,34 +3,35 @@ import {
   AlertTriangle,
   ArrowDownCircle,
   ArrowUpCircle,
-  Boxes,
-  PackageX,
   Plus,
+  Search,
   Settings2,
-  ShieldAlert,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Drawer, Modal } from '@synapse/ui';
 import {
   Button,
-  Card,
-  CardHeader,
-  CardTitle,
-  cn,
-  Drawer,
-  Input,
-  Modal,
-  Spinner,
-} from '@synapse/ui';
-import {
   classesDaLinha,
+  cn,
   DataGridCabecalho,
   DataGridCelula,
+  Divider,
+  Field,
+  Input,
+  NumberInput,
+  Spinner,
   Status,
   SynapseSignal,
   Text,
   type TomDeStatus,
 } from '@synapse/sdl';
-import { Secao, ValoresDeLeitura } from '../../components/formulario/Formulario';
+import {
+  AreaDeTexto,
+  LinhaDeCampos,
+  Secao,
+  ValoresDeLeitura,
+} from '../../components/formulario/Formulario';
+import { LARGURA_DE_CAMPO } from '../../components/formulario/larguras';
 import { devSignIn, isSignedIn } from '../../lib/dev-auth';
 import {
   createLot,
@@ -87,10 +88,10 @@ function LoginGate({ onSignedIn }: { readonly onSignedIn: () => void }) {
 
   return (
     <main className="bg-canvas-light flex min-h-screen items-center justify-center p-8">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Entrar (emulador local)</CardTitle>
-        </CardHeader>
+      <div className="border-line-fina w-full max-w-sm rounded-2xl border p-5">
+        <Text variant="tituloCartao" className="mb-4 block">
+          Entrar (emulador local)
+        </Text>
         <div className="flex flex-col gap-3">
           <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="e-mail" />
           <Input
@@ -99,12 +100,16 @@ function LoginGate({ onSignedIn }: { readonly onSignedIn: () => void }) {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="senha"
           />
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <Button onClick={submit} disabled={loading}>
-            {loading ? <Spinner /> : 'Entrar'}
+          {error && (
+            <Text variant="corpo" tone="perigo" role="alert">
+              {error}
+            </Text>
+          )}
+          <Button variant="primary" onClick={submit} loading={loading}>
+            Entrar
           </Button>
         </div>
-      </Card>
+      </div>
     </main>
   );
 }
@@ -148,69 +153,69 @@ function NewLotModal({
       description="Registra a entrada de um lote rastreável, com fabricação e validade para o FEFO."
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="quiet" onClick={onClose}>
             Cancelar
           </Button>
-          <Button onClick={submit} disabled={saving || !form.productId || !form.quantity}>
-            {saving ? <Spinner /> : 'Cadastrar lote'}
+          <Button
+            variant="primary"
+            onClick={submit}
+            loading={saving}
+            disabled={!form.productId || !form.quantity}
+          >
+            Cadastrar lote
           </Button>
         </>
       }
     >
-      <div className="grid grid-cols-2 gap-3">
-        <Input
-          placeholder="Filial"
-          value={form.branchId}
-          onChange={(e) => setForm({ ...form, branchId: e.target.value })}
-        />
-        <Input
-          placeholder="Depósito"
-          value={form.warehouseId}
-          onChange={(e) => setForm({ ...form, warehouseId: e.target.value })}
-        />
-        <Input
-          className="col-span-2"
-          placeholder="Id do produto"
-          value={form.productId}
-          onChange={(e) => setForm({ ...form, productId: e.target.value })}
-        />
-        <div>
-          <label
-            htmlFor="new-lot-manufactured-at"
-            className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500"
-          >
-            Fabricação
-          </label>
-          <Input
-            id="new-lot-manufactured-at"
-            type="date"
-            value={form.manufacturedAt}
-            onChange={(e) => setForm({ ...form, manufacturedAt: e.target.value })}
-          />
-        </div>
-        <div>
-          <label
-            htmlFor="new-lot-expires-at"
-            className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500"
-          >
-            Validade
-          </label>
-          <Input
-            id="new-lot-expires-at"
-            type="date"
-            value={form.expiresAt}
-            onChange={(e) => setForm({ ...form, expiresAt: e.target.value })}
-          />
-        </div>
-        <Input
-          className="col-span-2"
-          type="number"
-          placeholder="Quantidade"
-          value={form.quantity}
-          onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-        />
+      <div className="flex flex-col gap-3">
+        <LinhaDeCampos>
+          <Field label="Filial" className={LARGURA_DE_CAMPO.curto}>
+            <Input
+              value={form.branchId}
+              onChange={(e) => setForm({ ...form, branchId: e.target.value })}
+            />
+          </Field>
+          <Field label="Depósito" className={LARGURA_DE_CAMPO.curto}>
+            <Input
+              value={form.warehouseId}
+              onChange={(e) => setForm({ ...form, warehouseId: e.target.value })}
+            />
+          </Field>
+          <Field label="Id do produto" className={LARGURA_DE_CAMPO.resto}>
+            <Input
+              value={form.productId}
+              onChange={(e) => setForm({ ...form, productId: e.target.value })}
+            />
+          </Field>
+        </LinhaDeCampos>
+        <LinhaDeCampos>
+          <Field label="Fabricação" className={LARGURA_DE_CAMPO.curto}>
+            <Input
+              type="date"
+              value={form.manufacturedAt}
+              onChange={(e) => setForm({ ...form, manufacturedAt: e.target.value })}
+            />
+          </Field>
+          <Field label="Validade" className={LARGURA_DE_CAMPO.curto}>
+            <Input
+              type="date"
+              value={form.expiresAt}
+              onChange={(e) => setForm({ ...form, expiresAt: e.target.value })}
+            />
+          </Field>
+          <Field label="Quantidade" className={LARGURA_DE_CAMPO.codigo}>
+            <NumberInput
+              value={form.quantity}
+              onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+            />
+          </Field>
+        </LinhaDeCampos>
+        {error && (
+          <Text variant="corpo" tone="perigo" role="alert">
+            {error}
+          </Text>
+        )}
       </div>
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
     </Modal>
   );
 }
@@ -294,11 +299,11 @@ function QuickAdjustDrawer({
       description="Fora do fluxo de venda ou transferência — cada ajuste fica registrado com motivo e responsável."
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="quiet" onClick={onClose}>
             Cancelar
           </Button>
-          <Button onClick={submit} disabled={saving || invalid}>
-            {saving ? <Spinner /> : 'Confirmar movimento'}
+          <Button variant="primary" onClick={submit} loading={saving} disabled={invalid}>
+            Confirmar movimento
           </Button>
         </>
       }
@@ -312,69 +317,77 @@ function QuickAdjustDrawer({
               type="button"
               onClick={() => setKind(option.value)}
               className={cn(
-                'flex flex-col items-center gap-2 rounded-xl border p-3 text-center transition',
-                selected
-                  ? 'border-blue-500 bg-blue-50/70'
-                  : 'border-slate-200 hover:border-slate-300',
+                'rounded-controle border-line-fina duration-rapido flex flex-col items-center gap-2 border p-3 text-center transition-colors',
+                selected ? 'border-primary bg-primary/5' : 'hover:border-faint',
               )}
             >
               <option.icon size={20} className={option.tint} />
-              <span className="text-xs font-bold text-slate-800">{option.label}</span>
+              <Text variant="rotulo" as="span" className="text-ink font-semibold">
+                {option.label}
+              </Text>
             </button>
           );
         })}
       </div>
-      <p className="mt-2 text-xs leading-5 text-slate-500">
+      <Text variant="corpoSecundario" className="mt-2 block">
         {KIND_OPTIONS.find((option) => option.value === kind)?.description}
-      </p>
+      </Text>
 
-      <div className="mt-5 grid grid-cols-2 gap-3">
-        <Input
-          placeholder="Filial"
-          value={form.branchId}
-          onChange={(e) => setForm({ ...form, branchId: e.target.value })}
-        />
-        <Input
-          placeholder="Depósito"
-          value={form.warehouseId}
-          onChange={(e) => setForm({ ...form, warehouseId: e.target.value })}
-        />
-        <Input
-          className="col-span-2"
-          placeholder="Id do produto"
-          value={form.productId}
-          onChange={(e) => setForm({ ...form, productId: e.target.value })}
-        />
-        <Input
-          type="number"
-          placeholder="Quantidade"
-          value={form.quantity}
-          onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-        />
-        <label className="flex items-center gap-2 text-xs font-semibold text-slate-600">
+      <div className="mt-5 flex flex-col gap-3">
+        <LinhaDeCampos>
+          <Field label="Filial" className={LARGURA_DE_CAMPO.curto}>
+            <Input
+              value={form.branchId}
+              onChange={(e) => setForm({ ...form, branchId: e.target.value })}
+            />
+          </Field>
+          <Field label="Depósito" className={LARGURA_DE_CAMPO.curto}>
+            <Input
+              value={form.warehouseId}
+              onChange={(e) => setForm({ ...form, warehouseId: e.target.value })}
+            />
+          </Field>
+          <Field label="Id do produto" className={LARGURA_DE_CAMPO.resto}>
+            <Input
+              value={form.productId}
+              onChange={(e) => setForm({ ...form, productId: e.target.value })}
+            />
+          </Field>
+          <Field label="Quantidade" className={LARGURA_DE_CAMPO.codigo}>
+            <NumberInput
+              value={form.quantity}
+              onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+            />
+          </Field>
+        </LinhaDeCampos>
+
+        <label className="flex items-center gap-2">
           <input
             type="checkbox"
             checked={allowNegative}
             onChange={(e) => setAllowNegative(e.target.checked)}
-            className="h-4 w-4 rounded border-slate-300"
+            className="border-line-fina text-primary h-4 w-4 rounded"
           />
-          Permitir saldo negativo
+          <Text variant="corpo" as="span">
+            Permitir saldo negativo
+          </Text>
         </label>
-      </div>
 
-      <label className="mt-3 block">
-        <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500">
-          Motivo
-        </span>
-        <textarea
-          rows={2}
-          value={form.reason}
-          onChange={(e) => setForm({ ...form, reason: e.target.value })}
-          placeholder="Ex.: avaria no transporte, contagem cega, doação"
-          className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
-        />
-      </label>
-      {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
+        <Field label="Motivo">
+          <AreaDeTexto
+            rows={2}
+            value={form.reason}
+            onChange={(e) => setForm({ ...form, reason: e.target.value })}
+            placeholder="Ex.: avaria no transporte, contagem cega, doação"
+          />
+        </Field>
+
+        {error && (
+          <Text variant="corpo" tone="perigo" role="alert">
+            {error}
+          </Text>
+        )}
+      </div>
     </Drawer>
   );
 }
@@ -483,6 +496,42 @@ export function LotDetailDrawer({
   );
 }
 
+/** Faixa de indicadores — mesmos três números que a tela sempre teve (nenhum
+ *  inventado), agora na gramática já comprovada em `SnapshotDoCliente`
+ *  (crédito): `dl` com `divide-x`/hairline, número tabular grande, `apoio`
+ *  discreto embaixo — nunca um card isolado com ícone dentro de círculo. A
+ *  cor só aparece quando o número exige atenção (vencidos/críticos > 0). */
+function Indicador({
+  rotulo,
+  valor,
+  apoio,
+  atencao = false,
+}: {
+  readonly rotulo: string;
+  readonly valor: number;
+  readonly apoio: string;
+  readonly atencao?: boolean;
+}) {
+  return (
+    <div className="min-w-0 px-5 first:pl-0">
+      <Text variant="rotulo" as="dt">
+        {rotulo}
+      </Text>
+      <Text
+        variant="dado"
+        as="dd"
+        {...(atencao ? { tone: 'perigo' as const } : {})}
+        className="text-heading-md mt-1 block font-semibold"
+      >
+        {valor}
+      </Text>
+      <Text variant="legenda" as="dd" tone="sutil" className="mt-0.5 block">
+        {apoio}
+      </Text>
+    </div>
+  );
+}
+
 function AlertSummary({
   alerts,
   className,
@@ -494,50 +543,22 @@ function AlertSummary({
   const critical = alerts.filter((a) => a.alertLevel === 'D15').length;
   const total = alerts.length;
 
-  const tiles = [
-    {
-      label: 'Lotes monitorados',
-      value: total,
-      detail: 'Janela de 90 dias',
-      icon: Boxes,
-      tint: 'bg-blue-50 text-blue-600',
-    },
-    {
-      label: 'Vencidos',
-      value: expired,
-      detail: 'Requer baixa ou descarte',
-      icon: PackageX,
-      tint: 'bg-slate-900 text-white',
-    },
-    {
-      label: 'Críticos (≤15 dias)',
-      value: critical,
-      detail: 'Priorizar saída FEFO',
-      icon: ShieldAlert,
-      tint: 'bg-red-50 text-red-600',
-    },
-  ];
-
   return (
-    <section className={cn('grid gap-4 sm:grid-cols-3', className)}>
-      {tiles.map((tile) => (
-        <article
-          key={tile.label}
-          className="border-hairline-light bg-canvas-light rounded-2xl border p-5"
-        >
-          <div className="flex items-start justify-between">
-            <p className="text-xs font-semibold text-slate-500">{tile.label}</p>
-            <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${tile.tint}`}>
-              <tile.icon size={19} />
-            </span>
-          </div>
-          <strong className="mt-5 block text-2xl font-bold tracking-tight text-slate-950">
-            {tile.value}
-          </strong>
-          <p className="mt-3 text-xs text-slate-400">{tile.detail}</p>
-        </article>
-      ))}
-    </section>
+    <dl className={cn('divide-hairline-light flex flex-wrap divide-x', className)}>
+      <Indicador rotulo="Lotes monitorados" valor={total} apoio="Janela de 90 dias" />
+      <Indicador
+        rotulo="Vencidos"
+        valor={expired}
+        apoio="Requer baixa ou descarte"
+        atencao={expired > 0}
+      />
+      <Indicador
+        rotulo="Críticos (≤15 dias)"
+        valor={critical}
+        apoio="Priorizar saída FEFO"
+        atencao={critical > 0}
+      />
+    </dl>
   );
 }
 
@@ -641,17 +662,110 @@ export function ExpiryTable({
 
 type StockModal = 'none' | 'new-lot' | 'adjust';
 
+/** Nível de alerta ou "todos" — o filtro de situação da toolbar. Reaproveita
+ *  exatamente os mesmos `alertLevel` que a tabela já calcula; nenhuma
+ *  situação nova é inventada aqui. */
+type FiltroDeNivel = 'todos' | ExpiryAlertLevel;
+
+const NIVEIS: readonly FiltroDeNivel[] = ['todos', 'D90', 'D60', 'D30', 'D15', 'EXPIRED'];
+
+const combina = (alert: ExpiringLot, busca: string): boolean => {
+  if (!busca) return true;
+  const alvo =
+    `${alert.lot.productId} ${alert.lot.branchId} ${alert.lot.warehouseId}`.toLowerCase();
+  return alvo.includes(busca);
+};
+
+/** Busca por texto + pílulas de nível — mesma gramática de `FiltrosDaFila`
+ *  (fila de crédito): ícone de lupa dentro do campo, pílulas com contagem
+ *  real, "Limpar" quando há algo a limpar. Tudo client-side sobre o que já
+ *  foi buscado — `listExpiryAlerts` não tem parâmetro de filtro na API, e
+ *  esta fase não mexe em integração com API. */
+function FerramentasDeLocalizacao({
+  busca,
+  aoBuscar,
+  nivel,
+  aoTrocarNivel,
+  contagem,
+}: {
+  readonly busca: string;
+  readonly aoBuscar: (valor: string) => void;
+  readonly nivel: FiltroDeNivel;
+  readonly aoTrocarNivel: (nivel: FiltroDeNivel) => void;
+  readonly contagem: (nivel: FiltroDeNivel) => number;
+}) {
+  const podeLimpar = busca.trim() !== '' || nivel !== 'todos';
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <div className="relative min-w-[220px] flex-1 sm:max-w-xs">
+        <Search
+          size={15}
+          aria-hidden="true"
+          className="text-ink-sutil pointer-events-none absolute left-3 top-1/2 -translate-y-1/2"
+        />
+        <Input
+          value={busca}
+          onChange={(e) => aoBuscar(e.target.value)}
+          placeholder="Produto, filial ou depósito"
+          aria-label="Localizar lote"
+          className="w-full pl-9"
+        />
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {NIVEIS.map((opcao) => {
+          const ativo = nivel === opcao;
+          return (
+            <button
+              key={opcao}
+              type="button"
+              onClick={() => aoTrocarNivel(opcao)}
+              aria-pressed={ativo}
+              className={cn(
+                'text-caption rounded-controle duration-rapido inline-flex items-center gap-1.5 border px-3 py-1 transition-colors',
+                ativo
+                  ? 'border-primary bg-primary text-primary-on'
+                  : 'border-hairline-light text-charcoal hover:bg-surface-hover',
+              )}
+            >
+              {opcao === 'todos' ? 'Todos' : LEVEL_LABEL[opcao]}
+              <span className={ativo ? 'text-primary-on/70' : 'text-stone'}>{contagem(opcao)}</span>
+            </button>
+          );
+        })}
+        {podeLimpar && (
+          <Button
+            variant="quiet"
+            density="compacta"
+            onClick={() => {
+              aoBuscar('');
+              aoTrocarNivel('todos');
+            }}
+          >
+            Limpar
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function StockScreen() {
   const [signedIn, setSignedIn] = useState(false);
   const [alerts, setAlerts] = useState<ExpiringLot[]>([]);
   const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
   const [modal, setModal] = useState<StockModal>('none');
   const [selected, setSelected] = useState<ExpiringLot | null>(null);
+  const [busca, setBusca] = useState('');
+  const [nivel, setNivel] = useState<FiltroDeNivel>('todos');
 
   const refresh = async () => {
     setLoading(true);
+    setErro(null);
     try {
       setAlerts(await listExpiryAlerts());
+    } catch (cause) {
+      setErro(cause instanceof Error ? cause.message : 'Não foi possível ler os alertas');
     } finally {
       setLoading(false);
     }
@@ -662,58 +776,74 @@ export function StockScreen() {
     if (signedIn) void refresh();
   }, [signedIn]);
 
+  const buscaNormalizada = busca.trim().toLowerCase();
+  const porBusca = useMemo(
+    () => alerts.filter((alert) => combina(alert, buscaNormalizada)),
+    [alerts, buscaNormalizada],
+  );
+  const visiveis = useMemo(
+    () => (nivel === 'todos' ? porBusca : porBusca.filter((a) => a.alertLevel === nivel)),
+    [porBusca, nivel],
+  );
+  const contagemPorNivel = (opcao: FiltroDeNivel) =>
+    opcao === 'todos' ? porBusca.length : porBusca.filter((a) => a.alertLevel === opcao).length;
+
   if (!signedIn) return <LoginGate onSignedIn={() => setSignedIn(true)} />;
 
   return (
-    <main className="bg-canvas-light relative min-h-screen overflow-hidden text-slate-950">
-      <div className="relative mx-auto max-w-6xl px-5 py-8 sm:px-8 lg:px-10 lg:py-10">
-        <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+    <main className="bg-canvas-light relative min-h-screen text-slate-950">
+      <div className="relative mx-auto flex max-w-[1800px] flex-col gap-5 px-5 py-6 sm:px-8 lg:px-10">
+        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.18em] text-blue-600">
-              <span className="h-1.5 w-1.5 rounded-full bg-blue-600" /> Controle de estoque
+            <div className="text-caption text-primary flex items-center gap-2 font-bold uppercase tracking-[0.14em]">
+              <span className="bg-primary h-1.5 w-1.5 rounded-full" /> Controle de estoque
             </div>
-            <h1 className="mt-3 text-3xl font-bold tracking-[-0.035em] text-slate-950 sm:text-4xl">
+            <Text variant="tituloTela" className="mt-1.5 block">
               Estoque
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
+            </Text>
+            <Text variant="corpoSecundario" className="mt-1 block max-w-2xl">
               Lotes, validade e FEFO (§8) — a base do PDV e da separação.
-            </p>
+            </Text>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setModal('adjust')}
-              className="flex h-12 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
-            >
-              <Settings2 size={17} /> Ajuste rápido
-            </button>
-            <button
-              type="button"
-              onClick={() => setModal('new-lot')}
-              className="flex h-12 items-center justify-center gap-2 rounded-xl bg-slate-950 px-5 text-sm font-bold text-white shadow-xl shadow-slate-950/15 transition hover:-translate-y-0.5 hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
-            >
-              <Plus size={17} /> Novo lote
-            </button>
+            <Button variant="secondary" onClick={() => setModal('adjust')}>
+              <Settings2 size={16} aria-hidden="true" /> Ajuste rápido
+            </Button>
+            <Button variant="primary" onClick={() => setModal('new-lot')}>
+              <Plus size={16} aria-hidden="true" /> Novo lote
+            </Button>
           </div>
         </header>
 
-        <AlertSummary alerts={alerts} className="mt-8" />
+        <AlertSummary alerts={alerts} />
+        <Divider />
 
-        <section className="border-hairline-light bg-canvas-light mt-5 overflow-hidden rounded-3xl border">
-          <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5">
-            <div>
-              <h2 className="font-bold text-slate-950">Produtos próximos do vencimento</h2>
-              <p className="mt-1 text-xs text-slate-500">
-                Janela de alerta de 90 dias, priorizando FEFO — clique num lote para ver o detalhe
-              </p>
-            </div>
+        <FerramentasDeLocalizacao
+          busca={busca}
+          aoBuscar={setBusca}
+          nivel={nivel}
+          aoTrocarNivel={setNivel}
+          contagem={contagemPorNivel}
+        />
+
+        <section>
+          <div className="mb-2 flex items-baseline justify-between gap-3">
+            <Text variant="tituloSecao">Produtos próximos do vencimento</Text>
+            <Text variant="legenda" tone="sutil">
+              Janela de 90 dias, priorizando FEFO
+              {visiveis.length !== alerts.length ? ` · ${visiveis.length} de ${alerts.length}` : ''}
+            </Text>
           </div>
           {loading ? (
             <div className="flex justify-center py-14">
               <Spinner />
             </div>
+          ) : erro ? (
+            <Text variant="corpo" tone="perigo" role="alert" className="block py-10 text-center">
+              {erro}
+            </Text>
           ) : (
-            <ExpiryTable alerts={alerts} onSelect={setSelected} />
+            <ExpiryTable alerts={visiveis} onSelect={setSelected} />
           )}
         </section>
       </div>
