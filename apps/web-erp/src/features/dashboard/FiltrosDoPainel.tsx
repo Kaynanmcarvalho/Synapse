@@ -2,6 +2,28 @@ import { Button, Field, Input, Select } from '@synapse/sdl';
 import { LinhaDeCampos } from '../../components/formulario/Formulario';
 import { LARGURA_DE_CAMPO } from '../../components/formulario/larguras';
 
+function CampoData({
+  label,
+  value,
+  onChange,
+}: {
+  readonly label: string;
+  readonly value: string;
+  readonly onChange: (v: string) => void;
+}) {
+  return (
+    <Field label={label} className={LARGURA_DE_CAMPO.codigo}>
+      <Input
+        type="date"
+        required
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="font-data"
+      />
+    </Field>
+  );
+}
+
 /** Formulário de filtros — extraído do corpo de `DashboardScreen` só para
  *  ficar sob o limite de linhas/complexidade por função; nenhum estado ou
  *  comportamento muda, é a mesma `LinhaDeCampos` de sempre. */
@@ -48,24 +70,8 @@ export function FiltrosDoPainel({
             <option value="seller">Minhas vendas</option>
           </Select>
         </Field>
-        <Field label="De" className={LARGURA_DE_CAMPO.codigo}>
-          <Input
-            type="date"
-            required
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            className="font-data"
-          />
-        </Field>
-        <Field label="Até" className={LARGURA_DE_CAMPO.codigo}>
-          <Input
-            type="date"
-            required
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            className="font-data"
-          />
-        </Field>
+        <CampoData label="De" value={from} onChange={setFrom} />
+        <CampoData label="Até" value={to} onChange={setTo} />
         <Field label="Filial" className={LARGURA_DE_CAMPO.curto}>
           <Input
             value={branchId}

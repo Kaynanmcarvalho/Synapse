@@ -6,6 +6,41 @@ import { formatarData, formatarMoeda } from '../customers/formato';
 import type { Dashboard } from './dashboard.types';
 import { RankingDeFiliais } from './RankingDeFiliais';
 
+/** Erro / `ready: false` do backend / carregando — três ramos explícitos,
+ *  nunca inferidos por ausência de dado. Isolado só para manter
+ *  `DashboardScreen` sob o limite de linhas por função. */
+export function EstadoDaConsulta({
+  error,
+  data,
+  loading,
+}: {
+  readonly error: string;
+  readonly data: Dashboard | null;
+  readonly loading: boolean;
+}) {
+  return (
+    <>
+      {error && (
+        <Text variant="corpo" tone="perigo" role="alert" className="block">
+          {error}
+        </Text>
+      )}
+      {data && !data.ready && (
+        <Text variant="corpo" tone="apoio" role="status" className="block">
+          {data.message}
+        </Text>
+      )}
+      {loading && (
+        <div className="flex justify-center py-14">
+          <Text variant="corpo" role="status" tone="sutil">
+            Carregando…
+          </Text>
+        </div>
+      )}
+    </>
+  );
+}
+
 /** Faixa de indicadores do período + Meta mensal (só perfil vendedor). */
 function ResultadosDoPeriodo({
   cards,

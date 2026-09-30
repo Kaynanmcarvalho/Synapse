@@ -1,7 +1,7 @@
 import { Divider, Text } from '@synapse/sdl';
 import { useEffect, useState } from 'react';
 import { apiRequest } from '../../lib/dev-auth';
-import { ResultadosDaConsulta } from './DashboardSecoes';
+import { EstadoDaConsulta, ResultadosDaConsulta } from './DashboardSecoes';
 import type { Dashboard } from './dashboard.types';
 import { montarCards } from './dashboard.util';
 import { FiltrosDoPainel } from './FiltrosDoPainel';
@@ -60,24 +60,7 @@ export function DashboardScreen() {
       />
       <Divider />
 
-      {error && (
-        <Text variant="corpo" tone="perigo" role="alert" className="block">
-          {error}
-        </Text>
-      )}
-      {data && !data.ready && (
-        <Text variant="corpo" tone="apoio" role="status" className="block">
-          {data.message}
-        </Text>
-      )}
-
-      {loading && (
-        <div className="flex justify-center py-14">
-          <Text variant="corpo" role="status" tone="sutil">
-            Carregando…
-          </Text>
-        </div>
-      )}
+      <EstadoDaConsulta error={error} data={data} loading={loading} />
 
       {!loading && data?.ready && (
         <ResultadosDaConsulta
