@@ -519,6 +519,55 @@ existe. Critério de "não declarar por entusiasmo": são 3 domínios (crédito,
 cadastros) e 4 telas, não 2 — por isso sai de CANDIDATE para STABLE agora, e
 não antes.
 
+## Screen Composition Principles — CANDIDATE (Fase 7.1)
+
+Fase 7 redesenhou Estoque; Fase 7.1 redesenhou Boletos. As duas são o
+primeiro par de telas inteiras pensadas como composição (não só como
+inventário de componentes SDL), e a pergunta que a Fase 7.1 fez foi: o que
+realmente se repetiu entre elas, sem forçar as duas a ficarem iguais?
+
+**Repetiu de verdade:**
+
+- **Header operacional compacto**: `Text variant="tituloTela"` + subtítulo
+  em `corpoSecundario`, ações globais como `Button` alinhados à direita —
+  sem ícone decorativo, sem card em volta, sem saudação.
+- **Três estados de dado explícitos, nunca dois**: carregando / erro /
+  vazio são três ramos de código diferentes, não uma inferência por
+  `dados.length === 0`. A Fase 7 corrigiu Estoque exatamente por faltar o
+  ramo de erro; a Fase 7.1 corrigiu Boletos por sobrepor o ramo de vazio ao
+  de erro. O sintoma é o mesmo: tratar "a busca falhou" como "não há nada".
+- **Linha antes de card**: regiões se separam por `Divider`/hairline, nunca
+  por uma segunda superfície com borda arredondada dentro da primeira.
+- **Overlays continuam com a mesma infraestrutura**: o `Dialogo` que a
+  Decision Grammar comprovou em Cargos (Fase 6.4) é o mesmo que a baixa
+  manual de Boletos usa agora — nenhuma tela reimplementa foco/Esc/pilha.
+- **A fundação de tabela nunca muda por causa da composição em volta**:
+  `ExpiryTable` e `LinhaDoBoleto`/`DataGridCelula` saíram intocados dos dois
+  redesigns.
+
+**NÃO repetiu — e não devia:**
+
+- Estoque ganhou busca + pílulas de filtro porque é uma tela de consulta
+  pura, com um universo de registros para localizar. Boletos **não**
+  ganhou busca — a auditoria da Fase 5.3 já dizia que a tabela original não
+  tinha filtro, e a Fase 7.1 confirmou que não havia dado ou necessidade
+  real que justificasse inventar um agora.
+- Estoque é uma coluna (uma tabela, um Drawer de detalhe). Boletos virou
+  duas colunas (emissão à esquerda, consulta à direita) porque tem dois
+  trabalhos genuinamente diferentes — copiar a coluna única de Estoque
+  teria empurrado a tabela de Boletos para fora do primeiro viewport.
+- Estoque tem faixa de indicadores (3 números reais, já existentes,
+  reformatados). Boletos não tem — não havia indicador real que valesse a
+  pena destacar, e a Fase 7.1 preferiu não inventar um só para ecoar
+  Estoque (ver "Não inventar indicadores", regra que vale para qualquer
+  tela futura).
+
+**Por que CANDIDATE, não STABLE**: são 2 telas. O critério já usado aqui
+(Window Foundation virou STABLE só na 4ª tela real) se aplica igual: mais
+uma tela real — que confirme os cinco pontos acima ou mostre onde eles
+não se sustentam — decide se isso vira STABLE ou se alguns desses pontos
+eram coincidência de só dois casos.
+
 ## Migrando do que existe hoje
 
 | Legado                                   | Vai virar                  | Quando            |
