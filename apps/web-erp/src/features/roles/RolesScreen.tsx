@@ -42,7 +42,14 @@ const vazio: EstadoDoFormulario = { cargo: null, nome: '', grants: [] };
  *  nove confirms do app para provar o padrão pela primeira vez fora do
  *  crédito. Título + explicação da consequência + Cancelar (BOTAO_CLARO) +
  *  ação primária destrutiva (BOTAO_ALERTA) — mesma gramática de
- *  `ConfirmarLiberacao`/`DialogoDeDecisao`, sem inventar nada novo. */
+ *  `ConfirmarLiberacao`/`DialogoDeDecisao`.
+ *
+ *  Fase 7 (§1): `data-autofoco` saiu de "Excluir cargo" e foi para
+ *  "Cancelar" — o precedente em `ConfirmarLiberacao`/`DialogoDeDecisao`
+ *  focava a ação primária mesmo quando destrutiva, mas um Enter acidental
+ *  logo depois de abrir o diálogo não pode excluir nada. Isso diverge do
+ *  precedente só para o marcador destrutivo; não mexe no resto da
+ *  gramática. */
 function ConfirmarExclusaoDeCargo({
   cargo,
   aoConfirmar,
@@ -60,10 +67,10 @@ function ConfirmarExclusaoDeCargo({
         Quem tiver este cargo perde essas permissões agora.
       </p>
       <div className="mt-5 flex justify-end gap-2">
-        <button type="button" onClick={aoCancelar} className={BOTAO_CLARO}>
+        <button type="button" data-autofoco onClick={aoCancelar} className={BOTAO_CLARO}>
           Cancelar
         </button>
-        <button type="button" data-autofoco onClick={aoConfirmar} className={BOTAO_ALERTA}>
+        <button type="button" onClick={aoConfirmar} className={BOTAO_ALERTA}>
           Excluir cargo
         </button>
       </div>

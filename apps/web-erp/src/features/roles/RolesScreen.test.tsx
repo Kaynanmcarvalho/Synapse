@@ -73,6 +73,22 @@ describe('RolesScreen — confirmação de exclusão de cargo', () => {
     expect(api.excluirCargo).not.toHaveBeenCalled();
   });
 
+  it('Fase 7 §1 — foco inicial fica em "Cancelar", não na ação destrutiva', async () => {
+    // jsdom não simula o comportamento nativo do navegador de "Enter aciona
+    // o botão focado" — por isso o teste trava o que é realmente testável
+    // aqui: QUAL botão recebe o foco inicial. Num navegador real, um botão
+    // focado responde a Enter como um clique; garantir que o foco pousa em
+    // "Cancelar" é o que impede um Enter acidental de excluir o cargo.
+    montar(<RolesScreen />);
+    await esperar();
+
+    clicar(botao('Excluir'));
+    await esperar();
+
+    expect(document.activeElement?.textContent?.trim()).toBe('Cancelar');
+    expect(document.activeElement).not.toBe(botao('Excluir cargo'));
+  });
+
   it('Cancelar fecha o Dialogo e não chama excluirCargo', async () => {
     montar(<RolesScreen />);
     await esperar();
