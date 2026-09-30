@@ -17,6 +17,7 @@ import {
 import { Plus, RotateCw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { CelulaDeDinheiro } from '../../components/datagrid/CelulaDeDinheiro';
+import { Dialogo } from '../../components/dialogo/Dialogo';
 import {
   Abas,
   AreaDeTexto,
@@ -180,7 +181,11 @@ function NewOrderForm({
   return (
     <Secao titulo="Novo pedido de compra" descricao="Itens e quantidades; o preço vem da cotação.">
       <Field label="Depósito" className={LARGURA_DE_CAMPO.curto}>
-        <Input value={warehouseId} onChange={(event) => setWarehouseId(event.target.value)} />
+        <Input
+          data-autofoco
+          value={warehouseId}
+          onChange={(event) => setWarehouseId(event.target.value)}
+        />
       </Field>
       <div className="mt-4 flex gap-3">
         <RotuloDeColuna className="flex-1">Produto</RotuloDeColuna>
@@ -259,6 +264,102 @@ function ItensDoPedido({ order }: { readonly order: PurchaseOrder }) {
             />
           </tr>
         ))}
+      </tbody>
+    </table>
+  );
+}
+
+/** Itens + conferência de recebimento numa tabela só — Fase 7.3 §3: antes a
+ *  tela repetia a lista inteira de produtos duas vezes em sequência (a
+ *  seção "Itens" e depois "Conferência manual"), dobrando a rolagem em
+ *  pedidos com muitos itens sem acrescentar informação. Os campos de
+ *  conferência só aparecem na aba manual, e só na linha do item que ainda
+ *  falta receber — o resto é a mesma leitura de sempre. */
+function ItensComRecebimento({
+  order,
+  tab,
+  receivingLines,
+  onChangeLine,
+}: {
+  readonly order: PurchaseOrder;
+  readonly tab: 'manual' | 'xml';
+  readonly receivingLines: Record<string, { qty: string; cost: string }>;
+  readonly onChangeLine: (productId: string, patch: Partial<{ qty: string; cost: string }>) => void;
+}) {
+  const comCampos = tab === 'manual';
+  return (
+    <table className="w-full border-collapse text-left">
+      <thead>
+        <tr className="border-hairline-light border-b">
+          <DataGridCabecalho id="produto" rotulo="Produto" />
+          <DataGridCabecalho id="pedido" rotulo="Pedido" alinhamento="direita" />
+          <DataGridCabecalho id="recebido" rotulo="Recebido" alinhamento="direita" />
+          <DataGridCabecalho id="custo" rotulo="Custo" alinhamento="direita" />
+          {comCampos && (
+            <>
+              <DataGridCabecalho id="qtd-recebida" rotulo="Qtd. recebida" alinhamento="direita" />
+              <DataGridCabecalho id="custo-unit" rotulo="Custo unit. (R$)" alinhamento="direita" />
+            </>
+          )}
+        </tr>
+      </thead>
+      <tbody>
+        {order.items.map((item) => {
+          const pendente = item.quantityReceived < item.quantityOrdered;
+          return (
+            <tr
+              key={item.productId}
+              className={classesDaLinha({ clicavel: false, focoComAnel: false })}
+            >
+              <DataGridCelula papel="primary" truncar={false}>
+                <Text variant="dado">{item.productId}</Text>
+              </DataGridCelula>
+              <DataGridCelula papel="data" alinhamento="direita" truncar={false}>
+                <Text variant="dado">{item.quantityOrdered}</Text>
+              </DataGridCelula>
+              <DataGridCelula papel="data" alinhamento="direita" truncar={false}>
+                <Text variant="dado">{item.quantityReceived}</Text>
+              </DataGridCelula>
+              <CelulaDeDinheiro
+                truncar={false}
+                peso="normal"
+                valorFormatado={item.unitCostCentavos > 0 ? money(item.unitCostCentavos) : '—'}
+              />
+              {comCampos && pendente && (
+                <>
+                  <DataGridCelula alinhamento="direita" truncar={false}>
+                    <NumberInput
+                      aria-label={`Quantidade recebida de ${item.productId}`}
+                      value={receivingLines[item.productId]?.qty ?? ''}
+                      onChange={(event) =>
+                        onChangeLine(item.productId, { qty: event.target.value })
+                      }
+                      className="ml-auto w-28"
+                    />
+                  </DataGridCelula>
+                  <DataGridCelula alinhamento="direita" truncar={false}>
+                    <NumberInput
+                      aria-label={`Custo unitário de ${item.productId}, em reais`}
+                      step="0.01"
+                      value={receivingLines[item.productId]?.cost ?? ''}
+                      onChange={(event) =>
+                        onChangeLine(item.productId, { cost: event.target.value })
+                      }
+                      className="ml-auto w-32"
+                    />
+                  </DataGridCelula>
+                </>
+              )}
+              {comCampos && !pendente && (
+                <DataGridCelula alinhamento="direita" truncar={false} colSpan={2}>
+                  <Text variant="legenda" tone="sutil">
+                    Completo
+                  </Text>
+                </DataGridCelula>
+              )}
+            </tr>
+          );
+        })}
       </tbody>
     </table>
   );
@@ -411,9 +512,11 @@ function OrderDetail({
       <Divider />
 
       <div className="space-y-6 p-5">
-        <Secao titulo="Itens">
-          <ItensDoPedido order={order} />
-        </Secao>
+        {!emRecebimento && (
+          <Secao titulo="Itens">
+            <ItensDoPedido order={order} />
+          </Secao>
+        )}
 
         {emCotacao && (
           <Secao
@@ -528,7 +631,10 @@ function OrderDetail({
         )}
 
         {emRecebimento && (
-          <Secao titulo="Recebimento" descricao="Confira item a item ou importe o XML da NF-e.">
+          <Secao
+            titulo="Itens e recebimento"
+            descricao="Confira item a item ou importe o XML da NF-e."
+          >
             <Abas
               idBase={idDasAbas}
               rotulo="Forma de recebimento"
@@ -539,72 +645,35 @@ function OrderDetail({
                 { id: 'xml', rotulo: 'Entrada por XML (DF-e)' },
               ]}
             />
+            <div className="mt-4">
+              <ItensComRecebimento
+                order={order}
+                tab={tab}
+                receivingLines={receivingLines}
+                onChangeLine={(productId, patch) =>
+                  setReceivingLines((current) => ({
+                    ...current,
+                    [productId]: {
+                      qty: patch.qty ?? current[productId]?.qty ?? '',
+                      cost: patch.cost ?? current[productId]?.cost ?? '',
+                    },
+                  }))
+                }
+              />
+            </div>
             <PainelDeAba idBase={idDasAbas} ativa={tab}>
               {tab === 'manual' ? (
-                <>
-                  <div className="flex gap-3">
-                    <RotuloDeColuna className="flex-1">Produto</RotuloDeColuna>
-                    <RotuloDeColuna className="w-32 text-right">Qtd. recebida</RotuloDeColuna>
-                    <RotuloDeColuna className="w-40 text-right">Custo unit. (R$)</RotuloDeColuna>
-                  </div>
-                  <div className="mt-1.5 space-y-2">
-                    {order.items
-                      .filter((item) => item.quantityReceived < item.quantityOrdered)
-                      .map((item) => (
-                        <div key={item.productId} className="flex items-center gap-3">
-                          <span className="min-w-0 flex-1">
-                            <Text variant="dado" className="block truncate">
-                              {item.productId}
-                            </Text>
-                            <Text variant="legenda">
-                              {item.quantityReceived} de {item.quantityOrdered} recebidos
-                            </Text>
-                          </span>
-                          <NumberInput
-                            aria-label={`Quantidade recebida de ${item.productId}`}
-                            value={receivingLines[item.productId]?.qty ?? ''}
-                            onChange={(event) =>
-                              setReceivingLines((current) => ({
-                                ...current,
-                                [item.productId]: {
-                                  ...current[item.productId],
-                                  qty: event.target.value,
-                                  cost: current[item.productId]?.cost ?? '',
-                                },
-                              }))
-                            }
-                            className="w-32"
-                          />
-                          <NumberInput
-                            aria-label={`Custo unitário de ${item.productId}, em reais`}
-                            step="0.01"
-                            value={receivingLines[item.productId]?.cost ?? ''}
-                            onChange={(event) =>
-                              setReceivingLines((current) => ({
-                                ...current,
-                                [item.productId]: {
-                                  ...current[item.productId],
-                                  cost: event.target.value,
-                                  qty: current[item.productId]?.qty ?? '',
-                                },
-                              }))
-                            }
-                            className="w-40"
-                          />
-                        </div>
-                      ))}
-                  </div>
-                  <BarraDeAcoes mensagem={error}>
-                    <Button variant="primary" loading={busy} onClick={submitManualReceiving}>
-                      Confirmar recebimento
-                    </Button>
-                  </BarraDeAcoes>
-                </>
+                <BarraDeAcoes mensagem={error}>
+                  <Button variant="primary" loading={busy} onClick={submitManualReceiving}>
+                    Confirmar recebimento
+                  </Button>
+                </BarraDeAcoes>
               ) : (
                 <>
                   <Field
                     label="XML da NF-e do fornecedor"
                     hint="Cole o conteúdo do arquivo. Quantidade e custo vêm da própria nota."
+                    className="mt-4"
                   >
                     <AreaDeTexto
                       value={xml}
@@ -630,10 +699,24 @@ function OrderDetail({
           </Secao>
         )}
 
-        {!emCotacao && !emRecebimento && error && (
-          <Text variant="corpo" tone="perigo" role="alert">
-            {error}
-          </Text>
+        {!emCotacao && !emRecebimento && (
+          <>
+            {order.status === 'RECEBIDO' && (
+              <Text variant="corpo" tone="apoio" role="status">
+                Recebido por completo — nada pendente neste pedido.
+              </Text>
+            )}
+            {order.status === 'CANCELADO' && (
+              <Text variant="corpo" tone="apoio" role="status">
+                Pedido cancelado.
+              </Text>
+            )}
+            {error && (
+              <Text variant="corpo" tone="perigo" role="alert">
+                {error}
+              </Text>
+            )}
+          </>
         )}
       </div>
     </Surface>
@@ -643,17 +726,29 @@ function OrderDetail({
 function ListaDePedidos({
   orders,
   loading,
+  erro,
   selectedId,
   onSelect,
 }: {
   readonly orders: readonly PurchaseOrder[];
   readonly loading: boolean;
+  readonly erro: string | null;
   readonly selectedId: string | null;
   readonly onSelect: (id: string) => void;
 }) {
   if (loading) return <Text variant="corpoSecundario">Carregando…</Text>;
+  if (erro)
+    return (
+      <Text variant="corpo" tone="perigo" role="alert">
+        {erro}
+      </Text>
+    );
   if (orders.length === 0)
-    return <Text variant="corpoSecundario">Nenhum pedido para esta filial.</Text>;
+    return (
+      <Text variant="corpoSecundario" role="status">
+        Nenhum pedido para esta filial.
+      </Text>
+    );
   return (
     <ul className="border-line-fina -mx-2 border-t">
       {orders.map((order) => {
@@ -689,12 +784,17 @@ export function PurchasingScreen() {
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const [novoPedidoAberto, setNovoPedidoAberto] = useState(false);
 
   const refresh = async () => {
     setLoading(true);
+    setErro(null);
     try {
       const items = await listPurchaseOrders(branchId.trim());
       setOrders(items);
+    } catch (cause) {
+      setErro(cause instanceof Error ? cause.message : 'Não foi possível carregar os pedidos');
     } finally {
       setLoading(false);
     }
@@ -741,6 +841,9 @@ export function PurchasingScreen() {
           <Button variant="quiet" onClick={() => void refresh()}>
             <RotateCw size={14} aria-hidden="true" /> Atualizar
           </Button>
+          <Button variant="primary" onClick={() => setNovoPedidoAberto(true)}>
+            <Plus size={14} aria-hidden="true" /> Novo pedido
+          </Button>
         </div>
       </div>
       <Divider />
@@ -772,25 +875,21 @@ export function PurchasingScreen() {
       </dl>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(300px,360px)_minmax(0,1fr)]">
-        <aside className="min-w-0 space-y-6" aria-label="Pedidos e novo pedido">
-          <section>
-            <div className="mb-2 flex items-baseline justify-between">
-              <Text variant="tituloCartao" as="h2">
-                Pedidos
-              </Text>
-              <Text variant="legenda">{orders.length}</Text>
-            </div>
-            <div className="max-h-[520px] overflow-y-auto">
-              <ListaDePedidos
-                orders={orders}
-                loading={loading}
-                selectedId={selectedId}
-                onSelect={setSelectedId}
-              />
-            </div>
-          </section>
-          <div className="border-line-fina border-t pt-5">
-            <NewOrderForm branchId={branchId.trim()} onCreated={refresh} />
+        <aside className="min-w-0" aria-label="Pedidos">
+          <div className="mb-2 flex items-baseline justify-between">
+            <Text variant="tituloCartao" as="h2">
+              Pedidos
+            </Text>
+            <Text variant="legenda">{orders.length}</Text>
+          </div>
+          <div className="max-h-[70vh] overflow-y-auto">
+            <ListaDePedidos
+              orders={orders}
+              loading={loading}
+              erro={erro}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+            />
           </div>
         </aside>
 
@@ -809,6 +908,18 @@ export function PurchasingScreen() {
           )}
         </div>
       </div>
+
+      {novoPedidoAberto && (
+        <Dialogo rotulo="Novo pedido de compra" aoFechar={() => setNovoPedidoAberto(false)}>
+          <NewOrderForm
+            branchId={branchId.trim()}
+            onCreated={() => {
+              setNovoPedidoAberto(false);
+              void refresh();
+            }}
+          />
+        </Dialogo>
+      )}
     </Surface>
   );
 }
