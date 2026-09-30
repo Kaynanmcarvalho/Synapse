@@ -130,6 +130,19 @@ describe('StockScreen — ferramentas de localização (Fase 7, client-side)', (
     expect(caixa.querySelectorAll('tbody tr').length).toBe(3);
   });
 
+  it('Fase 7.1 §1-C — busca sem correspondência mostra mensagem distinta do "sem lotes"', async () => {
+    montar(<StockScreen />);
+    await esperar();
+
+    const campo = caixa.querySelector<HTMLInputElement>('input[aria-label="Localizar lote"]');
+    digitar(campo!, 'produto-que-nao-existe');
+    await esperar();
+
+    expect(caixa.querySelectorAll('tbody tr').length).toBe(0);
+    expect(caixa.textContent).toContain('Nenhum lote corresponde à busca ou ao filtro atual');
+    expect(caixa.textContent).not.toContain('Nenhum lote dentro da janela de alerta');
+  });
+
   it('indicadores mostram o universo total, não o filtrado pela busca', async () => {
     montar(<StockScreen />);
     await esperar();

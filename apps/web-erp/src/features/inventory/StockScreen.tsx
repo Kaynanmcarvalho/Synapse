@@ -842,6 +842,14 @@ export function StockScreen() {
             <Text variant="corpo" tone="perigo" role="alert" className="block py-10 text-center">
               {erro}
             </Text>
+          ) : alerts.length > 0 && visiveis.length === 0 ? (
+            // Diferente de "nenhum lote no sistema": aqui existem lotes, só
+            // nenhum corresponde à busca/pílula atual. A mensagem genérica
+            // do ExpiryTable ("Nenhum lote dentro da janela...") confundiria
+            // as duas situações — Fase 7.1 (§1-C) encontrou essa lacuna.
+            <Text variant="corpoSecundario" className="block px-6 py-10 text-center" role="status">
+              Nenhum lote corresponde à busca ou ao filtro atual.
+            </Text>
           ) : (
             <ExpiryTable alerts={visiveis} onSelect={setSelected} />
           )}
