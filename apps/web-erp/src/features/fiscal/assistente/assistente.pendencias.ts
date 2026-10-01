@@ -1,3 +1,4 @@
+import type { NfceSeriesAssignment } from '@synapse/types';
 import { isValidCnpj, isValidCpf, isValidCpfOrCnpj } from '@synapse/validation';
 import type {
   EtapaId,
@@ -165,6 +166,32 @@ const daNfe = ({ nfeSeries, nfe }: FormularioFiscal): Pendencia[] =>
     ],
   ]);
 
+/** As mesmas regras de série da NFC-e que bloqueiam o F8, vistas por linha —
+ *  a grade de séries marca a célula/linha com ELAS, não com uma cópia. Não há
+ *  regra nova aqui: `daNfce` usa esta função para a pendência do formulário. */
+export interface ProblemasDaLinhaDeSerie {
+  readonly identificador: boolean;
+  readonly serie: boolean;
+  readonly proximoNumero: boolean;
+  /** Identificador preenchido que se repete em outra linha. */
+  readonly repetida: boolean;
+}
+
+export const problemasDaLinhaDeSerie = (
+  linha: NfceSeriesAssignment,
+  todas: readonly NfceSeriesAssignment[],
+): ProblemasDaLinhaDeSerie => {
+  const identificador = linha.identifier.trim();
+  return {
+    identificador: vazio(linha.identifier),
+    serie: !inteiroEntre(linha.series, 1, 999),
+    proximoNumero: !inteiroEntre(linha.nextNumber, 1, MAIOR_NUMERO),
+    repetida:
+      identificador !== '' &&
+      todas.filter((outra) => outra.identifier.trim() === identificador).length > 1,
+  };
+};
+
 const daNfce = (
   formulario: FormularioFiscal,
   segredos: SegredosDigitados,
@@ -172,12 +199,10 @@ const daNfce = (
 ): Pendencia[] => {
   const { nfce } = formulario;
   const identificadores = nfce.series.map((linha) => linha.identifier.trim());
-  const linhaIncompleta = nfce.series.some(
-    (linha) =>
-      vazio(linha.identifier) ||
-      !inteiroEntre(linha.series, 1, 999) ||
-      !inteiroEntre(linha.nextNumber, 1, MAIOR_NUMERO),
-  );
+  const linhaIncompleta = nfce.series.some((linha) => {
+    const problemas = problemasDaLinhaDeSerie(linha, nfce.series);
+    return problemas.identificador || problemas.serie || problemas.proximoNumero;
+  });
   const senha = segredos.nfceOfflinePassword;
   const semCsc = vazio(formulario.cscId) || (!gravados.csc && vazio(segredos.csc));
   return coletar('nfce', [
