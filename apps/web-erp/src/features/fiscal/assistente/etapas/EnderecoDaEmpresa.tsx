@@ -1,22 +1,32 @@
-import { LoaderCircle, Search } from 'lucide-react';
+import {
+  DocInput,
+  Field,
+  IconButton,
+  Input,
+  Select,
+  Spinner,
+  TAMANHO_DE_ICONE,
+} from '@synapse/sdl';
+import { Search } from 'lucide-react';
 import { useState } from 'react';
+import {
+  LinhaDeCampos,
+  Secao,
+  ValoresDeLeitura,
+} from '../../../../components/formulario/Formulario';
+import { LARGURA_DE_CAMPO as L } from '../../../../components/formulario/larguras';
 import { buscarCep } from '../assistente.api';
 import { UFS } from '../assistente.dados';
 import { formatarCep, formatarCodigoIbge, soDigitos } from '../assistente.formato';
-import type { AlterarFormulario, FormularioFiscal } from '../assistente.tipos';
-import { BOTAO_ICONE, Campo, Grupo, Selecao } from '../campos';
-import { alterarEndereco, GRADE } from './grade';
+import type { PropsDeEtapa } from '../assistente.tipos';
+import { alterarEndereco } from './grade';
 
-type Props = { readonly formulario: FormularioFiscal; readonly alterar: AlterarFormulario };
+type Props = Pick<PropsDeEtapa, 'formulario' | 'alterar' | 'erroDoCampo'>;
 
-const OPCOES_DE_UF = [
-  { valor: '', rotulo: 'Selecione' },
-  ...UFS.map((uf) => ({ valor: uf as string, rotulo: uf })),
-];
-
-/** CEP com lupa: preenche logradouro, bairro, cidade, codigo IBGE e UF pelo ViaCEP,
- *  sem apagar numero e complemento. */
-function CampoCep({ formulario, alterar }: Props) {
+/** CEP com lupa: preenche logradouro, bairro, cidade, código IBGE e UF pelo
+ *  ViaCEP, sem apagar número e complemento. A lupa é ação do campo (ícone ao
+ *  lado), não um botão grande. */
+function CampoCep({ formulario, alterar, erroDoCampo }: Props) {
   const [buscando, setBuscando] = useState(false);
   const [mensagem, setMensagem] = useState<string | null>(null);
   const { zipCode } = formulario.issuer.address;
@@ -52,108 +62,125 @@ function CampoCep({ formulario, alterar }: Props) {
   };
 
   return (
-    <Campo
-      rotulo="CEP"
-      className="sm:col-span-2 lg:col-span-3"
-      inputMode="numeric"
-      value={formatarCep(zipCode)}
-      dica={mensagem ?? undefined}
-      onChange={(e) => alterarEndereco(alterar)({ zipCode: soDigitos(e.target.value).slice(0, 8) })}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' && zipCode.length === 8) void buscar();
-      }}
-      acessorio={
-        <button
-          type="button"
+    <Field
+      label="CEP"
+      className="w-48"
+      data-campo="issuer.address.zipCode"
+      error={mensagem ?? erroDoCampo('issuer.address.zipCode')}
+    >
+      <div className="flex items-center gap-1">
+        <DocInput
+          value={formatarCep(zipCode)}
+          onChange={(e) =>
+            alterarEndereco(alterar)({ zipCode: soDigitos(e.target.value).slice(0, 8) })
+          }
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && zipCode.length === 8) void buscar();
+          }}
+        />
+        <IconButton
+          label="Buscar endereço pelo CEP"
+          title="Buscar endereço pelo CEP"
           onClick={() => void buscar()}
           disabled={buscando || zipCode.length !== 8}
-          aria-label="Buscar endereço pelo CEP"
-          title="Buscar endereço pelo CEP"
-          className={BOTAO_ICONE}
         >
-          {buscando ? <LoaderCircle size={17} className="animate-spin" /> : <Search size={17} />}
-        </button>
-      }
-    />
+          {buscando ? (
+            <Spinner size={TAMANHO_DE_ICONE.padrao} decorative />
+          ) : (
+            <Search size={TAMANHO_DE_ICONE.padrao} aria-hidden="true" />
+          )}
+        </IconButton>
+      </div>
+    </Field>
   );
 }
 
-function Municipio({ formulario, alterar }: Props) {
+function Municipio({ formulario, alterar, erroDoCampo }: Props) {
   const { address } = formulario.issuer;
   const endereco = alterarEndereco(alterar);
   return (
     <>
-      <Selecao
-        rotulo="País"
-        className="sm:col-span-3 lg:col-span-3"
-        valor="1058"
-        opcoes={[{ valor: '1058', rotulo: '1058 - Brasil' }]}
-        aoMudar={() => undefined}
-        disabled
-      />
-      <Campo
-        rotulo="Código IBGE da cidade"
-        className="sm:col-span-2 lg:col-span-3"
-        inputMode="numeric"
-        value={formatarCodigoIbge(address.cityCode)}
-        onChange={(e) => endereco({ cityCode: soDigitos(e.target.value).slice(0, 7) })}
-      />
-      <Campo
-        rotulo="Cidade"
-        className="sm:col-span-2 lg:col-span-6"
-        value={address.cityName}
-        maxLength={60}
-        onChange={(e) => endereco({ cityName: e.target.value })}
-      />
-      <Selecao
-        rotulo="UF"
-        className="sm:col-span-2 lg:col-span-3"
-        valor={formulario.state}
-        opcoes={OPCOES_DE_UF}
-        aoMudar={(state) => alterar((atual) => ({ ...atual, state }))}
-      />
+      <Field
+        label="Código IBGE da cidade"
+        className={L.curto}
+        data-campo="issuer.address.cityCode"
+        error={erroDoCampo('issuer.address.cityCode')}
+      >
+        <DocInput
+          value={formatarCodigoIbge(address.cityCode)}
+          onChange={(e) => endereco({ cityCode: soDigitos(e.target.value).slice(0, 7) })}
+        />
+      </Field>
+      <Field label="Cidade" className={L.medio}>
+        <Input
+          value={address.cityName}
+          maxLength={60}
+          onChange={(e) => endereco({ cityName: e.target.value })}
+        />
+      </Field>
+      <Field label="UF" className={L.codigo} data-campo="state" error={erroDoCampo('state')}>
+        <Select
+          value={formulario.state}
+          onChange={(e) => alterar((atual) => ({ ...atual, state: e.target.value }))}
+        >
+          <option value="">Selecione</option>
+          {UFS.map((uf) => (
+            <option key={uf} value={uf}>
+              {uf}
+            </option>
+          ))}
+        </Select>
+      </Field>
     </>
   );
 }
 
-export function EnderecoDaEmpresa({ formulario, alterar }: Props) {
-  const { address } = formulario.issuer;
-  const endereco = alterarEndereco(alterar);
+export function EnderecoDaEmpresa(props: Props) {
+  const { address } = props.formulario.issuer;
+  const endereco = alterarEndereco(props.alterar);
   return (
-    <Grupo titulo="Endereço">
-      <div className={GRADE}>
-        <CampoCep formulario={formulario} alterar={alterar} />
-        <Campo
-          rotulo="Endereço"
-          className="sm:col-span-4 lg:col-span-7"
-          value={address.street}
-          maxLength={120}
-          onChange={(e) => endereco({ street: e.target.value })}
-        />
-        <Campo
-          rotulo="Número"
-          className="sm:col-span-2 lg:col-span-2"
-          value={address.number}
-          maxLength={20}
-          placeholder="S/N"
-          onChange={(e) => endereco({ number: e.target.value })}
-        />
-        <Campo
-          rotulo="Complemento"
-          className="sm:col-span-4 lg:col-span-4"
-          value={address.complement}
-          maxLength={60}
-          onChange={(e) => endereco({ complement: e.target.value })}
-        />
-        <Campo
-          rotulo="Bairro"
-          className="sm:col-span-3 lg:col-span-5"
-          value={address.district}
-          maxLength={60}
-          onChange={(e) => endereco({ district: e.target.value })}
-        />
-        <Municipio formulario={formulario} alterar={alterar} />
+    <Secao titulo="Endereço">
+      <LinhaDeCampos>
+        <CampoCep {...props} />
+        <Field label="Endereço" className={L.resto}>
+          <Input
+            value={address.street}
+            maxLength={120}
+            onChange={(e) => endereco({ street: e.target.value })}
+          />
+        </Field>
+        <Field label="Número" className={L.codigo}>
+          <Input
+            value={address.number}
+            maxLength={20}
+            placeholder="S/N"
+            onChange={(e) => endereco({ number: e.target.value })}
+          />
+        </Field>
+        <Field label="Complemento" className={L.medio}>
+          <Input
+            value={address.complement}
+            maxLength={60}
+            onChange={(e) => endereco({ complement: e.target.value })}
+          />
+        </Field>
+      </LinhaDeCampos>
+      <div className="mt-3">
+        <LinhaDeCampos>
+          <Field label="Bairro" className={L.medio}>
+            <Input
+              value={address.district}
+              maxLength={60}
+              onChange={(e) => endereco({ district: e.target.value })}
+            />
+          </Field>
+          <Municipio {...props} />
+        </LinhaDeCampos>
       </div>
-    </Grupo>
+      {/* País não se edita: era um select desabilitado com uma opção só. */}
+      <div className="mt-4">
+        <ValoresDeLeitura itens={[{ rotulo: 'País', valor: '1058 - Brasil', dado: true }]} />
+      </div>
+    </Secao>
   );
 }

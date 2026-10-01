@@ -1,30 +1,121 @@
+import { Button, Field, IconButton, Input, Select, TAMANHO_DE_ICONE, Text } from '@synapse/sdl';
 import type { NfceAcquirer } from '@synapse/types';
 import { Plus, X } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
+import { Secao } from '../../../../components/formulario/Formulario';
+import { LARGURA_DE_CAMPO as L } from '../../../../components/formulario/larguras';
 import { BANDEIRAS } from '../assistente.dados';
-import { BOTAO_ICONE, BOTAO_SECUNDARIO, Campo, Escolha, Grupo, Selecao } from '../campos';
+import { Escolha } from '../campos';
+import { incluirCodigo, type ModoDeCodigo } from './codigos';
 
-type Modo = 'ESTABELECIMENTO' | 'BANDEIRA';
+/** Códigos de uma credenciadora (Fase 8): três responsabilidades separadas —
+ *  a regra de inclusão (pura), o formulário de um código e a lista. */
 
-function Etiqueta({
-  texto,
-  aoRemover,
+type Modo = ModoDeCodigo;
+type Mudar = (parcial: Partial<NfceAcquirer>) => void;
+
+function FormularioDeCodigo({
+  credenciadora,
+  modo,
+  aoMudar,
 }: {
-  readonly texto: string;
-  readonly aoRemover: () => void;
+  readonly credenciadora: NfceAcquirer;
+  readonly modo: Modo;
+  readonly aoMudar: Mudar;
 }) {
+  const [codigo, setCodigo] = useState('');
+  const [bandeira, setBandeira] = useState<string>(BANDEIRAS[0]);
+  const adicionar = (evento: FormEvent) => {
+    evento.preventDefault();
+    if (!codigo.trim()) return;
+    const mudanca = incluirCodigo(credenciadora, modo, codigo, bandeira);
+    if (mudanca) aoMudar(mudanca);
+    setCodigo('');
+  };
   return (
-    <li className="bg-surface-soft text-body-sm text-ink flex items-center gap-1 rounded-full py-1 pl-3.5 pr-1">
-      {texto}
-      <button
-        type="button"
-        aria-label={`Remover ${texto}`}
-        onClick={aoRemover}
-        className={`${BOTAO_ICONE} h-7 w-7`}
+    <form onSubmit={adicionar} className="mt-4 flex flex-wrap items-end gap-3">
+      {modo === 'BANDEIRA' && (
+        <Field label="Bandeira" className={L.curto}>
+          <Select value={bandeira} onChange={(e) => setBandeira(e.target.value)}>
+            {BANDEIRAS.map((nome) => (
+              <option key={nome} value={nome}>
+                {nome}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      )}
+      <Field
+        label={modo === 'ESTABELECIMENTO' ? 'Código do estabelecimento' : 'Código na bandeira'}
+        className={L.medio}
       >
-        <X size={14} />
-      </button>
+        <Input
+          className="font-data"
+          value={codigo}
+          maxLength={30}
+          onChange={(e) => setCodigo(e.target.value)}
+        />
+      </Field>
+      <Button type="submit" variant="secondary" disabled={!codigo.trim()}>
+        <Plus size={TAMANHO_DE_ICONE.padrao} aria-hidden="true" /> Adicionar
+      </Button>
+    </form>
+  );
+}
+
+function Codigo({ texto, aoRemover }: { readonly texto: string; readonly aoRemover: () => void }) {
+  return (
+    <li className="border-line-fina bg-surface-afundada rounded-controle flex items-center gap-1 border py-0.5 pl-2.5 pr-0.5">
+      <Text variant="dado">{texto}</Text>
+      <IconButton label={`Remover ${texto}`} density="compacta" onClick={aoRemover}>
+        <X size={TAMANHO_DE_ICONE.compacta} aria-hidden="true" />
+      </IconButton>
     </li>
+  );
+}
+
+function ListaDeCodigos({
+  credenciadora,
+  modo,
+  aoMudar,
+}: {
+  readonly credenciadora: NfceAcquirer;
+  readonly modo: Modo;
+  readonly aoMudar: Mudar;
+}) {
+  const { establishmentCodes, brandCodes } = credenciadora;
+  const vazia =
+    modo === 'ESTABELECIMENTO' ? establishmentCodes.length === 0 : brandCodes.length === 0;
+  if (vazia)
+    return (
+      <Text variant="corpoSecundario" className="mt-3">
+        Nenhum código informado.
+      </Text>
+    );
+  return (
+    <ul className="mt-3 flex flex-wrap gap-2" aria-label="Códigos informados">
+      {modo === 'ESTABELECIMENTO'
+        ? establishmentCodes.map((item) => (
+            <Codigo
+              key={item}
+              texto={item}
+              aoRemover={() =>
+                aoMudar({
+                  establishmentCodes: establishmentCodes.filter((outro) => outro !== item),
+                })
+              }
+            />
+          ))
+        : brandCodes.map((item) => (
+            <Codigo
+              key={item.brand}
+              texto={`${item.brand}: ${item.code}`}
+              aoRemover={() =>
+                aoMudar({ brandCodes: brandCodes.filter((outro) => outro.brand !== item.brand) })
+              }
+            />
+          ))}
+    </ul>
   );
 }
 
@@ -33,28 +124,11 @@ export function CodigosDaCredenciadora({
   aoMudar,
 }: {
   readonly credenciadora: NfceAcquirer;
-  readonly aoMudar: (parcial: Partial<NfceAcquirer>) => void;
+  readonly aoMudar: Mudar;
 }) {
   const [modo, setModo] = useState<Modo>('ESTABELECIMENTO');
-  const [codigo, setCodigo] = useState('');
-  const [bandeira, setBandeira] = useState<string>(BANDEIRAS[0]);
-
-  const adicionar = (evento: FormEvent) => {
-    evento.preventDefault();
-    const limpo = codigo.trim();
-    if (!limpo) return;
-    if (modo === 'ESTABELECIMENTO') {
-      if (!credenciadora.establishmentCodes.includes(limpo))
-        aoMudar({ establishmentCodes: [...credenciadora.establishmentCodes, limpo] });
-    } else {
-      const outras = credenciadora.brandCodes.filter((item) => item.brand !== bandeira);
-      aoMudar({ brandCodes: [...outras, { brand: bandeira, code: limpo }] });
-    }
-    setCodigo('');
-  };
-
   return (
-    <Grupo titulo={`Códigos — ${credenciadora.tradeName || credenciadora.legalName}`}>
+    <Secao titulo={`Códigos — ${credenciadora.tradeName || credenciadora.legalName}`}>
       <Escolha
         rotulo="Informar código"
         valor={modo}
@@ -64,56 +138,8 @@ export function CodigosDaCredenciadora({
         ]}
         aoMudar={setModo}
       />
-      <form onSubmit={adicionar} className="mt-5 flex max-w-2xl flex-wrap items-end gap-3">
-        {modo === 'BANDEIRA' && (
-          <Selecao
-            rotulo="Bandeira"
-            className="w-48"
-            valor={bandeira}
-            opcoes={BANDEIRAS.map((nome) => ({ valor: nome as string, rotulo: nome }))}
-            aoMudar={setBandeira}
-          />
-        )}
-        <Campo
-          rotulo={modo === 'ESTABELECIMENTO' ? 'Código do estabelecimento' : 'Código na bandeira'}
-          className="min-w-[200px] flex-1"
-          value={codigo}
-          maxLength={30}
-          onChange={(e) => setCodigo(e.target.value)}
-        />
-        <button type="submit" className={BOTAO_SECUNDARIO} disabled={!codigo.trim()}>
-          <Plus size={16} aria-hidden="true" /> Adicionar
-        </button>
-      </form>
-      <ul className="mt-4 flex flex-wrap gap-2">
-        {modo === 'ESTABELECIMENTO'
-          ? credenciadora.establishmentCodes.map((item) => (
-              <Etiqueta
-                key={item}
-                texto={item}
-                aoRemover={() =>
-                  aoMudar({
-                    establishmentCodes: credenciadora.establishmentCodes.filter(
-                      (outro) => outro !== item,
-                    ),
-                  })
-                }
-              />
-            ))
-          : credenciadora.brandCodes.map((item) => (
-              <Etiqueta
-                key={item.brand}
-                texto={`${item.brand}: ${item.code}`}
-                aoRemover={() =>
-                  aoMudar({
-                    brandCodes: credenciadora.brandCodes.filter(
-                      (outro) => outro.brand !== item.brand,
-                    ),
-                  })
-                }
-              />
-            ))}
-      </ul>
-    </Grupo>
+      <FormularioDeCodigo credenciadora={credenciadora} modo={modo} aoMudar={aoMudar} />
+      <ListaDeCodigos credenciadora={credenciadora} modo={modo} aoMudar={aoMudar} />
+    </Secao>
   );
 }

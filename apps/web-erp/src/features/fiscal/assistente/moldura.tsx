@@ -1,37 +1,38 @@
+import {
+  Button,
+  IconButton,
+  Kbd,
+  Status,
+  SynapseSignal,
+  TAMANHO_DE_ICONE,
+  Text,
+  type TomDeStatus,
+} from '@synapse/sdl';
 import type { FiscalEnvironment } from '@synapse/types';
 import { Modal, useOverlayClose } from '@synapse/ui';
-import {
-  ArrowLeft,
-  ArrowRight,
-  CircleAlert,
-  CircleCheck,
-  LoaderCircle,
-  Save,
-  X,
-} from 'lucide-react';
+import { ArrowLeft, ArrowRight, CircleAlert, CircleCheck, X } from 'lucide-react';
 import { type ReactNode, type RefObject, useEffect } from 'react';
 import { ETAPAS, rotuloDoAmbiente } from './assistente.dados';
 import { quando } from './assistente.formato';
 import type { EtapaId, Pendencia } from './assistente.tipos';
-import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO } from './campos';
+import { resumoDePendencias } from './pendencias.resumo';
 import type { Aviso } from './useAssistente';
 
-/** Janela do assistente: fundo escurecido, os paineis flutuando por cima e a
- *  barra de acoes logo abaixo deles.
+/** Moldura do assistente fiscal (Fase 8): uma superfície só, em tela cheia —
+ *  cabeçalho de contexto, trilho de etapas, área de trabalho (a ÚNICA região
+ *  que rola) e a barra de ações presa ao pé da área de trabalho.
  *
- *  De proposito nao leva `role="dialog"`: os atalhos F6/F7/F8/Esc se desligam
- *  quando existe dialogo aberto na pagina, e quem abre dialogo aqui e o
- *  descarte de alteracoes — que precisa mesmo tirar os atalhos do assistente. */
+ *  De propósito não leva `role="dialog"`: os atalhos F6/F7/F8/Esc se desligam
+ *  quando existe diálogo aberto na página, e quem abre diálogo aqui é o
+ *  descarte de alterações — que precisa mesmo tirar os atalhos do assistente. */
 export function JanelaDoAssistente({
   area,
-  aoFechar,
   children,
 }: {
   readonly area: RefObject<HTMLElement | null>;
-  readonly aoFechar: () => void;
   readonly children: ReactNode;
 }) {
-  // A pagina atras da janela nao rola enquanto o assistente esta aberto.
+  // A página atrás do assistente não rola enquanto ele está aberto.
   useEffect(() => {
     const anterior = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -40,18 +41,8 @@ export function JanelaDoAssistente({
     };
   }, []);
   return (
-    <div className="fixed inset-0 z-40 flex flex-col">
-      <button
-        type="button"
-        tabIndex={-1}
-        aria-label="Fechar o assistente"
-        onClick={aoFechar}
-        className="animate-backdrop-in absolute inset-0 h-full w-full cursor-default bg-slate-950/55 backdrop-blur-md motion-reduce:animate-none"
-      />
-      <main
-        ref={area}
-        className="animate-modal-in relative flex min-h-0 flex-1 flex-col gap-3 p-3 motion-reduce:animate-none sm:gap-4 sm:p-5 lg:p-6"
-      >
+    <div data-assistente className="bg-surface-tela fixed inset-0 z-40 flex flex-col">
+      <main ref={area} className="flex min-h-0 flex-1 flex-col">
         {children}
       </main>
     </div>
@@ -66,21 +57,18 @@ export function AvisoFlutuante({
   readonly aoFechar: () => void;
 }) {
   const erro = aviso.tom === 'erro';
+  const Icone = erro ? CircleAlert : CircleCheck;
   return (
     <div
       role={erro ? 'alert' : 'status'}
-      className="bg-ink text-body-sm fixed bottom-28 left-1/2 z-30 flex w-[calc(100%-32px)] max-w-lg -translate-x-1/2 items-start gap-3 rounded-2xl px-4 py-3 text-white shadow-lg"
+      className="bg-surface-inversa text-ink-inverso text-body-sm rounded-painel shadow-cartao fixed bottom-20 left-1/2 z-50 flex w-[calc(100%-32px)] max-w-lg -translate-x-1/2 items-start gap-3 px-4 py-3"
     >
-      {erro ? (
-        <CircleAlert size={18} className="mt-0.5 shrink-0 text-[#ff8a95]" aria-hidden="true" />
-      ) : (
-        <CircleCheck size={18} className="mt-0.5 shrink-0 text-[#5fe0bd]" aria-hidden="true" />
-      )}
+      <Icone size={TAMANHO_DE_ICONE.padrao} className="mt-0.5 shrink-0" aria-hidden="true" />
       <span className="flex-1">{aviso.texto}</span>
       <button
         type="button"
         onClick={aoFechar}
-        className="text-caption font-semibold text-white/70 hover:text-white"
+        className="text-caption rounded-minimo focus-visible:ring-primary/40 font-semibold opacity-80 outline-none hover:opacity-100 focus-visible:ring-2"
       >
         Fechar
       </button>
@@ -88,47 +76,74 @@ export function AvisoFlutuante({
   );
 }
 
-const TOM_DO_AMBIENTE: Record<FiscalEnvironment, string> = {
-  PRODUCAO: 'bg-[#fdecee] text-accent-deep-red',
-  HOMOLOGACAO: 'bg-[#fff4e5] text-[#8a4b00]',
-  SANDBOX: 'bg-surface-soft text-charcoal',
-  MOCK: 'bg-surface-soft text-charcoal',
+/** Ambiente fiscal com significado: produção é o que tem validade fiscal. */
+const TOM_DO_AMBIENTE: Readonly<Record<FiscalEnvironment, TomDeStatus>> = {
+  PRODUCAO: 'perigo',
+  HOMOLOGACAO: 'atencao',
+  SANDBOX: 'neutro',
+  MOCK: 'neutro',
 };
 
-/** Cabecalho da janela: mora no alto do painel das etapas, que e por onde o
- *  assistente comeca. */
+/** Responde, numa linha: o que estou configurando, de qual empresa, em que
+ *  ambiente e se há algo não salvo. */
 export function Cabecalho({
   ambiente,
+  empresa,
+  documento,
   sujo,
   atualizadoEm,
+  aoFechar,
 }: {
   readonly ambiente: FiscalEnvironment;
+  readonly empresa: string;
+  readonly documento: string;
   readonly sujo: boolean;
   readonly atualizadoEm: string | null;
+  readonly aoFechar: () => void;
 }) {
   return (
-    <header className="border-hairline-light shrink-0 border-b px-4 py-3 2xl:px-5 2xl:pb-4 2xl:pt-5">
-      <p className="text-stone 2xl:text-caption hidden text-[11px] font-medium uppercase tracking-[0.08em] lg:block">
-        Configurações · Fiscal
-      </p>
-      <h1 className="font-display text-body-sm text-ink 2xl:text-heading-sm font-semibold leading-snug lg:mt-0.5 2xl:mt-1 2xl:font-medium 2xl:leading-tight">
-        Assistente de Configuração de NF-e
-      </h1>
-      <div className="mt-2 flex flex-wrap items-center gap-2 2xl:mt-3">
-        <span
-          className={`2xl:text-caption inline-flex h-6 items-center gap-1.5 rounded-full px-2 text-[12px] font-semibold 2xl:h-7 2xl:gap-2 2xl:px-2.5 ${TOM_DO_AMBIENTE[ambiente]}`}
-        >
-          <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-current" />
-          {rotuloDoAmbiente(ambiente)}
-        </span>
-        <span className="text-stone 2xl:text-caption text-[12px]">
+    <header
+      data-cabecalho-do-assistente
+      className="border-line-fina flex shrink-0 flex-wrap items-center gap-x-6 gap-y-1 border-b px-4 py-2.5 sm:px-6"
+    >
+      <div className="min-w-0">
+        <Text variant="legenda" as="p">
+          Configuração fiscal
+        </Text>
+        <Text variant="tituloCartao" as="h1">
+          Assistente de Configuração de NF-e
+        </Text>
+      </div>
+      <div className="border-line-fina hidden min-w-0 border-l pl-6 md:block">
+        <Text variant="legenda" as="p">
+          Empresa emitente
+        </Text>
+        <Text variant="corpo" as="p" className="truncate font-medium">
+          {empresa}
+          {documento && (
+            <Text variant="dado" tone="apoio" className="ml-2">
+              {documento}
+            </Text>
+          )}
+        </Text>
+      </div>
+      <div className="ml-auto flex items-center gap-4">
+        <Status tone={TOM_DO_AMBIENTE[ambiente]}>{rotuloDoAmbiente(ambiente)}</Status>
+        <Status tone={sujo ? 'atencao' : 'neutro'}>
           {sujo ? 'Alterações não salvas' : `Salvo ${quando(atualizadoEm)}`}
-        </span>
+        </Status>
+        <IconButton label="Fechar o assistente" onClick={aoFechar}>
+          <X size={TAMANHO_DE_ICONE.padrao} aria-hidden="true" />
+        </IconButton>
       </div>
     </header>
   );
 }
 
+/** Trilho de etapas. A etapa atual se marca por posição, peso, plano e o
+ *  Synapse Signal — a cor é reforço. Pendência mostra a CONTAGEM (legível em
+ *  escala de cinza), não só um ponto colorido. Todas as etapas são
+ *  revisitáveis: o assistente nunca travou a navegação. */
 export function TrilhaDeEtapas({
   atual,
   pendencias,
@@ -141,34 +156,42 @@ export function TrilhaDeEtapas({
   return (
     <nav
       aria-label="Etapas do assistente"
-      className="min-w-0 lg:min-h-0 lg:flex-1 lg:overflow-y-auto"
+      className="border-line-fina min-w-0 border-b lg:overflow-y-auto lg:border-b-0 lg:border-r"
     >
-      <p className="text-caption text-stone hidden px-5 pt-4 2xl:block">6 etapas para concluir</p>
-      <ol className="flex gap-1.5 overflow-x-auto p-2 lg:flex-col lg:gap-0.5 lg:overflow-visible 2xl:mt-1 2xl:gap-1 2xl:px-3 2xl:pb-4">
+      <ol className="flex gap-1 overflow-x-auto p-2 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:p-3">
         {ETAPAS.map((etapa, indice) => {
           const ativa = etapa.id === atual;
-          const bloqueios = pendencias.filter((p) => p.etapa === etapa.id && p.bloqueia).length;
-          const avisos = pendencias.filter((p) => p.etapa === etapa.id).length;
+          const { bloqueios, texto } = resumoDePendencias(
+            pendencias.filter((p) => p.etapa === etapa.id),
+          );
           return (
             <li key={etapa.id} className="shrink-0 lg:shrink">
               <button
                 type="button"
                 onClick={() => aoEscolher(etapa.id)}
                 aria-current={ativa ? 'step' : undefined}
-                className={`text-caption 2xl:text-body-sm flex min-h-10 w-full items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-left transition 2xl:min-h-12 2xl:gap-3 2xl:rounded-2xl 2xl:px-3 2xl:py-2.5 ${ativa ? 'bg-canvas-dark shadow-cartao font-semibold text-white' : 'text-mute hover:bg-surface-soft hover:text-ink'}`}
+                className={`rounded-controle focus-visible:ring-primary/40 relative flex min-h-10 w-full items-center gap-2.5 px-3 py-2 text-left outline-none transition-colors focus-visible:ring-2 ${ativa ? 'bg-surface-hover text-ink' : 'text-ink-medio hover:bg-surface-suave hover:text-ink'}`}
               >
+                <SynapseSignal ativo={ativa} />
+                <Text variant="dado" tone={ativa ? 'padrao' : 'sutil'} className="text-caption">
+                  {String(indice + 1).padStart(2, '0')}
+                </Text>
                 <span
-                  aria-hidden="true"
-                  className={`2xl:text-caption flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold 2xl:h-7 2xl:w-7 ${ativa ? 'bg-white/15 text-white' : 'bg-surface-soft text-charcoal'}`}
+                  className={`text-body-sm flex-1 whitespace-nowrap ${ativa ? 'font-semibold' : ''}`}
                 >
-                  {indice + 1}
+                  {etapa.rotulo}
                 </span>
-                <span className="flex-1 whitespace-nowrap">{etapa.rotulo}</span>
-                {avisos > 0 && (
-                  <span
-                    title={`${avisos} pendência(s)`}
-                    className={`h-2 w-2 shrink-0 rounded-full ${bloqueios > 0 ? 'bg-accent-danger' : 'bg-accent-warning'}`}
-                  />
+                {texto && <span className="sr-only">, {texto}</span>}
+                {texto && (
+                  <Status
+                    tone={bloqueios > 0 ? 'perigo' : 'atencao'}
+                    title={texto}
+                    aria-hidden="true"
+                  >
+                    <span className="font-data">
+                      {pendencias.filter((p) => p.etapa === etapa.id).length}
+                    </span>
+                  </Status>
                 )}
               </button>
             </li>
@@ -178,12 +201,6 @@ export function TrilhaDeEtapas({
     </nav>
   );
 }
-
-const Tecla = ({ children }: { readonly children: string }) => (
-  <kbd className="text-caption hidden rounded-md bg-black/5 px-1.5 font-sans font-medium sm:inline">
-    {children}
-  </kbd>
-);
 
 export function BarraDeAcoes({
   primeira,
@@ -205,29 +222,22 @@ export function BarraDeAcoes({
   return (
     <div
       aria-label="Ações do assistente"
-      className="border-hairline-light bg-canvas-light/95 shadow-janela mx-auto flex w-full max-w-[940px] shrink-0 flex-wrap items-center gap-2 rounded-2xl border p-2 backdrop-blur-xl sm:flex-nowrap sm:px-3"
+      className="border-line-fina bg-surface-pagina flex shrink-0 flex-wrap items-center gap-2 border-t px-4 py-2.5 sm:px-6"
     >
-      <button type="button" className={BOTAO_SECUNDARIO} onClick={aoVoltar} disabled={primeira}>
-        <ArrowLeft size={16} aria-hidden="true" /> <Tecla>F6</Tecla> Voltar
-      </button>
-      <button type="button" className={BOTAO_SECUNDARIO} onClick={aoAvancar} disabled={ultima}>
-        <Tecla>F7</Tecla> Próximo <ArrowRight size={16} aria-hidden="true" />
-      </button>
-      <span className="hidden flex-1 sm:block" />
-      <button type="button" className={BOTAO_SECUNDARIO} onClick={aoCancelar}>
-        <X size={16} aria-hidden="true" /> <Tecla>Esc</Tecla> Cancelar
-      </button>
-      <button type="button" className={BOTAO_PRIMARIO} onClick={aoSalvar} disabled={salvando}>
-        {salvando ? (
-          <LoaderCircle size={16} className="animate-spin" aria-hidden="true" />
-        ) : (
-          <Save size={16} aria-hidden="true" />
-        )}
-        <kbd className="text-caption hidden rounded-md bg-white/15 px-1.5 font-sans font-medium sm:inline">
-          F8
-        </kbd>
+      <Button variant="secondary" onClick={aoVoltar} disabled={primeira}>
+        <ArrowLeft size={TAMANHO_DE_ICONE.padrao} aria-hidden="true" /> Voltar <Kbd>F6</Kbd>
+      </Button>
+      <Button variant="secondary" onClick={aoAvancar} disabled={ultima}>
+        Próximo <Kbd>F7</Kbd> <ArrowRight size={TAMANHO_DE_ICONE.padrao} aria-hidden="true" />
+      </Button>
+      <span className="flex-1" />
+      <Button variant="quiet" onClick={aoCancelar}>
+        Cancelar <Kbd>Esc</Kbd>
+      </Button>
+      <Button variant="primary" onClick={aoSalvar} loading={salvando}>
         Salvar configuração
-      </button>
+        <Kbd className="text-primary-on border-transparent bg-white/15">F8</Kbd>
+      </Button>
     </div>
   );
 }
@@ -236,12 +246,12 @@ function RodapeDoDescarte({ aoDescartar }: { readonly aoDescartar: () => void })
   const fechar = useOverlayClose();
   return (
     <>
-      <button type="button" className={BOTAO_SECUNDARIO} onClick={fechar}>
+      <Button variant="quiet" onClick={fechar}>
         Continuar editando
-      </button>
-      <button type="button" className={BOTAO_PRIMARIO} onClick={aoDescartar}>
+      </Button>
+      <Button variant="danger" onClick={aoDescartar}>
         Descartar e sair
-      </button>
+      </Button>
     </>
   );
 }
@@ -261,9 +271,9 @@ export function DescartarAlteracoes({
       description="O que foi alterado e ainda não foi salvo (F8) será perdido."
       footer={<RodapeDoDescarte aoDescartar={aoDescartar} />}
     >
-      <p className="text-body-sm text-mute">
+      <Text variant="corpoSecundario">
         A configuração que já está no servidor continua valendo.
-      </p>
+      </Text>
     </Modal>
   );
 }

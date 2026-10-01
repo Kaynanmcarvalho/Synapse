@@ -69,7 +69,7 @@ function useFormularioFiscal() {
  *  alterado e grava tudo de uma vez (F8), como o Salvar Configuracao do Syndata. */
 export function useAssistente() {
   const estado = useFormularioFiscal();
-  const { aplicar, companyId, formulario, segredos, gravados } = estado;
+  const { aplicar, companyId, formulario, segredos, gravados, atualizadoEm } = estado;
   const [carga, setCarga] = useState<Carga>({ status: 'carregando' });
   const [salvando, setSalvando] = useState(false);
   const [aviso, setAviso] = useState<Aviso | null>(null);
@@ -97,10 +97,28 @@ export function useAssistente() {
     [formulario, segredos, gravados],
   );
 
+  /** Fase 8: depois de um F8 bloqueado, cada pendencia que tem campo aparece
+   *  NO campo. Antes disso, so a faixa da etapa mostra — o formulario nao nasce
+   *  vermelho. Volta a esconder quando a config e carregada ou salva. */
+  const [revelar, setRevelar] = useState(false);
+  useEffect(() => setRevelar(false), [atualizadoEm, companyId]);
+  const erroDoCampo = useCallback(
+    (campo: string): string | null =>
+      revelar ? (pendencias.find((p) => p.bloqueia && p.campo === campo)?.mensagem ?? null) : null,
+    [revelar, pendencias],
+  );
+
   const salvar = async (): Promise<ResultadoDoSalvar> => {
     const bloqueio = pendencias.find((pendencia) => pendencia.bloqueia);
     if (bloqueio) {
-      setAviso({ tom: 'erro', texto: `Antes de salvar: ${bloqueio.mensagem}` });
+      const bloqueios = pendencias.filter((pendencia) => pendencia.bloqueia).length;
+      setRevelar(true);
+      // A mensagem do problema fica no campo/etapa (um lugar so); o aviso diz
+      // por que a tela mudou de lugar.
+      setAviso({
+        tom: 'erro',
+        texto: `Não foi salvo: ${bloqueios === 1 ? '1 pendência impede' : `${bloqueios} pendências impedem`} salvar. Abrimos a primeira.`,
+      });
       return { ok: false, pendencia: bloqueio };
     }
     setSalvando(true);
@@ -124,6 +142,8 @@ export function useAssistente() {
     salvando,
     aviso,
     pendencias,
+    revelar,
+    erroDoCampo,
     salvar,
     fecharAviso: () => setAviso(null),
     recarregar: () => setTentativa((atual) => atual + 1),

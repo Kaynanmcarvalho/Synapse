@@ -1,8 +1,8 @@
 import type { FiscalAddress, FiscalIssuer } from '@synapse/types';
 import type { AlterarFormulario } from '../assistente.tipos';
 
-/** Grade dos formularios longos: 1 coluna no celular, 6 no tablet, 12 no desktop. */
-export const GRADE = 'grid grid-cols-1 gap-x-4 gap-y-5 sm:grid-cols-6 lg:grid-cols-12';
+/** Atualizadores do emitente e do endereço. A antiga grade de 12 colunas
+ *  (`GRADE`) saiu na Fase 8: a largura agora vem do dado (`larguras.ts`). */
 
 export const alterarEmitente =
   (alterar: AlterarFormulario) =>

@@ -1,12 +1,16 @@
-import { FileKey2, ShieldCheck, Upload, X } from 'lucide-react';
-import { useId, useState } from 'react';
+import { Button, IconButton, Status, TAMANHO_DE_ICONE, Text } from '@synapse/sdl';
+import { Upload, X } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { LinhaDeCampos, Secao } from '../../../../components/formulario/Formulario';
+import { LARGURA_DE_CAMPO as L } from '../../../../components/formulario/larguras';
 import { lerArquivoComoBase64 } from '../assistente.api';
 import type { PropsDeEtapa } from '../assistente.tipos';
-import { BOTAO_ICONE, BOTAO_SECUNDARIO, CampoSegredo, Escolha, Grupo, Nota } from '../campos';
+import { CampoSegredo, Escolha, Nota } from '../campos';
 
-/** Um A1 tem poucos KB; um arquivo grande assim nao e certificado. */
+/** Um A1 tem poucos KB; um arquivo grande assim não é certificado. */
 const TAMANHO_MAXIMO = 200 * 1024;
 
+/** A situação do certificado numa linha de leitura — sem cartão. */
 function SituacaoDoCertificado({
   gravado,
   arquivo,
@@ -18,66 +22,74 @@ function SituacaoDoCertificado({
 }) {
   if (arquivo) {
     return (
-      <div className="border-hairline-strong flex items-center gap-4 rounded-2xl border p-5">
-        <span className="bg-surface-soft text-ink flex h-11 w-11 shrink-0 items-center justify-center rounded-full">
-          <FileKey2 size={19} aria-hidden="true" />
-        </span>
-        <span className="min-w-0 flex-1">
-          <span className="text-body-sm text-ink block truncate font-semibold">{arquivo}</span>
-          <span className="text-caption text-stone block">
-            Vai para o cofre do servidor quando você salvar (F8).
-          </span>
-        </span>
-        <button
-          type="button"
-          onClick={aoRemover}
-          aria-label="Remover certificado selecionado"
-          className={BOTAO_ICONE}
-        >
-          <X size={17} />
-        </button>
+      <div className="flex items-center gap-3">
+        <Status tone="info">Arquivo selecionado</Status>
+        <Text variant="dado" className="min-w-0 truncate">
+          {arquivo}
+        </Text>
+        <Text variant="legenda">Vai para o cofre do servidor quando você salvar (F8).</Text>
+        <IconButton label="Remover certificado selecionado" density="compacta" onClick={aoRemover}>
+          <X size={TAMANHO_DE_ICONE.compacta} aria-hidden="true" />
+        </IconButton>
       </div>
     );
   }
   return (
-    <div className="border-hairline-light flex items-center gap-4 rounded-2xl border p-5">
-      <span
-        className={`bg-surface-soft flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${gravado ? 'text-accent-teal' : 'text-stone'}`}
-      >
-        <ShieldCheck size={19} aria-hidden="true" />
-      </span>
-      <span className="flex-1">
-        <span className="text-body-sm text-ink block font-semibold">
-          {gravado ? 'Certificado A1 guardado' : 'Nenhum certificado enviado'}
-        </span>
-        <span className="text-caption text-stone block">
-          {gravado
-            ? 'Para trocar, selecione o novo arquivo e informe a senha dele.'
-            : 'Selecione o arquivo .pfx ou .p12 do certificado A1 da empresa.'}
-        </span>
-      </span>
+    <div className="flex flex-wrap items-center gap-3">
+      <Status tone={gravado ? 'ok' : 'neutro'}>
+        {gravado ? 'Certificado A1 guardado' : 'Nenhum certificado enviado'}
+      </Status>
+      <Text variant="legenda">
+        {gravado
+          ? 'Para trocar, selecione o novo arquivo e informe a senha dele.'
+          : 'Selecione o arquivo .pfx ou .p12 do certificado A1 da empresa.'}
+      </Text>
     </div>
   );
 }
 
-export function AbaCertificado({ segredos, gravados, alterarSegredo }: PropsDeEtapa) {
-  const idDoArquivo = useId();
+/** O `<input type=file>` fica escondido; quem a pessoa usa é um Button do SDL
+ *  (antes era um `<label>` vestido de botão). */
+function SeletorDeArquivo({ aoEscolher }: { readonly aoEscolher: (arquivo?: File) => void }) {
+  const arquivo = useRef<HTMLInputElement>(null);
+  return (
+    <div className="pt-[22px]">
+      <input
+        ref={arquivo}
+        type="file"
+        accept=".pfx,.p12,application/x-pkcs12"
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden="true"
+        onChange={(evento) => {
+          aoEscolher(evento.target.files?.[0]);
+          evento.target.value = '';
+        }}
+      />
+      <Button variant="secondary" onClick={() => arquivo.current?.click()}>
+        <Upload size={TAMANHO_DE_ICONE.padrao} aria-hidden="true" /> Selecionar arquivo
+      </Button>
+    </div>
+  );
+}
+
+export function AbaCertificado({ segredos, gravados, alterarSegredo, erroDoCampo }: PropsDeEtapa) {
   const [erro, setErro] = useState<string | null>(null);
 
-  const escolher = async (arquivo: File | undefined) => {
+  const escolher = async (selecionado: File | undefined) => {
     setErro(null);
-    if (!arquivo) return;
-    if (!/\.(pfx|p12)$/i.test(arquivo.name)) {
+    if (!selecionado) return;
+    if (!/\.(pfx|p12)$/i.test(selecionado.name)) {
       setErro('Selecione um arquivo .pfx ou .p12.');
       return;
     }
-    if (arquivo.size > TAMANHO_MAXIMO) {
+    if (selecionado.size > TAMANHO_MAXIMO) {
       setErro('Arquivo grande demais para um certificado A1.');
       return;
     }
     try {
-      alterarSegredo('certificateBase64', await lerArquivoComoBase64(arquivo));
-      alterarSegredo('certificateFileName', arquivo.name);
+      alterarSegredo('certificateBase64', await lerArquivoComoBase64(selecionado));
+      alterarSegredo('certificateFileName', selecionado.name);
     } catch (falha) {
       setErro(falha instanceof Error ? falha.message : 'Não foi possível ler o arquivo.');
     }
@@ -89,8 +101,8 @@ export function AbaCertificado({ segredos, gravados, alterarSegredo }: PropsDeEt
   };
 
   return (
-    <Grupo titulo="Certificado digital">
-      <div className="max-w-2xl space-y-6">
+    <Secao titulo="Certificado digital">
+      <div className="space-y-5">
         <Escolha
           rotulo="Vale para"
           valor="TODOS"
@@ -105,33 +117,22 @@ export function AbaCertificado({ segredos, gravados, alterarSegredo }: PropsDeEt
           arquivo={segredos.certificateFileName}
           aoRemover={remover}
         />
-        <div className="grid gap-5 sm:grid-cols-2 sm:items-end">
-          <div>
-            <input
-              id={idDoArquivo}
-              type="file"
-              accept=".pfx,.p12,application/x-pkcs12"
-              className="sr-only"
-              onChange={(evento) => {
-                void escolher(evento.target.files?.[0]);
-                evento.target.value = '';
-              }}
-            />
-            <label htmlFor={idDoArquivo} className={`${BOTAO_SECUNDARIO} w-full cursor-pointer`}>
-              <Upload size={16} aria-hidden="true" /> Selecionar arquivo
-            </label>
-          </div>
+        <LinhaDeCampos>
+          <SeletorDeArquivo aoEscolher={(selecionado) => void escolher(selecionado)} />
           <CampoSegredo
             rotulo="Senha do certificado"
+            className={L.longo}
+            campo="segredo.certificatePassword"
+            erro={erroDoCampo('segredo.certificatePassword')}
             gravado={gravados.senhaCertificado && !segredos.certificateBase64}
             valor={segredos.certificatePassword}
             aoMudar={(valor) => alterarSegredo('certificatePassword', valor)}
           />
-        </div>
+        </LinhaDeCampos>
         {erro && (
-          <p role="alert" className="text-body-sm text-accent-danger">
+          <Text variant="corpo" tone="perigo" role="alert">
             {erro}
-          </p>
+          </Text>
         )}
         <Nota>
           Na nuvem, o Synapse guarda um certificado A1 por empresa, usado por todos os terminais.
@@ -139,6 +140,6 @@ export function AbaCertificado({ segredos, gravados, alterarSegredo }: PropsDeEt
           volta.
         </Nota>
       </div>
-    </Grupo>
+    </Secao>
   );
 }

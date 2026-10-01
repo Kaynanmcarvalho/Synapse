@@ -1,3 +1,6 @@
+import { DocInput, Field, Input, Select } from '@synapse/sdl';
+import { LinhaDeCampos, Secao } from '../../../../components/formulario/Formulario';
+import { LARGURA_DE_CAMPO as L } from '../../../../components/formulario/larguras';
 import { CRTS } from '../assistente.dados';
 import {
   formatarCnpj,
@@ -7,34 +10,46 @@ import {
   soDigitos,
 } from '../assistente.formato';
 import type { PropsDeEtapa } from '../assistente.tipos';
-import { Campo, Escolha, Grupo, Selecao } from '../campos';
+import { Escolha, OpcoesDoSelect } from '../campos';
+import { opcaoEscolhida } from '../opcoes';
 import { EnderecoDaEmpresa } from './EnderecoDaEmpresa';
-import { alterarEmitente, GRADE } from './grade';
+import { alterarEmitente } from './grade';
 
-type PropsDoGrupo = Pick<PropsDeEtapa, 'formulario' | 'alterar'>;
+/** Parâmetros da empresa. Mesmos campos, máscaras e limites de antes; a
+ *  largura de cada campo vem do dado (CNAE curto, razão social longa), não de
+ *  uma grade de 12 colunas. */
 
-function Identificacao({ formulario, alterar }: PropsDoGrupo) {
+type PropsDoGrupo = Pick<PropsDeEtapa, 'formulario' | 'alterar' | 'erroDoCampo'>;
+
+function Identificacao({ formulario, alterar, erroDoCampo }: PropsDoGrupo) {
   const { issuer } = formulario;
   const emitente = alterarEmitente(alterar);
   const pj = issuer.personType === 'PJ';
   return (
-    <Grupo titulo="Identificação">
-      <div className={GRADE}>
-        <Campo
-          rotulo="Razão social"
-          className="sm:col-span-6 lg:col-span-7"
-          value={issuer.legalName}
-          maxLength={120}
-          onChange={(e) => emitente({ legalName: e.target.value })}
-        />
-        <Campo
-          rotulo="Nome fantasia"
-          className="sm:col-span-6 lg:col-span-5"
-          value={issuer.tradeName}
-          maxLength={120}
-          onChange={(e) => emitente({ tradeName: e.target.value })}
-        />
-        <div className="sm:col-span-3 lg:col-span-4">
+    <Secao titulo="Identificação">
+      <LinhaDeCampos>
+        <Field
+          label="Razão social"
+          className={L.resto}
+          data-campo="issuer.legalName"
+          error={erroDoCampo('issuer.legalName')}
+        >
+          <Input
+            value={issuer.legalName}
+            maxLength={120}
+            onChange={(e) => emitente({ legalName: e.target.value })}
+          />
+        </Field>
+        <Field label="Nome fantasia" className={L.resto}>
+          <Input
+            value={issuer.tradeName}
+            maxLength={120}
+            onChange={(e) => emitente({ tradeName: e.target.value })}
+          />
+        </Field>
+      </LinhaDeCampos>
+      <div className="mt-3">
+        <LinhaDeCampos>
           <Escolha
             rotulo="Pessoa"
             valor={issuer.personType}
@@ -44,140 +59,169 @@ function Identificacao({ formulario, alterar }: PropsDoGrupo) {
             ]}
             aoMudar={(personType) => emitente({ personType, document: '' })}
           />
-        </div>
-        <Campo
-          rotulo={pj ? 'CNPJ' : 'CPF'}
-          className="sm:col-span-3 lg:col-span-4"
-          inputMode="numeric"
-          value={pj ? formatarCnpj(issuer.document) : formatarCpf(issuer.document)}
-          onChange={(e) => emitente({ document: soDigitos(e.target.value).slice(0, pj ? 14 : 11) })}
-        />
+          <Field
+            label={pj ? 'CNPJ' : 'CPF'}
+            className={L.medio}
+            data-campo="issuer.document"
+            error={erroDoCampo('issuer.document')}
+          >
+            <DocInput
+              value={pj ? formatarCnpj(issuer.document) : formatarCpf(issuer.document)}
+              onChange={(e) =>
+                emitente({ document: soDigitos(e.target.value).slice(0, pj ? 14 : 11) })
+              }
+            />
+          </Field>
+        </LinhaDeCampos>
       </div>
-    </Grupo>
+    </Secao>
   );
 }
 
-function InscricoesERegime({ formulario, alterar }: PropsDoGrupo) {
+function InscricoesERegime({ formulario, alterar, erroDoCampo }: PropsDoGrupo) {
   const { issuer } = formulario;
   const emitente = alterarEmitente(alterar);
   return (
-    <Grupo titulo="Inscrições e regime tributário">
-      <div className={GRADE}>
-        <Campo
-          rotulo="Inscrição estadual"
-          className="sm:col-span-2 lg:col-span-4"
-          value={formulario.stateRegistration}
-          maxLength={20}
-          placeholder="Número ou ISENTO"
-          onChange={(e) => alterar((atual) => ({ ...atual, stateRegistration: e.target.value }))}
-        />
-        <Campo
-          rotulo="Inscrição municipal"
-          className="sm:col-span-2 lg:col-span-4"
-          value={issuer.municipalRegistration}
-          maxLength={20}
-          onChange={(e) => emitente({ municipalRegistration: e.target.value })}
-        />
-        <Campo
-          rotulo="Inscrição SUFRAMA"
-          className="sm:col-span-2 lg:col-span-4"
-          inputMode="numeric"
-          value={issuer.suframaRegistration}
-          onChange={(e) => emitente({ suframaRegistration: soDigitos(e.target.value).slice(0, 9) })}
-        />
-        <Selecao
-          rotulo="CRT — código de regime tributário"
-          className="sm:col-span-4 lg:col-span-8"
-          valor={formulario.crt}
-          opcoes={CRTS}
-          aoMudar={(crt) => alterar((atual) => ({ ...atual, crt }))}
-        />
-        <Campo
-          rotulo="CNAE"
-          className="sm:col-span-2 lg:col-span-4"
-          inputMode="numeric"
-          value={issuer.cnae}
-          onChange={(e) => emitente({ cnae: soDigitos(e.target.value).slice(0, 7) })}
-        />
-      </div>
-    </Grupo>
+    <Secao titulo="Inscrições e regime tributário">
+      <LinhaDeCampos>
+        <Field
+          label="Inscrição estadual"
+          className={L.curto}
+          data-campo="stateRegistration"
+          error={erroDoCampo('stateRegistration')}
+        >
+          <Input
+            className="font-data"
+            value={formulario.stateRegistration}
+            maxLength={20}
+            placeholder="Número ou ISENTO"
+            onChange={(e) => alterar((atual) => ({ ...atual, stateRegistration: e.target.value }))}
+          />
+        </Field>
+        <Field label="Inscrição municipal" className={L.curto}>
+          <Input
+            className="font-data"
+            value={issuer.municipalRegistration}
+            maxLength={20}
+            onChange={(e) => emitente({ municipalRegistration: e.target.value })}
+          />
+        </Field>
+        <Field label="Inscrição SUFRAMA" className={L.curto}>
+          <DocInput
+            value={issuer.suframaRegistration}
+            onChange={(e) =>
+              emitente({ suframaRegistration: soDigitos(e.target.value).slice(0, 9) })
+            }
+          />
+        </Field>
+        <Field label="CRT — código de regime tributário" className={L.longo}>
+          <Select
+            value={String(formulario.crt)}
+            onChange={(e) => {
+              const crt = opcaoEscolhida(CRTS, e.target.value);
+              if (crt) alterar((atual) => ({ ...atual, crt }));
+            }}
+          >
+            <OpcoesDoSelect opcoes={CRTS} />
+          </Select>
+        </Field>
+        <Field label="CNAE" className={L.codigo}>
+          <DocInput
+            value={issuer.cnae}
+            onChange={(e) => emitente({ cnae: soDigitos(e.target.value).slice(0, 7) })}
+          />
+        </Field>
+      </LinhaDeCampos>
+    </Secao>
   );
 }
 
-function Contato({ formulario, alterar }: PropsDoGrupo) {
+function Contato({ formulario, alterar, erroDoCampo }: PropsDoGrupo) {
   const { issuer } = formulario;
   const emitente = alterarEmitente(alterar);
   const telefone = (chave: 'phone' | 'phone2' | 'fax', rotulo: string) => (
-    <Campo
-      rotulo={rotulo}
-      className="sm:col-span-2 lg:col-span-4"
-      inputMode="tel"
-      value={formatarTelefone(issuer[chave])}
-      onChange={(e) => emitente({ [chave]: soDigitos(e.target.value).slice(0, 11) })}
-    />
+    <Field label={rotulo} className={L.curto}>
+      <DocInput
+        inputMode="tel"
+        value={formatarTelefone(issuer[chave])}
+        onChange={(e) => emitente({ [chave]: soDigitos(e.target.value).slice(0, 11) })}
+      />
+    </Field>
   );
   return (
-    <Grupo titulo="Contato">
-      <div className={GRADE}>
+    <Secao titulo="Contato">
+      <LinhaDeCampos>
         {telefone('phone', 'Telefone 1')}
         {telefone('phone2', 'Telefone 2')}
         {telefone('fax', 'Fax')}
-        <Campo
-          rotulo="E-mail"
-          type="email"
-          className="sm:col-span-3 lg:col-span-6"
-          value={issuer.email}
-          maxLength={120}
-          onChange={(e) => emitente({ email: e.target.value.trim() })}
-        />
-        <Campo
-          rotulo="Responsável"
-          className="sm:col-span-3 lg:col-span-6"
-          value={issuer.responsible}
-          maxLength={80}
-          onChange={(e) => emitente({ responsible: e.target.value })}
-        />
-      </div>
-    </Grupo>
+        <Field
+          label="E-mail"
+          className={L.resto}
+          data-campo="issuer.email"
+          error={erroDoCampo('issuer.email')}
+        >
+          <Input
+            type="email"
+            value={issuer.email}
+            maxLength={120}
+            onChange={(e) => emitente({ email: e.target.value.trim() })}
+          />
+        </Field>
+        <Field label="Responsável" className={L.resto}>
+          <Input
+            value={issuer.responsible}
+            maxLength={80}
+            onChange={(e) => emitente({ responsible: e.target.value })}
+          />
+        </Field>
+      </LinhaDeCampos>
+    </Secao>
   );
 }
 
-function Contabilista({ formulario, alterar }: PropsDoGrupo) {
+function Contabilista({ formulario, alterar, erroDoCampo }: PropsDoGrupo) {
   const { issuer } = formulario;
   const emitente = alterarEmitente(alterar);
   return (
-    <Grupo
+    <Secao
       titulo="Contabilista"
       descricao="Usado para autorizar o escritório de contabilidade a baixar o XML das notas."
     >
-      <div className={GRADE}>
-        <Campo
-          rotulo="CPF ou CNPJ"
-          className="sm:col-span-2 lg:col-span-4"
-          inputMode="numeric"
-          value={formatarDocumento(issuer.accountantDocument)}
-          onChange={(e) => emitente({ accountantDocument: soDigitos(e.target.value).slice(0, 14) })}
-        />
-        <Campo
-          rotulo="Nome"
-          className="sm:col-span-4 lg:col-span-8"
-          value={issuer.accountantName}
-          maxLength={120}
-          onChange={(e) => emitente({ accountantName: e.target.value })}
-        />
-      </div>
-    </Grupo>
+      <LinhaDeCampos>
+        <Field
+          label="CPF ou CNPJ"
+          className={L.medio}
+          data-campo="issuer.accountantDocument"
+          error={erroDoCampo('issuer.accountantDocument')}
+        >
+          <DocInput
+            value={formatarDocumento(issuer.accountantDocument)}
+            onChange={(e) =>
+              emitente({ accountantDocument: soDigitos(e.target.value).slice(0, 14) })
+            }
+          />
+        </Field>
+        <Field label="Nome" className={L.resto}>
+          <Input
+            value={issuer.accountantName}
+            maxLength={120}
+            onChange={(e) => emitente({ accountantName: e.target.value })}
+          />
+        </Field>
+      </LinhaDeCampos>
+    </Secao>
   );
 }
 
-export function EtapaEmpresa({ formulario, alterar }: PropsDeEtapa) {
+export function EtapaEmpresa({ formulario, alterar, erroDoCampo }: PropsDeEtapa) {
+  const grupo = { formulario, alterar, erroDoCampo };
   return (
     <>
-      <Identificacao formulario={formulario} alterar={alterar} />
-      <InscricoesERegime formulario={formulario} alterar={alterar} />
-      <EnderecoDaEmpresa formulario={formulario} alterar={alterar} />
-      <Contato formulario={formulario} alterar={alterar} />
-      <Contabilista formulario={formulario} alterar={alterar} />
+      <Identificacao {...grupo} />
+      <InscricoesERegime {...grupo} />
+      <EnderecoDaEmpresa {...grupo} />
+      <Contato {...grupo} />
+      <Contabilista {...grupo} />
     </>
   );
 }

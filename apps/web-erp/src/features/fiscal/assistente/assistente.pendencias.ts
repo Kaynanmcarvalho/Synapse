@@ -19,13 +19,20 @@ const invalidoSePreenchido = (valor: string, validar: (texto: string) => boolean
 const inteiroEntre = (valor: number, minimo: number, maximo: number): boolean =>
   Number.isInteger(valor) && valor >= minimo && valor <= maximo;
 
-/** [falhou, mensagem, bloqueia salvar, aba] */
-type Regra = readonly [boolean, string, boolean, string?];
+/** [falhou, mensagem, bloqueia salvar, aba, campo]. `campo` so diz ONDE a
+ *  regra aparece na tela (Fase 8) — nao muda quando ela falha. */
+type Regra = readonly [boolean, string, boolean, (string | undefined)?, string?];
 
 const coletar = (etapa: EtapaId, regras: readonly Regra[]): Pendencia[] =>
   regras
     .filter(([falhou]) => falhou)
-    .map(([, mensagem, bloqueia, aba]) => ({ etapa, mensagem, bloqueia, ...(aba ? { aba } : {}) }));
+    .map(([, mensagem, bloqueia, aba, campo]) => ({
+      etapa,
+      mensagem,
+      bloqueia,
+      ...(aba ? { aba } : {}),
+      ...(campo ? { campo } : {}),
+    }));
 
 const daEmpresa = (formulario: FormularioFiscal): Pendencia[] => {
   const { issuer } = formulario;
@@ -33,35 +40,61 @@ const daEmpresa = (formulario: FormularioFiscal): Pendencia[] => {
   const pj = issuer.personType === 'PJ';
   const documento = pj ? 'CNPJ' : 'CPF';
   return coletar('empresa', [
-    [vazio(issuer.legalName), 'Informe a razão social.', false],
-    [vazio(issuer.document), `Informe o ${documento} do emitente.`, false],
+    [vazio(issuer.legalName), 'Informe a razão social.', false, undefined, 'issuer.legalName'],
+    [
+      vazio(issuer.document),
+      `Informe o ${documento} do emitente.`,
+      false,
+      undefined,
+      'issuer.document',
+    ],
     [
       invalidoSePreenchido(issuer.document, pj ? isValidCnpj : isValidCpf),
       `${documento} do emitente inválido.`,
       true,
+      undefined,
+      'issuer.document',
     ],
     [
       formulario.stateRegistration.trim().length < 2,
       'Informe a inscrição estadual (ou ISENTO).',
       true,
+      undefined,
+      'stateRegistration',
     ],
-    [vazio(formulario.state), 'Selecione a UF.', true],
-    [address.zipCode.length !== 8, 'Informe o CEP com 8 dígitos.', false],
+    [vazio(formulario.state), 'Selecione a UF.', true, undefined, 'state'],
+    [
+      address.zipCode.length !== 8,
+      'Informe o CEP com 8 dígitos.',
+      false,
+      undefined,
+      'issuer.address.zipCode',
+    ],
     [
       [address.street, address.number, address.district, address.cityName].some(vazio),
       'Complete o endereço: logradouro, número, bairro e cidade.',
       false,
     ],
-    [address.cityCode.length !== 7, 'Informe o código IBGE da cidade (7 dígitos).', false],
+    [
+      address.cityCode.length !== 7,
+      'Informe o código IBGE da cidade (7 dígitos).',
+      false,
+      undefined,
+      'issuer.address.cityCode',
+    ],
     [
       invalidoSePreenchido(issuer.email, (email) => EMAIL.test(email)),
       'E-mail da empresa inválido.',
       true,
+      undefined,
+      'issuer.email',
     ],
     [
       invalidoSePreenchido(issuer.accountantDocument, isValidCpfOrCnpj),
       'CPF/CNPJ do contabilista inválido.',
       true,
+      undefined,
+      'issuer.accountantDocument',
     ],
   ]);
 };
@@ -84,12 +117,14 @@ const daNotaFiscal = (
       'CPF/CNPJ autorizado a baixar o XML é inválido.',
       true,
       'emissao',
+      'emission.xmlDownloadDocument',
     ],
     [
       invalidoSePreenchido(emission.paymentBeneficiaryCnpj, isValidCnpj),
       'CNPJ do beneficiário do pagamento é inválido.',
       true,
       'emissao',
+      'emission.paymentBeneficiaryCnpj',
     ],
     [
       invalidoSePreenchido(email.senderEmail, (v) => EMAIL.test(v)),
@@ -108,6 +143,7 @@ const daNotaFiscal = (
       'Produção exige o provedor Gyn Fiscal.',
       true,
       'webservice',
+      'provider',
     ],
     [
       gyn && !gravados.chaveProvedor && vazio(segredos.providerApiKey),
@@ -132,6 +168,7 @@ const daNotaFiscal = (
       'Informe a senha do certificado enviado.',
       true,
       'certificado',
+      'segredo.certificatePassword',
     ],
     [
       aliquotaForaDoIntervalo,
@@ -149,20 +186,35 @@ const daNfe = ({ nfeSeries, nfe }: FormularioFiscal): Pendencia[] =>
       'CFOP dentro do estado começa com 5 (ex.: 5.102).',
       true,
       'configuracoes',
+      'nfe.cfopInState',
     ],
     [
       !CFOP_FORA.test(nfe.cfopOutOfState),
       'CFOP fora do estado começa com 6 (ex.: 6.102).',
       true,
       'configuracoes',
+      'nfe.cfopOutOfState',
     ],
-    [vazio(nfe.operationNature), 'Informe a natureza da operação.', true, 'configuracoes'],
-    [!inteiroEntre(nfeSeries, 1, 999), 'A série da NF-e vai de 1 a 999.', true, 'series'],
+    [
+      vazio(nfe.operationNature),
+      'Informe a natureza da operação.',
+      true,
+      'configuracoes',
+      'nfe.operationNature',
+    ],
+    [
+      !inteiroEntre(nfeSeries, 1, 999),
+      'A série da NF-e vai de 1 a 999.',
+      true,
+      'series',
+      'nfeSeries',
+    ],
     [
       !inteiroEntre(nfe.nextNumber, 1, MAIOR_NUMERO),
       'Informe o próximo número da NF-e.',
       true,
       'series',
+      'nfe.nextNumber',
     ],
   ]);
 
@@ -211,6 +263,7 @@ const daNfce = (
       'CFOP dentro do estado começa com 5 (ex.: 5.102).',
       true,
       'configuracoes',
+      'nfce.cfopInState',
     ],
     [
       formulario.provider !== 'MOCK' && semCsc,
@@ -236,12 +289,14 @@ const daNfce = (
       'A senha da contingência precisa de ao menos 4 caracteres.',
       true,
       'forma-emissao',
+      'segredo.nfceOfflinePassword',
     ],
     [
       nfce.requireOfflinePassword && !gravados.senhaOffline && senha === '',
       'Defina a senha da contingência offline.',
       true,
       'forma-emissao',
+      'segredo.nfceOfflinePassword',
     ],
   ]);
 };

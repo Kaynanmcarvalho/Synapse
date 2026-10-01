@@ -73,6 +73,10 @@ export interface Pendencia {
   readonly mensagem: string;
   /** A API recusaria o valor: impede salvar. As outras so avisam. */
   readonly bloqueia: boolean;
+  /** Campo onde a regra aparece na tela (ex.: `issuer.document`). Sem ele, a
+   *  regra envolve um conjunto (endereco incompleto, linhas de serie) e fica
+   *  no nivel da etapa. */
+  readonly campo?: string;
 }
 
 export type AlterarFormulario = (mudar: (atual: FormularioFiscal) => FormularioFiscal) => void;
@@ -87,4 +91,9 @@ export interface PropsDeEtapa {
   readonly alterarSegredo: AlterarSegredo;
   readonly aba: string;
   readonly aoMudarAba: (aba: string) => void;
+  /** Mensagem a mostrar no campo — so depois de um F8 bloqueado, para o
+   *  formulario nao nascer vermelho. `null` quando nao ha nada a mostrar. */
+  readonly erroDoCampo: (campo: string) => string | null;
+  /** As mesmas pendencias do F8, para as abas marcarem onde ha bloqueio. */
+  readonly pendencias: readonly Pendencia[];
 }

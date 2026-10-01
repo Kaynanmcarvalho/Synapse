@@ -1,4 +1,5 @@
-import { ArrowRight, LoaderCircle } from 'lucide-react';
+import { Button, Text } from '@synapse/sdl';
+import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { ROTAS } from '../../../../app/rotas';
 import { PROVEDORES, rotuloDoAmbiente } from '../assistente.dados';
@@ -9,7 +10,7 @@ import type {
   SegredosDigitados,
   SegredosGravados,
 } from '../assistente.tipos';
-import { BOTAO_PRIMARIO, BOTAO_SECUNDARIO } from '../campos';
+import { Secao } from '../../../../components/formulario/Formulario';
 import type { PropsDeFechamento } from './EtapaSincronia';
 
 interface DadosDoResumo {
@@ -96,26 +97,37 @@ export function EtapaConclusao({
     resumoDasPendencias(pendencias, atualizadoEm),
   ];
   return (
-    <>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <Secao titulo="Resumo" descricao="O que vai para o servidor, por assunto.">
+      {/* Leitura em grade de valores, sem cartão por item. */}
+      <dl className="grid gap-x-10 gap-y-5 sm:grid-cols-2 xl:grid-cols-3">
         {resumos.map((resumo) => (
-          <div key={resumo.titulo} className="border-hairline-light rounded-2xl border p-5">
-            <p className="text-caption text-mute">{resumo.titulo}</p>
-            <p className="text-heading-sm text-ink mt-2 truncate font-medium">{resumo.valor}</p>
-            <p className="text-body-sm text-mute mt-1 truncate">{resumo.detalhe}</p>
+          <div key={resumo.titulo} className="border-line-fina min-w-0 border-l-2 pl-4">
+            <dt>
+              <Text variant="rotulo">{resumo.titulo}</Text>
+            </dt>
+            <dd className="mt-0.5">
+              <Text variant="tituloCartao" as="p" className="truncate">
+                {resumo.valor}
+              </Text>
+              <Text variant="corpoSecundario" className="truncate">
+                {resumo.detalhe}
+              </Text>
+            </dd>
           </div>
         ))}
-      </div>
+      </dl>
 
-      <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <button type="button" className={BOTAO_PRIMARIO} onClick={aoConcluir} disabled={salvando}>
-          {salvando && <LoaderCircle size={17} className="animate-spin" aria-hidden="true" />}
+      <div className="mt-8 flex flex-wrap items-center gap-4">
+        <Button variant="primary" onClick={aoConcluir} loading={salvando}>
           {sujo ? 'Salvar e concluir' : 'Concluir'}
-        </button>
-        <Link to={ROTAS.integracoes} className={BOTAO_SECUNDARIO}>
-          Testar na Central de Integrações <ArrowRight size={16} aria-hidden="true" />
+        </Button>
+        <Link
+          to={ROTAS.integracoes}
+          className="text-button-sm text-primary rounded-minimo focus-visible:ring-primary/40 inline-flex items-center gap-1 underline-offset-4 outline-none hover:underline focus-visible:ring-2"
+        >
+          Testar na Central de Integrações <ArrowRight size={15} aria-hidden="true" />
         </Link>
       </div>
-    </>
+    </Secao>
   );
 }

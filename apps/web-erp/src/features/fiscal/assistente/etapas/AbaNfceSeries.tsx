@@ -2,9 +2,9 @@ import { Button, DataGridCabecalho, Text } from '@synapse/sdl';
 import type { NfceSeriesAssignment, NfceSettings } from '@synapse/types';
 import { MonitorSmartphone, Plus } from 'lucide-react';
 import type { ReactNode, RefObject } from 'react';
-import { ValoresDeLeitura } from '../../../../components/formulario/Formulario';
+import { Secao, ValoresDeLeitura } from '../../../../components/formulario/Formulario';
 import { identificadorDoDispositivo } from '../../../../lib/dev-auth';
-import { Escolha, Grupo } from '../campos';
+import { Escolha } from '../campos';
 import { LinhaDeSerie } from './LinhaDeSerie';
 import { nomeDoDispositivo, novaLinha, useCamposTocados, useFocoDaColecao } from './series.colecao';
 
@@ -147,7 +147,7 @@ export function AbaNfceSeries({
   };
 
   return (
-    <Grupo
+    <Secao
       titulo="Controle de séries"
       descricao="A primeira linha é a série padrão das vendas com NFC-e."
       acao={
@@ -186,6 +186,6 @@ export function AbaNfceSeries({
         ))}
       </Tabela>
       {porTerminal && <EsteDispositivo dispositivo={dispositivo} linha={desteDispositivo} />}
-    </Grupo>
+    </Secao>
   );
 }

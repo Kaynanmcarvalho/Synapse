@@ -1,10 +1,11 @@
-import { CircleAlert, RotateCw, X } from 'lucide-react';
+import { Button, Spinner, Text } from '@synapse/sdl';
+import { RotateCw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROTAS } from '../../../app/rotas';
 import { ETAPAS } from './assistente.dados';
-import type { PropsDeEtapa } from './assistente.tipos';
-import { BOTAO_ICONE, BOTAO_SECUNDARIO } from './campos';
+import { formatarDocumento } from './assistente.formato';
+import type { EtapaId, Pendencia, PropsDeEtapa } from './assistente.tipos';
 import { EtapaConclusao } from './etapas/EtapaConclusao';
 import { EtapaEmpresa } from './etapas/EtapaEmpresa';
 import { EtapaNfce } from './etapas/EtapaNfce';
@@ -19,18 +20,15 @@ import {
   JanelaDoAssistente,
   TrilhaDeEtapas,
 } from './moldura';
+import { PendenciasDaEtapa } from './PendenciasDaEtapa';
 import { type EstadoDoAssistente, useAssistente, useNavegacao } from './useAssistente';
 import { useAtalhosDoAssistente } from './useAtalhosDoAssistente';
 
 type Navegacao = ReturnType<typeof useNavegacao>;
 
-/** Grade das duas janelas: a das etapas e a da etapa aberta. A linha e limitada
- *  no desktop para que cada painel role por dentro em vez de estourar a tela. */
-const GRADE =
-  'mx-auto grid min-h-0 w-full max-w-[1360px] flex-1 gap-3 overflow-y-auto sm:gap-4 lg:grid-cols-[264px_minmax(0,1fr)] 2xl:grid-cols-[304px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] lg:overflow-hidden';
-
-const PAINEL =
-  'border-hairline-light bg-canvas-light shadow-janela flex min-h-0 min-w-0 flex-col overflow-hidden rounded-3xl border lg:h-full';
+/** Etapas que editam dados — as que ganham a faixa de pendências. Sincronia já
+ *  é a revisão de tudo; Conclusão é o resumo. */
+const ETAPAS_DE_DADOS: ReadonlySet<EtapaId> = new Set(['empresa', 'nota-fiscal', 'nfe', 'nfce']);
 
 function ConteudoDaEtapa({
   assistente,
@@ -51,6 +49,8 @@ function ConteudoDaEtapa({
     alterarSegredo: assistente.alterarSegredo,
     aba: navegacao.aba,
     aoMudarAba: navegacao.mudarAba,
+    erroDoCampo: assistente.erroDoCampo,
+    pendencias: assistente.pendencias,
   };
   const fechamento = {
     pendencias: assistente.pendencias,
@@ -77,13 +77,15 @@ function ConteudoDaEtapa({
 
 function Carregando() {
   return (
-    <div aria-busy="true" className={GRADE}>
-      <div className="bg-canvas-light/70 shadow-janela hidden min-h-80 animate-pulse rounded-3xl lg:block" />
-      <div className="bg-canvas-light/70 shadow-janela min-h-[560px] animate-pulse rounded-3xl" />
+    <div className="m-auto flex items-center gap-3" aria-busy="true">
+      <Spinner decorative />
+      <Text variant="corpoSecundario">Carregando a configuração fiscal…</Text>
     </div>
   );
 }
 
+/** Falha ao carregar NÃO mostra formulário com valores padrão: preencher em
+ *  cima de um default e salvar sobrescreveria a config real. */
 function FalhaAoCarregar({
   mensagem,
   aoTentar,
@@ -92,24 +94,38 @@ function FalhaAoCarregar({
   readonly aoTentar: () => void;
 }) {
   return (
-    <div className="border-hairline-light bg-canvas-light shadow-janela m-auto flex w-full max-w-xl flex-col items-start gap-4 rounded-3xl border p-6 sm:flex-row sm:items-center">
-      <span className="bg-surface-soft text-accent-danger flex h-11 w-11 shrink-0 items-center justify-center rounded-full">
-        <CircleAlert size={20} aria-hidden="true" />
-      </span>
-      <span className="flex-1">
-        <span className="text-body-md text-ink block font-semibold">
-          Não foi possível abrir a configuração fiscal
-        </span>
-        <span className="text-body-sm text-mute block">{mensagem}</span>
-      </span>
-      <button type="button" className={BOTAO_SECUNDARIO} onClick={aoTentar}>
+    <div role="alert" className="m-auto max-w-xl px-6 text-center">
+      <Text variant="tituloCartao" as="p">
+        Não foi possível abrir a configuração fiscal
+      </Text>
+      <Text variant="corpoSecundario" className="mt-1">
+        {mensagem}
+      </Text>
+      <Button variant="secondary" className="mt-4" onClick={aoTentar}>
         <RotateCw size={15} aria-hidden="true" /> Tentar de novo
-      </button>
+      </Button>
     </div>
   );
 }
 
-function PaineisDoAssistente({
+/** Leva até a pendência clicada: abre etapa/aba e, se ela tem campo, rola até
+ *  ele e põe o foco — só por clique, nunca sozinho. */
+const useIrParaPendencia = (navegacao: Navegacao) => {
+  const [alvo, setAlvo] = useState<string | null>(null);
+  useEffect(() => {
+    if (!alvo) return;
+    const campo = document.querySelector<HTMLElement>(`[data-campo="${alvo}"]`);
+    campo?.scrollIntoView({ block: 'center' });
+    campo?.querySelector<HTMLElement>('input, select, textarea')?.focus({ preventScroll: true });
+    setAlvo(null);
+  }, [alvo, navegacao.etapa, navegacao.aba]);
+  return (pendencia: Pendencia) => {
+    navegacao.irPara(pendencia.etapa, pendencia.aba);
+    if (pendencia.campo) setAlvo(pendencia.campo);
+  };
+};
+
+function AreaDeTrabalho({
   assistente,
   navegacao,
   aoSalvar,
@@ -123,68 +139,69 @@ function PaineisDoAssistente({
   readonly aoCancelar: () => void;
 }) {
   const corpo = useRef<HTMLDivElement>(null);
-  // Trocar de etapa volta ao topo do painel — a pagina atras nao rola mais.
+  const irPara = useIrParaPendencia(navegacao);
+  // Trocar de etapa ou de aba volta ao topo — onde está a faixa de pendências.
   useEffect(() => {
     corpo.current?.scrollTo({ top: 0 });
-  }, [navegacao.etapa]);
-
+  }, [navegacao.etapa, navegacao.aba]);
   const etapa = ETAPAS[navegacao.indice] ?? ETAPAS[0];
   if (!etapa) return null;
   return (
-    <div className={GRADE}>
-      <aside className={PAINEL}>
-        <Cabecalho
-          ambiente={assistente.formulario.environment}
-          sujo={assistente.sujo}
-          atualizadoEm={assistente.atualizadoEm}
-        />
-        <TrilhaDeEtapas
-          atual={navegacao.etapa}
-          pendencias={assistente.pendencias}
-          aoEscolher={navegacao.irPara}
-        />
-      </aside>
-      <section aria-labelledby="titulo-da-etapa" className={PAINEL}>
-        {/* Uma linha so: o espaco do painel fica para o formulario. */}
-        <header className="border-hairline-light bg-surface-soft/50 flex shrink-0 items-center gap-3 border-b py-2.5 pl-5 pr-3 sm:pl-6">
-          <span className="text-caption bg-canvas-light border-hairline-light text-charcoal shrink-0 rounded-full border px-2.5 py-0.5 font-semibold">
-            Etapa {navegacao.indice + 1} de {ETAPAS.length}
-          </span>
-          <div className="flex min-w-0 flex-1 items-baseline gap-2">
-            <h2
-              id="titulo-da-etapa"
-              className="text-body-md text-ink truncate font-semibold md:shrink-0"
-            >
-              {etapa.rotulo}
-            </h2>
-            <p className="text-caption text-stone hidden truncate md:block" title={etapa.descricao}>
+    <section
+      data-area-de-trabalho
+      aria-labelledby="titulo-da-etapa"
+      className="bg-surface-pagina flex min-h-0 min-w-0 flex-col"
+    >
+      <div ref={corpo} className="min-h-0 flex-1 overflow-y-auto">
+        <div className="max-w-conteudo-ampla px-4 py-5 sm:px-8 lg:px-10">
+          <header className="mb-5">
+            <div className="flex flex-wrap items-baseline gap-x-3">
+              <Text variant="tituloSecao" as="h2" id="titulo-da-etapa">
+                {etapa.rotulo}
+              </Text>
+              <Text variant="legenda">
+                Etapa {navegacao.indice + 1} de {ETAPAS.length}
+              </Text>
+            </div>
+            <Text variant="corpoSecundario" className="mt-0.5">
               {etapa.descricao}
-            </p>
+            </Text>
+          </header>
+          {ETAPAS_DE_DADOS.has(etapa.id) && (
+            <PendenciasDaEtapa
+              pendencias={assistente.pendencias.filter((p) => p.etapa === etapa.id)}
+              abaAtual={navegacao.aba}
+              revelar={assistente.revelar}
+              aoIr={irPara}
+            />
+          )}
+          <div className="space-y-8">
+            <ConteudoDaEtapa
+              assistente={assistente}
+              navegacao={navegacao}
+              aoSalvar={aoSalvar}
+              aoConcluir={aoConcluir}
+            />
           </div>
-          <button
-            type="button"
-            aria-label="Fechar o assistente"
-            className={BOTAO_ICONE}
-            onClick={aoCancelar}
-          >
-            <X size={18} aria-hidden="true" />
-          </button>
-        </header>
-        <div ref={corpo} className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-8">
-          <ConteudoDaEtapa
-            assistente={assistente}
-            navegacao={navegacao}
-            aoSalvar={aoSalvar}
-            aoConcluir={aoConcluir}
-          />
         </div>
-      </section>
-    </div>
+      </div>
+      <BarraDeAcoes
+        primeira={navegacao.indice === 0}
+        ultima={navegacao.indice === ETAPAS.length - 1}
+        salvando={assistente.salvando}
+        aoVoltar={navegacao.voltar}
+        aoAvancar={navegacao.avancar}
+        aoSalvar={aoSalvar}
+        aoCancelar={aoCancelar}
+      />
+    </section>
   );
 }
 
-/** Assistente de Configuracao de NF-e: as etapas do Syndata (empresa, nota fiscal,
- *  NF-e, NFC-e, sincronia e conclusao) gravando na config fiscal da API. */
+/** Assistente de Configuração de NF-e: as etapas do Syndata (empresa, nota
+ *  fiscal, NF-e, NFC-e, sincronia e conclusão) gravando na config fiscal da
+ *  API. Fase 8: uma superfície só — contexto em cima, etapas à esquerda, área
+ *  de trabalho (a única região que rola) e ações presas ao pé dela. */
 export function AssistenteNfeScreen() {
   const assistente = useAssistente();
   const navegacao = useNavegacao();
@@ -193,7 +210,7 @@ export function AssistenteNfeScreen() {
   const [cancelando, setCancelando] = useState(false);
   const { aviso, fecharAviso } = assistente;
 
-  // Chave de proposito: efeito que devolve algo alem da limpeza derruba a tela.
+  // Chave de propósito: efeito que devolve algo além da limpeza derruba a tela.
   useEffect(() => {
     if (aviso?.tom !== 'sucesso') return undefined;
     const temporizador = window.setTimeout(fecharAviso, 4000);
@@ -211,6 +228,7 @@ export function AssistenteNfeScreen() {
     if (!assistente.sujo || (await salvar())) navigate(ROTAS.inicio);
   };
   const pronto = assistente.carga.status === 'pronto';
+  const { issuer, environment } = assistente.formulario;
 
   useAtalhosDoAssistente(area, {
     F6: () => pronto && navegacao.voltar(),
@@ -221,30 +239,34 @@ export function AssistenteNfeScreen() {
 
   return (
     <>
-      <JanelaDoAssistente area={area} aoFechar={cancelar}>
+      <JanelaDoAssistente area={area}>
+        <Cabecalho
+          ambiente={environment}
+          empresa={pronto ? issuer.tradeName || issuer.legalName || 'Empresa sem nome' : '—'}
+          documento={pronto && issuer.document ? formatarDocumento(issuer.document) : ''}
+          sujo={assistente.sujo}
+          atualizadoEm={assistente.atualizadoEm}
+          aoFechar={cancelar}
+        />
         {assistente.carga.status === 'carregando' && <Carregando />}
         {assistente.carga.status === 'erro' && (
           <FalhaAoCarregar mensagem={assistente.carga.mensagem} aoTentar={assistente.recarregar} />
         )}
         {pronto && (
-          <>
-            <PaineisDoAssistente
+          <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] lg:grid-cols-[260px_minmax(0,1fr)] lg:grid-rows-1">
+            <TrilhaDeEtapas
+              atual={navegacao.etapa}
+              pendencias={assistente.pendencias}
+              aoEscolher={navegacao.irPara}
+            />
+            <AreaDeTrabalho
               assistente={assistente}
               navegacao={navegacao}
               aoSalvar={() => void salvar()}
               aoConcluir={() => void concluir()}
               aoCancelar={cancelar}
             />
-            <BarraDeAcoes
-              primeira={navegacao.indice === 0}
-              ultima={navegacao.indice === ETAPAS.length - 1}
-              salvando={assistente.salvando}
-              aoVoltar={navegacao.voltar}
-              aoAvancar={navegacao.avancar}
-              aoSalvar={() => void salvar()}
-              aoCancelar={cancelar}
-            />
-          </>
+          </div>
         )}
         {aviso && <AvisoFlutuante aviso={aviso} aoFechar={fecharAviso} />}
       </JanelaDoAssistente>
